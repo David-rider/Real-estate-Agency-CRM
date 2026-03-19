@@ -1,0 +1,3 @@
+﻿error TS6059: File 'D:/study/projects01/CPRE-Agent-CRM/backend/prisma/seed.ts' is not under 'rootDir' 'D:/study/projects01/CPRE-Agent-CRM/backend/src'. 'rootDir' is expected to contain all source files.
+  The file is in the program because:
+    Matched by default include pattern '**/*'

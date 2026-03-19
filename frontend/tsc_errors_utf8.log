@@ -1,0 +1,2 @@
+﻿src/app/crm/[id]/page.tsx(140,6): error TS17008: JSX element 'div' has no corresponding closing tag.
+src/app/crm/[id]/page.tsx(441,1): error TS1005: '</' expected.

@@ -1,0 +1,329 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider   = "prisma-client-js"
+  engineType = "binary"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Organization {
+  id                String   @id @default(uuid())
+  name              String
+  subscription      SubTier  @default(BASIC)
+  preferredLanguage String   @default("en")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  users          User[]
+  clients        Client[]
+  properties     Property[]
+  transactions   Transaction[]
+  commissions    Commission[]
+  offers         Offer[]
+  documents      Document[]
+  appointments   Appointment[]
+  mediaAssets    MediaAsset[]
+  marketingTasks MarketingTask[]
+  referrals      Referral[]
+  giftOrders     GiftOrder[]
+}
+
+enum SubTier {
+  BASIC
+  PRO
+  ENTERPRISE
+}
+
+model User {
+  id                String       @id @default(uuid())
+  email             String       @unique
+  password          String?
+  googleId          String?      @unique
+  appleId           String?      @unique
+  name              String
+  role              Role         @default(AGENT)
+  tier              Tier         @default(CORE)
+  preferredLanguage String       @default("en")
+  orgId             String
+  organization      Organization @relation(fields: [orgId], references: [id])
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  clients        Client[]
+  properties     Property[]
+  transactions   Transaction[]
+  commissions    Commission[]
+  offers         Offer[]
+  appointments   Appointment[]
+  marketingTasks MarketingTask[]
+  referralsGiven Referral[]    @relation("Referrer")
+  referralsRecv  Referral[]    @relation("Referee")
+  giftOrders     GiftOrder[]
+}
+
+enum Role {
+  SUPERADMIN
+  FIRMADMIN
+  MANAGER
+  AGENT
+  ATTORNEY
+  LENDER
+  TITLECO
+  MARKETING
+  OFFICE_SUPPORT
+}
+
+enum Tier {
+  CORE
+  PRO
+  ELITE
+}
+
+model Client {
+  id             String       @id @default(uuid())
+  firstName      String
+  lastName       String
+  email          String?
+  phone          String?
+  type           ClientType   @default(BUYER)
+  status         ClientStatus @default(ACTIVE)
+  targetMoveDate DateTime?
+  funnelStage    ClientFunnel @default(LEAD)
+  budget         String?
+  agentId        String
+  agent          User         @relation(fields: [agentId], references: [id])
+  orgId          String
+  organization   Organization @relation(fields: [orgId], references: [id])
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  transactions Transaction[]
+  offers       Offer[]
+  appointments Appointment[]
+  giftOrders   GiftOrder[]
+}
+
+enum ClientType {
+  BUYER
+  SELLER
+  REFERRAL
+}
+
+enum ClientStatus {
+  LEAD
+  ACTIVE
+  IN_CONTRACT
+  CLOSED
+}
+
+enum ClientFunnel {
+  LEAD
+  QUALIFIED
+  SHOWING
+  OFFERING
+  IN_CONTRACT
+  CLOSED
+  ARCHIVED
+}
+
+model Property {
+  id           String       @id @default(uuid())
+  address      String
+  city         String
+  state        String
+  zip          String
+  price        Float
+  beds         Float
+  baths        Float
+  sqft         Int?
+  description  String?
+  status       PropStatus   @default(ACTIVE)
+  agentId      String
+  agent        User         @relation(fields: [agentId], references: [id])
+  orgId        String
+  organization Organization @relation(fields: [orgId], references: [id])
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  transactions Transaction[]
+  offers       Offer[]
+  appointments Appointment[]
+  mediaAssets  MediaAsset[]
+}
+
+enum PropStatus {
+  COMING_SOON
+  ACTIVE
+  IN_CONTRACT
+  SOLD
+}
+
+model Transaction {
+  id           String       @id @default(uuid())
+  propertyId   String
+  property     Property     @relation(fields: [propertyId], references: [id])
+  clientId     String
+  client       Client       @relation(fields: [clientId], references: [id])
+  agentId      String
+  agent        User         @relation(fields: [agentId], references: [id])
+  orgId        String
+  organization Organization @relation(fields: [orgId], references: [id])
+  price        Float
+  status       TransStatus  @default(OFFER_REVIEW)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  commissions Commission[]
+  documents   Document[]
+}
+
+enum TransStatus {
+  OFFER_REVIEW
+  IN_CONTRACT
+  BOARD_PACKAGE
+  CLEARED_TO_CLOSE
+  CLOSED
+  FALLEN_THROUGH
+}
+
+model Commission {
+  id               String       @id @default(uuid())
+  transactionId    String
+  transaction      Transaction  @relation(fields: [transactionId], references: [id])
+  agentId          String
+  agent            User         @relation(fields: [agentId], references: [id])
+  orgId            String
+  organization     Organization @relation(fields: [orgId], references: [id])
+  grossAmount      Float
+  firmSplitPercent Float
+  overridePercent  Float
+  netPayout        Float
+  status           CommStatus   @default(PENDING)
+  paidAt           DateTime?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+}
+
+enum CommStatus {
+  PENDING
+  PAID
+}
+
+model Offer {
+  id           String       @id @default(uuid())
+  amount       Float
+  status       OfferStatus  @default(PENDING)
+  propertyId   String
+  property     Property     @relation(fields: [propertyId], references: [id])
+  clientId     String
+  client       Client       @relation(fields: [clientId], references: [id])
+  agentId      String
+  agent        User         @relation(fields: [agentId], references: [id])
+  orgId        String
+  organization Organization @relation(fields: [orgId], references: [id])
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+}
+
+enum OfferStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  COUNTER
+}
+
+model Document {
+  id            String       @id @default(uuid())
+  name          String
+  url           String
+  type          String
+  transactionId String
+  transaction   Transaction  @relation(fields: [transactionId], references: [id])
+  orgId         String
+  organization  Organization @relation(fields: [orgId], references: [id])
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}
+
+model Appointment {
+  id           String        @id @default(uuid())
+  title        String
+  date         DateTime
+  notes        String?
+  status       AppointStatus @default(SCHEDULED)
+  agentId      String
+  agent        User          @relation(fields: [agentId], references: [id])
+  clientId     String?
+  client       Client?       @relation(fields: [clientId], references: [id])
+  propertyId   String?
+  property     Property?     @relation(fields: [propertyId], references: [id])
+  orgId        String
+  organization Organization  @relation(fields: [orgId], references: [id])
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+enum AppointStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+model MediaAsset {
+  id           String       @id @default(uuid())
+  url          String
+  type         String
+  propertyId   String
+  property     Property     @relation(fields: [propertyId], references: [id])
+  orgId        String
+  organization Organization @relation(fields: [orgId], references: [id])
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+}
+
+model MarketingTask {
+  id           String       @id @default(uuid())
+  title        String
+  content      String?
+  status       String       @default("PENDING")
+  agentId      String
+  agent        User         @relation(fields: [agentId], references: [id])
+  orgId        String
+  organization Organization @relation(fields: [orgId], references: [id])
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+}
+
+model Referral {
+  id           String       @id @default(uuid())
+  referrerId   String
+  referrer     User         @relation("Referrer", fields: [referrerId], references: [id])
+  refereeId    String
+  referee      User         @relation("Referee", fields: [refereeId], references: [id])
+  status       String       @default("PENDING")
+  orgId        String
+  organization Organization @relation(fields: [orgId], references: [id])
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+}
+
+model GiftOrder {
+  id           String       @id @default(uuid())
+  item         String
+  status       String       @default("ORDERED")
+  clientId     String
+  client       Client       @relation(fields: [clientId], references: [id])
+  agentId      String
+  agent        User         @relation(fields: [agentId], references: [id])
+  orgId        String
+  organization Organization @relation(fields: [orgId], references: [id])
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+}
+
