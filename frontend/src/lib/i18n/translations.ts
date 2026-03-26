@@ -3,6 +3,7 @@ export type Language = "en" | "zh" | "es";
 export const translations = {
   en: {
     sidebar: {
+      brandName: "Real Estate CRM",
       dashboard: "Dashboard",
       crm: "CRM",
       listings: "Listings",
@@ -564,6 +565,7 @@ export const translations = {
   },
   zh: {
     sidebar: {
+      brandName: "房产经纪系统",
       dashboard: "工作台",
       crm: "客户管理",
       listings: "房源中心",
@@ -1106,6 +1108,7 @@ export const translations = {
   },
   es: {
     sidebar: {
+      brandName: "CRM Inmobiliario",
       dashboard: "Tablero",
       crm: "CRM",
       listings: "Listados",

@@ -11,6 +11,14 @@ import { useAuth } from "@/lib/auth/AuthContext";
 export default function Sidebar() {
     const { t } = useI18n();
     const { user } = useAuth();
+    
+    // Helpers to localize default seeded names
+    const getLocalizedName = (name: string | undefined, t: any) => {
+        if (name === 'System Admin') return t.roles.ADMIN;
+        if (name === 'Regional Manager') return t.roles.MANAGER;
+        if (name === 'Sarah Agent') return t.roles.AGENT;
+        return name || t.sidebar.guest;
+    };
 
     const menuItems = [
         { name: t.sidebar.dashboard, path: "/dashboard", icon: "📊" },
@@ -28,7 +36,7 @@ export default function Sidebar() {
     return (
         <aside className="w-64 bg-background border-r border-border/40 h-screen text-foreground flex flex-col pt-6 flex-shrink-0">
             <div className="px-6 mb-8 text-foreground font-sans font-bold text-2xl tracking-wide flex items-center gap-2">
-                <span className="text-primary tracking-tighter">Real Estate Brokerage Management Platform</span> {t.sidebar.adminTitle}
+                <span className="text-primary tracking-tighter">{t.sidebar.brandName}</span> {t.sidebar.adminTitle}
             </div>
             <nav className="flex-1 px-4 space-y-2">
                 {menuItems.map((item) => (
@@ -51,7 +59,7 @@ export default function Sidebar() {
                         {user?.name?.charAt(0) || 'A'}
                     </div>
                     <div className="text-sm">
-                        <p className="text-foreground font-semibold">{user?.name || t.sidebar.guest}</p>
+                        <p className="text-foreground font-semibold">{getLocalizedName(user?.name, t)}</p>
                         <p className="text-xs text-foreground/50 font-medium">
                             {user?.tier ? `${(t as any).tiers?.[user.tier] || user.tier} ${t.sidebar.tierSuffix}` : ''}
                         </p>

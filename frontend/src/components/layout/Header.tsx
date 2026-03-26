@@ -11,6 +11,15 @@ import { useAuth } from "@/lib/auth/AuthContext";
 export default function Header() {
     const { t, language, setLanguage } = useI18n();
     const { user, logout } = useAuth();
+    
+    // Helpers to localize default seeded names
+    const getLocalizedName = (name: string | undefined, t: any) => {
+        if (name === 'System Admin') return t.roles.ADMIN;
+        if (name === 'Regional Manager') return t.roles.MANAGER;
+        if (name === 'Sarah Agent') return t.roles.AGENT;
+        return name || t.sidebar.guest;
+    };
+    
     const [isLangDropdownOpen, setIsLangDropdownOpen] = useState(false);
     const langDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -82,7 +91,7 @@ export default function Header() {
                 {/* User Profile & Logout */}
                 <div className="flex items-center gap-3 pl-4 border-l border-slate-200">
                     <div className="flex flex-col text-right">
-                        <span className="text-sm font-bold text-slate-800">{user?.name || t.sidebar.guest}</span>
+                        <span className="text-sm font-bold text-slate-800">{getLocalizedName(user?.name, t)}</span>
                         <span className="text-xs text-blue-600 font-medium">[{user?.role ? ((t as any).roles?.[user.role] || user.role) : t.roles.GUEST}]</span>
                     </div>
                     <button
