@@ -235,13 +235,13 @@ export default function TransactionsPage() {
   ];
 
   return (
-    <div className="space-y-12 animate-in fade-in slide-in-from-bottom-8 duration-700 ease-out text-foreground h-full flex flex-col pb-12">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-b border-border pb-8 flex-shrink-0">
-        <div className="max-w-xl">
-          <h1 className="font-serif text-5xl font-light tracking-tight text-foreground">
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out text-foreground h-full flex flex-col pb-12">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 pb-6 border-b border-border">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">
             {t.transactions.title || "Transactions & Offers"}
           </h1>
-          <p className="font-sans text-foreground/60 mt-4 text-base font-light leading-relaxed">
+          <p className="text-foreground/50 mt-1 text-sm">
             {t.transactions.subtitle ||
               "Manage your active pipeline and track incoming offers."}
           </p>
@@ -249,13 +249,13 @@ export default function TransactionsPage() {
         <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto shrink-0">
           <button
             onClick={() => setIsAddOfferModalOpen(true)}
-            className="px-6 py-3 bg-transparent border border-border hover:border-foreground text-foreground transition-colors duration-500 rounded-none text-sm uppercase tracking-widest font-medium text-center"
+            className="px-6 py-3 bg-transparent border border-border hover:border-foreground text-foreground transition-colors duration-500 rounded-none text-base uppercase tracking-widest font-medium text-center"
           >
             {t.transactions.offers.addOffer}
           </button>
           <button
             onClick={() => setIsAddModalOpen(true)}
-            className="px-6 py-3 bg-primary text-background hover:bg-primary-hover transition-colors duration-500 rounded-none text-sm uppercase tracking-widest font-medium text-center"
+            className="px-6 py-3 bg-primary text-background hover:bg-primary-hover transition-colors duration-500 rounded-none text-base uppercase tracking-widest font-medium text-center"
           >
             {t.transactions.addDeal}
           </button>
@@ -267,7 +267,7 @@ export default function TransactionsPage() {
         <div className="flex border-b border-border w-full md:w-auto">
           <button
             onClick={() => setActiveTab("PIPELINE")}
-            className={`pb-3 px-6 text-sm uppercase tracking-widest font-sans transition-colors relative ${activeTab === "PIPELINE" ? "text-primary" : "text-foreground/50 hover:text-foreground"}`}
+            className={`pb-3 px-6 text-base uppercase tracking-widest font-sans transition-colors relative ${activeTab === "PIPELINE" ? "text-primary" : "text-foreground/50 hover:text-foreground"}`}
           >
             {t.transactions.offers.activePipeline}
             {activeTab === "PIPELINE" && (
@@ -276,7 +276,7 @@ export default function TransactionsPage() {
           </button>
           <button
             onClick={() => setActiveTab("OFFERS")}
-            className={`pb-3 px-6 text-sm uppercase tracking-widest font-sans transition-colors relative ${activeTab === "OFFERS" ? "text-primary" : "text-foreground/50 hover:text-foreground"}`}
+            className={`pb-3 px-6 text-base uppercase tracking-widest font-sans transition-colors relative ${activeTab === "OFFERS" ? "text-primary" : "text-foreground/50 hover:text-foreground"}`}
           >
             {t.transactions.offers.tabOffers}
             {activeTab === "OFFERS" && (
@@ -289,14 +289,14 @@ export default function TransactionsPage() {
           placeholder={t.transactions.offers.searchPlaceholder}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full md:max-w-xs px-4 py-3 bg-surface border border-border rounded-none text-sm text-foreground focus:border-primary outline-none transition-colors placeholder:text-foreground/30 font-sans tracking-wide"
+          className="w-full md:max-w-xs px-4 py-3 bg-surface border border-border rounded-none text-base text-foreground focus:border-primary outline-none transition-colors placeholder:text-foreground/30 font-sans tracking-wide"
         />
       </div>
 
       {/* Boards */}
       <div className="flex-1 overflow-x-auto overflow-y-hidden custom-scrollbar border border-border bg-background p-4 md:p-8">
         {loading ? (
-          <div className="h-full flex items-center justify-center text-foreground/40 font-sans text-xs uppercase tracking-widest">
+          <div className="h-full flex items-center justify-center text-foreground/40 font-sans text-sm uppercase tracking-widest">
             <div className="flex flex-col items-center gap-4">
               <div className="w-8 h-8 border-2 border-primary/20 border-t-primary rounded-full animate-spin" />
               {t.transactions.offers.loading}
@@ -311,7 +311,7 @@ export default function TransactionsPage() {
               >
                 {/* Column Header */}
                 <div className="flex justify-between items-center mb-6 pb-4 border-b border-border">
-                  <h3 className="font-sans text-xs uppercase tracking-widest text-foreground flex items-center gap-3">
+                  <h3 className="font-sans text-sm uppercase tracking-widest text-foreground flex items-center gap-3">
                     <span
                       className={`px-2 py-0.5 text-[9px] font-bold ${col.textMarker}`}
                     >
@@ -319,7 +319,7 @@ export default function TransactionsPage() {
                     </span>
                     {col.title}
                   </h3>
-                  <span className="text-xs font-serif text-foreground/50">
+                  <span className="text-sm font-serif text-foreground/50">
                     {col.deals.length}
                   </span>
                 </div>
@@ -332,10 +332,10 @@ export default function TransactionsPage() {
                       className="bg-surface p-6 border border-border hover:border-primary/50 transition-colors duration-300 cursor-pointer group flex flex-col gap-4 relative"
                     >
                       <div className="flex justify-between items-start">
-                        <span className="text-[10px] font-sans uppercase tracking-widest text-primary border border-primary/20 px-2 py-1 bg-primary/5">
+                        <span className="text-xs font-sans uppercase tracking-widest text-primary border border-primary/20 px-2 py-1 bg-primary/5">
                           {deal.id}
                         </span>
-                        <span className="text-[10px] uppercase tracking-widest text-foreground/40 font-light">
+                        <span className="text-xs uppercase tracking-widest text-foreground/40 font-light">
                           {deal.days} {t.transactions.offers.days}
                         </span>
                       </div>
@@ -343,7 +343,7 @@ export default function TransactionsPage() {
                         <h4 className="font-serif text-xl text-foreground group-hover:text-primary transition-colors leading-tight mb-2">
                           {deal.property}
                         </h4>
-                        <p className="text-foreground/60 text-xs font-sans uppercase tracking-widest">
+                        <p className="text-foreground/60 text-sm font-sans uppercase tracking-widest">
                           {deal.client}
                         </p>
                       </div>
@@ -364,7 +364,7 @@ export default function TransactionsPage() {
                         <button
                           onClick={(e) => handleSendDocuSign(e, deal.raw.id)}
                           disabled={sendingDocuSign === deal.raw.id}
-                          className="w-full flex items-center justify-center gap-2 py-2 text-[10px] uppercase tracking-widest font-sans border border-blue-600/30 text-blue-600 bg-blue-600/5 hover:bg-blue-600 hover:text-white transition-colors duration-300 disabled:opacity-50"
+                          className="w-full flex items-center justify-center gap-2 py-2 text-xs uppercase tracking-widest font-sans border border-blue-600/30 text-blue-600 bg-blue-600/5 hover:bg-blue-600 hover:text-white transition-colors duration-300 disabled:opacity-50"
                         >
                           <svg viewBox="0 0 24 24" fill="currentColor" className="w-3 h-3">
                             <path d="M11.644 1.545a.735.735 0 01.712 0l10.355 6.007a.735.735 0 01.368.636v12.016a.735.735 0 01-.368.636l-10.355 6.006a.735.735 0 01-.712 0L1.289 20.84A.735.735 0 01.921 20.204V8.188a.735.735 0 01.368-.636l10.355-6.007zM2.392 8.783v10.603l9.252 5.367 9.25-5.367V8.783l-9.25 5.367-9.252-5.367zm9.252-7.208L3.253 6.442l8.391 4.868 8.392-4.868-8.392-4.867z" />
@@ -375,7 +375,7 @@ export default function TransactionsPage() {
                     </div>
                   ))}
                   {col.deals.length === 0 && (
-                    <div className="h-24 border border-dashed border-border flex items-center justify-center text-[10px] font-sans text-foreground/30 uppercase tracking-widest">
+                    <div className="h-24 border border-dashed border-border flex items-center justify-center text-xs font-sans text-foreground/30 uppercase tracking-widest">
                       {t.transactions.offers.emptyStage}
                     </div>
                   )}
@@ -388,19 +388,19 @@ export default function TransactionsPage() {
             <table className="w-full text-left font-sans border-collapse">
               <thead className="sticky top-0 bg-background z-10 before:absolute before:inset-x-0 before:bottom-0 before:border-b before:border-border">
                 <tr>
-                  <th className="py-4 px-6 text-xs uppercase tracking-widest text-foreground/50 font-medium">
+                  <th className="py-4 px-6 text-sm uppercase tracking-widest text-foreground/50 font-medium">
                     {t.transactions.offers.table.property}
                   </th>
-                  <th className="py-4 px-6 text-xs uppercase tracking-widest text-foreground/50 font-medium">
+                  <th className="py-4 px-6 text-sm uppercase tracking-widest text-foreground/50 font-medium">
                     {t.transactions.offers.table.client}
                   </th>
-                  <th className="py-4 px-6 text-xs uppercase tracking-widest text-foreground/50 font-medium text-right">
+                  <th className="py-4 px-6 text-sm uppercase tracking-widest text-foreground/50 font-medium text-right">
                     {t.transactions.offers.table.amount}
                   </th>
-                  <th className="py-4 px-6 text-xs uppercase tracking-widest text-foreground/50 font-medium text-center">
+                  <th className="py-4 px-6 text-sm uppercase tracking-widest text-foreground/50 font-medium text-center">
                     {t.transactions.offers.table.status}
                   </th>
-                  <th className="py-4 px-6 text-xs uppercase tracking-widest text-foreground/50 font-medium text-right">
+                  <th className="py-4 px-6 text-sm uppercase tracking-widest text-foreground/50 font-medium text-right">
                     {t.transactions.offers.table.date}
                   </th>
                 </tr>
@@ -410,7 +410,7 @@ export default function TransactionsPage() {
                   <tr>
                     <td
                       colSpan={5}
-                      className="py-16 text-center text-xs uppercase tracking-widest text-foreground/40"
+                      className="py-16 text-center text-sm uppercase tracking-widest text-foreground/40"
                     >
                       {t.transactions.offers.table.noOffers}
                     </td>
@@ -424,7 +424,7 @@ export default function TransactionsPage() {
                       <td className="py-5 px-6 font-serif text-lg">
                         {offer.property?.address}
                       </td>
-                      <td className="py-5 px-6 font-sans text-sm">
+                      <td className="py-5 px-6 font-sans text-base">
                         {offer.client?.firstName} {offer.client?.lastName}
                       </td>
                       <td className="py-5 px-6 font-serif text-xl text-right group-hover:text-primary transition-colors">
@@ -432,7 +432,7 @@ export default function TransactionsPage() {
                       </td>
                       <td className="py-5 px-6 text-center">
                         <span
-                          className={`inline-block px-3 py-1 text-[10px] uppercase tracking-widest border font-medium ${
+                          className={`inline-block px-3 py-1 text-xs uppercase tracking-widest border font-medium ${
                             offer.status === "ACCEPTED"
                               ? "bg-primary/10 text-primary border-primary/20"
                               : offer.status === "REJECTED"
@@ -445,7 +445,7 @@ export default function TransactionsPage() {
                           {offer.status}
                         </span>
                       </td>
-                      <td className="py-5 px-6 font-sans text-sm text-foreground/60 text-right">
+                      <td className="py-5 px-6 font-sans text-base text-foreground/60 text-right">
                         {new Date(offer.createdAt).toLocaleDateString()}
                       </td>
                     </tr>
@@ -477,7 +477,7 @@ export default function TransactionsPage() {
               className="p-8 overflow-y-auto space-y-8"
             >
               <div>
-                <label className="block font-sans text-xs uppercase tracking-widest text-foreground/50 mb-2">
+                <label className="block font-sans text-sm uppercase tracking-widest text-foreground/50 mb-2">
                   {t.transactions.modal.selectProperty}
                 </label>
                 <select
@@ -485,7 +485,7 @@ export default function TransactionsPage() {
                   name="propertyId"
                   value={formData.propertyId}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 bg-surface border border-border rounded-none text-sm text-foreground focus:border-primary outline-none transition-colors appearance-none cursor-pointer"
+                  className="w-full px-4 py-3 bg-surface border border-border rounded-none text-base text-foreground focus:border-primary outline-none transition-colors appearance-none cursor-pointer"
                 >
                   <option value="" disabled>
                     Select a property...
@@ -499,7 +499,7 @@ export default function TransactionsPage() {
               </div>
 
               <div>
-                <label className="block font-sans text-xs uppercase tracking-widest text-foreground/50 mb-2">
+                <label className="block font-sans text-sm uppercase tracking-widest text-foreground/50 mb-2">
                   {t.transactions.modal.selectClient}
                 </label>
                 <select
@@ -507,7 +507,7 @@ export default function TransactionsPage() {
                   name="clientId"
                   value={formData.clientId}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 bg-surface border border-border rounded-none text-sm text-foreground focus:border-primary outline-none transition-colors appearance-none cursor-pointer"
+                  className="w-full px-4 py-3 bg-surface border border-border rounded-none text-base text-foreground focus:border-primary outline-none transition-colors appearance-none cursor-pointer"
                 >
                   <option value="" disabled>
                     Select a client...
@@ -522,7 +522,7 @@ export default function TransactionsPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div>
-                  <label className="block font-sans text-xs uppercase tracking-widest text-foreground/50 mb-2">
+                  <label className="block font-sans text-sm uppercase tracking-widest text-foreground/50 mb-2">
                     {t.transactions.modal.offerPrice}
                   </label>
                   <input
@@ -532,19 +532,19 @@ export default function TransactionsPage() {
                     onChange={handleChange}
                     type="number"
                     min="0"
-                    className="w-full px-4 py-3 bg-surface border border-border rounded-none text-sm text-foreground focus:border-primary outline-none transition-colors font-serif placeholder:font-sans placeholder:text-foreground/20"
+                    className="w-full px-4 py-3 bg-surface border border-border rounded-none text-base text-foreground focus:border-primary outline-none transition-colors font-serif placeholder:font-sans placeholder:text-foreground/20"
                     placeholder="1400000"
                   />
                 </div>
                 <div>
-                  <label className="block font-sans text-xs uppercase tracking-widest text-foreground/50 mb-2">
+                  <label className="block font-sans text-sm uppercase tracking-widest text-foreground/50 mb-2">
                     {t.transactions.modal.initialStage}
                   </label>
                   <select
                     name="status"
                     value={formData.status}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 bg-surface border border-border rounded-none text-sm text-foreground focus:border-primary outline-none transition-colors appearance-none cursor-pointer"
+                    className="w-full px-4 py-3 bg-surface border border-border rounded-none text-base text-foreground focus:border-primary outline-none transition-colors appearance-none cursor-pointer"
                   >
                     <option value="OFFER_REVIEW">
                       {t.transactions.modal.stageOffer}
@@ -566,14 +566,14 @@ export default function TransactionsPage() {
                 <button
                   type="button"
                   onClick={() => setIsAddModalOpen(false)}
-                  className="px-6 py-3 bg-transparent border border-border text-foreground/70 rounded-none text-sm uppercase tracking-widest font-medium hover:text-foreground hover:border-foreground transition-colors"
+                  className="px-6 py-3 bg-transparent border border-border text-foreground/70 rounded-none text-base uppercase tracking-widest font-medium hover:text-foreground hover:border-foreground transition-colors"
                 >
                   {t.transactions.modal.cancel}
                 </button>
                 <button
                   disabled={isSubmitting}
                   type="submit"
-                  className="px-6 py-3 bg-primary text-background rounded-none text-sm uppercase tracking-widest font-medium hover:bg-primary-hover transition-colors disabled:opacity-50"
+                  className="px-6 py-3 bg-primary text-background rounded-none text-base uppercase tracking-widest font-medium hover:bg-primary-hover transition-colors disabled:opacity-50"
                 >
                   {isSubmitting
                     ? t.transactions.modal.saving
@@ -605,7 +605,7 @@ export default function TransactionsPage() {
               className="p-8 overflow-y-auto space-y-6"
             >
               <div>
-                <label className="block font-sans text-xs uppercase tracking-widest text-foreground/50 mb-2">
+                <label className="block font-sans text-sm uppercase tracking-widest text-foreground/50 mb-2">
                   {t.transactions.offers.modal.targetProperty}
                 </label>
                 <select
@@ -613,7 +613,7 @@ export default function TransactionsPage() {
                   name="propertyId"
                   value={offerFormData.propertyId}
                   onChange={handleOfferChange}
-                  className="w-full px-4 py-3 bg-surface border border-border rounded-none text-sm text-foreground focus:border-primary outline-none transition-colors appearance-none cursor-pointer"
+                  className="w-full px-4 py-3 bg-surface border border-border rounded-none text-base text-foreground focus:border-primary outline-none transition-colors appearance-none cursor-pointer"
                 >
                   <option value="" disabled>
                     {t.transactions.offers.modal.selectProperty}
@@ -627,7 +627,7 @@ export default function TransactionsPage() {
               </div>
 
               <div>
-                <label className="block font-sans text-xs uppercase tracking-widest text-foreground/50 mb-2">
+                <label className="block font-sans text-sm uppercase tracking-widest text-foreground/50 mb-2">
                   {t.transactions.offers.modal.interestedClient}
                 </label>
                 <select
@@ -635,7 +635,7 @@ export default function TransactionsPage() {
                   name="clientId"
                   value={offerFormData.clientId}
                   onChange={handleOfferChange}
-                  className="w-full px-4 py-3 bg-surface border border-border rounded-none text-sm text-foreground focus:border-primary outline-none transition-colors appearance-none cursor-pointer"
+                  className="w-full px-4 py-3 bg-surface border border-border rounded-none text-base text-foreground focus:border-primary outline-none transition-colors appearance-none cursor-pointer"
                 >
                   <option value="" disabled>
                     {t.transactions.offers.modal.selectClient}
@@ -649,7 +649,7 @@ export default function TransactionsPage() {
               </div>
 
               <div>
-                <label className="block font-sans text-xs uppercase tracking-widest text-foreground/50 mb-2">
+                <label className="block font-sans text-sm uppercase tracking-widest text-foreground/50 mb-2">
                   {t.transactions.offers.modal.offerAmount}
                 </label>
                 <input
@@ -659,7 +659,7 @@ export default function TransactionsPage() {
                   onChange={handleOfferChange}
                   type="number"
                   min="0"
-                  className="w-full px-4 py-3 bg-surface border border-border rounded-none text-sm text-foreground focus:border-primary outline-none transition-colors font-serif placeholder:font-sans placeholder:text-foreground/20"
+                  className="w-full px-4 py-3 bg-surface border border-border rounded-none text-base text-foreground focus:border-primary outline-none transition-colors font-serif placeholder:font-sans placeholder:text-foreground/20"
                   placeholder="e.g 950000"
                 />
               </div>
@@ -668,14 +668,14 @@ export default function TransactionsPage() {
                 <button
                   type="button"
                   onClick={() => setIsAddOfferModalOpen(false)}
-                  className="px-6 py-3 bg-transparent border border-border text-foreground/70 rounded-none text-sm uppercase tracking-widest font-medium hover:text-foreground hover:border-foreground transition-colors"
+                  className="px-6 py-3 bg-transparent border border-border text-foreground/70 rounded-none text-base uppercase tracking-widest font-medium hover:text-foreground hover:border-foreground transition-colors"
                 >
                   {t.transactions.offers.modal.cancel}
                 </button>
                 <button
                   disabled={isSubmitting}
                   type="submit"
-                  className="px-6 py-3 bg-primary text-background rounded-none text-sm uppercase tracking-widest font-medium hover:bg-primary-hover transition-colors disabled:opacity-50"
+                  className="px-6 py-3 bg-primary text-background rounded-none text-base uppercase tracking-widest font-medium hover:bg-primary-hover transition-colors disabled:opacity-50"
                 >
                   {isSubmitting
                     ? t.transactions.offers.modal.saving

@@ -126,7 +126,7 @@ export default function FinancePage() {
 
   if (loading) {
     return (
-      <div className="p-24 text-center font-sans text-xs uppercase tracking-widest text-foreground/50 bg-background h-screen flex flex-col items-center justify-center">
+      <div className="p-24 text-center font-sans text-sm uppercase tracking-widest text-foreground/50 bg-background h-screen flex flex-col items-center justify-center">
         <div className="w-8 h-8 border-2 border-primary/20 border-t-primary rounded-full animate-spin mb-6" />
         Loading Finance Data...
       </div>
@@ -134,17 +134,17 @@ export default function FinancePage() {
   }
 
   return (
-    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-8 duration-700 ease-out text-foreground pb-12">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-b border-border/40 pb-8">
-        <div className="max-w-xl">
-          <h1 className="font-sans text-4xl font-semibold tracking-tight text-foreground">
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out text-foreground pb-12">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 pb-6 border-b border-border">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">
             {t.finance.title}
           </h1>
-          <p className="font-sans text-foreground/60 mt-3 text-base leading-relaxed">
+          <p className="text-foreground/50 mt-1 text-sm">
             {t.finance.subtitle}
           </p>
         </div>
-        <button className="px-6 py-2.5 bg-surface text-foreground hover:bg-background ring-1 ring-border/50 transition-colors duration-300 rounded-xl text-sm font-semibold shadow-sm w-full md:w-auto text-center">
+        <button className="px-6 py-2.5 bg-surface text-foreground hover:bg-background ring-1 ring-border/50 transition-colors duration-300 rounded-xl text-base font-semibold shadow-sm w-full md:w-auto text-center">
           {t.finance.exportReport}
         </button>
       </div>
@@ -158,10 +158,10 @@ export default function FinancePage() {
                 <span className="text-2xl">🔒</span>
               </div>
               <h3 className="text-lg font-bold mb-2">{t.finance.waterfall}</h3>
-              <p className="text-sm text-foreground/60 mb-6 max-w-xs">
+              <p className="text-base text-foreground/60 mb-6 max-w-xs">
                 {tierErrors.commissions}
               </p>
-              <button className="px-6 py-2 bg-primary text-background rounded-xl text-sm font-bold shadow-lg hover:scale-105 transition-transform">
+              <button className="px-6 py-2 bg-primary text-background rounded-xl text-base font-bold shadow-lg hover:scale-105 transition-transform">
                 Upgrade to PRO
               </button>
             </div>
@@ -173,7 +173,7 @@ export default function FinancePage() {
                 <select 
                   value={selectedCommIndex}
                   onChange={(e) => setSelectedCommIndex(parseInt(e.target.value))}
-                  className="text-xs font-sans font-semibold text-primary ring-1 ring-primary/30 px-3 py-1 bg-primary/5 rounded-md outline-none cursor-pointer"
+                  className="text-sm font-sans font-semibold text-primary ring-1 ring-primary/30 px-3 py-1 bg-primary/5 rounded-md outline-none cursor-pointer"
                 >
                   {commissions.map((c, idx) => (
                     <option key={c.id} value={idx}>
@@ -186,7 +186,7 @@ export default function FinancePage() {
           </h2>
 
           {commissions.length === 0 ? (
-            <div className="text-center py-16 text-foreground/50 font-sans text-sm font-semibold">
+            <div className="text-center py-16 text-foreground/50 font-sans text-base font-semibold">
               {tierErrors.commissions ? "Detailed data locked." : "No commissions found."}
             </div>
           ) : (
@@ -198,14 +198,14 @@ export default function FinancePage() {
                 </div>
                 <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] bg-surface/30 p-6 ring-1 ring-border/50 rounded-xl transition-all duration-300 group-hover:ring-primary/50 group-hover:shadow-md">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold font-sans text-foreground/60 uppercase tracking-widest">
+                    <span className="text-sm font-bold font-sans text-foreground/60 uppercase tracking-widest">
                       {t.finance.grossCommission}
                     </span>
                     <span className="text-xl font-sans font-semibold text-foreground">
                       ${commissions[selectedCommIndex].grossAmount.toLocaleString()}
                     </span>
                   </div>
-                  <div className="text-[10px] font-sans text-foreground/50 mt-3 font-semibold border-t border-border/40 pt-3">
+                  <div className="text-xs font-sans text-foreground/50 mt-3 font-semibold border-t border-border/40 pt-3">
                     {t.finance.recvFromTitle}
                   </div>
                 </div>
@@ -218,7 +218,7 @@ export default function FinancePage() {
                 </div>
                 <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] bg-surface/10 p-6 ring-1 ring-border/40 rounded-xl">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold font-sans text-foreground/60">
+                    <span className="text-sm font-semibold font-sans text-foreground/60">
                       {t.finance.firmSplit} ({commissions[selectedCommIndex].firmSplitPercent}%)
                     </span>
                     <span className="text-lg font-sans font-medium text-foreground/60">
@@ -240,7 +240,7 @@ export default function FinancePage() {
                   </div>
                   <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] bg-surface/10 p-6 ring-1 ring-border/40 rounded-xl">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold font-sans text-foreground/60">
+                      <span className="text-sm font-semibold font-sans text-foreground/60">
                         {t.finance.teamOverride} (
                         {commissions[selectedCommIndex].overridePercent}%)
                       </span>
@@ -264,14 +264,14 @@ export default function FinancePage() {
                 </div>
                 <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] bg-primary/5 p-8 ring-1 ring-primary/30 rounded-2xl relative shadow-md">
                   <div className="flex flex-col gap-2">
-                    <span className="text-xs font-bold font-sans text-primary/80 uppercase tracking-widest">
+                    <span className="text-sm font-bold font-sans text-primary/80 uppercase tracking-widest">
                       {t.finance.netPayout}
                     </span>
                     <span className="text-4xl lg:text-5xl font-sans font-bold tracking-tight text-primary">
                       ${commissions[selectedCommIndex].netPayout.toLocaleString()}
                     </span>
                   </div>
-                  <div className="text-[10px] font-sans font-semibold uppercase text-primary/70 mt-6 border-t border-primary/20 pt-4 flex items-center justify-between gap-2">
+                  <div className="text-xs font-sans font-semibold uppercase text-primary/70 mt-6 border-t border-primary/20 pt-4 flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
                       <span
                         className={`w-2 h-2 rounded-full ${commissions[selectedCommIndex].status === "PAID" ? "bg-primary shadow-[0_0_8px_rgba(var(--primary),0.5)]" : "bg-primary/30"} flex-shrink-0`}
@@ -300,20 +300,20 @@ export default function FinancePage() {
         <div className="bg-background ring-1 ring-border/50 rounded-2xl shadow-sm p-8 flex flex-col h-full">
           <h2 className="font-sans text-2xl font-semibold text-foreground mb-8 pb-6 border-b border-border/40 flex items-center justify-between">
             {t.finance.performance}
-            <span className="text-xs font-semibold text-foreground/70 ring-1 ring-border/50 px-3 py-1.5 bg-surface/50 rounded-md">
+            <span className="text-sm font-semibold text-foreground/70 ring-1 ring-border/50 px-3 py-1.5 bg-surface/50 rounded-md">
               PRO Tier
             </span>
           </h2>
 
           <div className="flex flex-col gap-2 mb-10 border-b border-border/40 pb-8">
-            <p className="font-sans text-sm font-semibold text-foreground/50">
+            <p className="font-sans text-base font-semibold text-foreground/50">
               {t.finance.ytdGross}
             </p>
             <div className="flex flex-col sm:flex-row sm:items-end gap-2 sm:gap-4 mt-2">
               <p className="font-sans tracking-tight text-5xl font-bold text-foreground">
                 ${metrics?.ytdGross?.toLocaleString() || 0}
               </p>
-              <div className="pb-1.5 text-primary font-sans text-sm font-semibold">
+              <div className="pb-1.5 text-primary font-sans text-base font-semibold">
                 + {metrics?.topPercent || "TOP 10%"}
               </div>
             </div>
@@ -330,7 +330,7 @@ export default function FinancePage() {
                     <div className="absolute -left-5 w-[3px] h-8 bg-primary rounded-r-md" />
                   )}
                   <div
-                    className={`w-10 h-10 flex items-center justify-center font-sans font-bold text-sm rounded-full ${leader.name === metrics?.userRank?.name ? "bg-primary text-background shadow-[0_0_10px_rgba(var(--primary),0.4)]" : "ring-1 ring-border/80 bg-surface text-foreground/60 shadow-sm"}`}
+                    className={`w-10 h-10 flex items-center justify-center font-sans font-bold text-base rounded-full ${leader.name === metrics?.userRank?.name ? "bg-primary text-background shadow-[0_0_10px_rgba(var(--primary),0.4)]" : "ring-1 ring-border/80 bg-surface text-foreground/60 shadow-sm"}`}
                   >
                     {leader.rank}
                   </div>
@@ -361,10 +361,10 @@ export default function FinancePage() {
               <span className="text-2xl">📈</span>
             </div>
             <h3 className="text-lg font-bold mb-2">{t.finance.projectionsTitle}</h3>
-            <p className="text-sm text-foreground/60 mb-6 max-w-xs">
+            <p className="text-base text-foreground/60 mb-6 max-w-xs">
               {tierErrors.projections}
             </p>
-            <button className="px-6 py-2 bg-primary text-background rounded-xl text-sm font-bold shadow-lg hover:scale-105 transition-transform">
+            <button className="px-6 py-2 bg-primary text-background rounded-xl text-base font-bold shadow-lg hover:scale-105 transition-transform">
               Upgrade to ELITE
             </button>
           </div>
@@ -373,7 +373,7 @@ export default function FinancePage() {
           <h2 className="font-sans text-2xl font-semibold text-foreground">
             {t.finance.projectionsTitle || "Revenue Projection"}
           </h2>
-          <p className="font-sans text-sm text-foreground/50 mt-1">
+          <p className="font-sans text-base text-foreground/50 mt-1">
             {t.finance.projectionsSubtitle || "Estimated income based on active listings & pending offers"}
           </p>
         </div>

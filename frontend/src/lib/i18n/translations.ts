@@ -460,6 +460,7 @@ export const translations = {
         users: "Users & Teams",
         security: "Security & Audit",
         integrations: "Integrations",
+        appearance: "Appearance",
       },
       users: {
         name: "Name",
@@ -1009,6 +1010,7 @@ export const translations = {
         users: "员工与团队管理",
         security: "安全与审计日志",
         integrations: "第三方集成",
+        appearance: "外观设置",
       },
       users: {
         name: "姓名",
@@ -1559,6 +1561,7 @@ export const translations = {
         users: "Usuarios y Equipos",
         security: "Seguridad y Auditoría",
         integrations: "Integraciones",
+        appearance: "Apariencia",
       },
       users: {
         name: "Nombre",

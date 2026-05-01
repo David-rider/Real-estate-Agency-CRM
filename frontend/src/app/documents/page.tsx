@@ -112,7 +112,7 @@ export default function DocumentsPage() {
         </div>
         <button
           onClick={() => setIsAddModalOpen(true)}
-          className="px-6 py-3 bg-primary text-background hover:bg-primary-hover transition-colors duration-500 rounded-none text-sm uppercase tracking-widest font-medium w-full md:w-auto text-center"
+          className="px-6 py-3 bg-primary text-background hover:bg-primary-hover transition-colors duration-500 rounded-none text-base uppercase tracking-widest font-medium w-full md:w-auto text-center"
         >
           {t.documents.uploadDoc}
         </button>
@@ -125,12 +125,12 @@ export default function DocumentsPage() {
           placeholder={t.documents.searchPlaceholder}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="flex-1 max-w-md px-4 py-3 bg-background border border-border rounded-none font-sans text-sm text-foreground focus:border-primary outline-none transition-colors placeholder:text-foreground/30"
+          className="flex-1 max-w-md px-4 py-3 bg-background border border-border rounded-none font-sans text-base text-foreground focus:border-primary outline-none transition-colors placeholder:text-foreground/30"
         />
         <select
           value={filterType}
           onChange={(e) => setFilterType(e.target.value)}
-          className="px-4 py-3 bg-background border border-border rounded-none font-sans text-sm text-foreground text-opacity-80 outline-none cursor-pointer focus:border-primary transition-colors appearance-none md:w-48"
+          className="px-4 py-3 bg-background border border-border rounded-none font-sans text-base text-foreground text-opacity-80 outline-none cursor-pointer focus:border-primary transition-colors appearance-none md:w-48"
         >
           <option value="ALL">{t.documents.filters.allTypes}</option>
           <option value="CONTRACT">{t.documents.modal.typeContract}</option>
@@ -145,7 +145,7 @@ export default function DocumentsPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-surface border-b border-border text-xs uppercase tracking-widest text-foreground/40 font-sans">
+              <tr className="bg-surface border-b border-border text-sm uppercase tracking-widest text-foreground/40 font-sans">
                 <th className="p-6 font-medium whitespace-nowrap">
                   {t.documents.table.name}
                 </th>
@@ -168,7 +168,7 @@ export default function DocumentsPage() {
                 <tr>
                   <td
                     colSpan={5}
-                    className="p-12 text-center text-foreground/40 font-sans text-xs uppercase tracking-widest"
+                    className="p-12 text-center text-foreground/40 font-sans text-sm uppercase tracking-widest"
                   >
                     Loading...
                   </td>
@@ -177,7 +177,7 @@ export default function DocumentsPage() {
                 <tr>
                   <td
                     colSpan={5}
-                    className="p-12 text-center text-foreground/40 font-sans text-xs uppercase tracking-widest bg-surface/30"
+                    className="p-12 text-center text-foreground/40 font-sans text-sm uppercase tracking-widest bg-surface/30"
                   >
                     {t.documents.empty}
                   </td>
@@ -199,13 +199,13 @@ export default function DocumentsPage() {
                       </div>
                     </td>
                     <td className="p-6">
-                      <span className="px-2 py-1 text-[10px] uppercase tracking-widest font-sans border border-border bg-surface text-foreground/70 group-hover:border-primary/20 group-hover:text-primary transition-colors">
+                      <span className="px-2 py-1 text-xs uppercase tracking-widest font-sans border border-border bg-surface text-foreground/70 group-hover:border-primary/20 group-hover:text-primary transition-colors">
                         {doc.type.replace("_", " ")}
                       </span>
                     </td>
                     <td className="p-6">
                       {doc.transaction ? (
-                        <span className="font-sans text-sm text-foreground/70">
+                        <span className="font-sans text-base text-foreground/70">
                           {doc.transaction.clientId?.substring(
                             0,
                             8,
@@ -213,19 +213,19 @@ export default function DocumentsPage() {
                           Deal
                         </span>
                       ) : (
-                        <span className="text-foreground/30 text-xs italic">
+                        <span className="text-foreground/30 text-sm italic">
                           {t.documents.unlinked}
                         </span>
                       )}
                     </td>
-                    <td className="p-6 font-sans text-sm text-foreground/60">
+                    <td className="p-6 font-sans text-base text-foreground/60">
                       {new Date(doc.createdAt).toLocaleDateString()}
                     </td>
                     <td className="p-6 text-right">
                       <div className="flex gap-4 justify-end">
                         <button
                           onClick={() => setPreviewDoc(doc)}
-                          className="text-xs font-sans uppercase tracking-widest text-primary hover:text-primary-hover transition-colors"
+                          className="text-sm font-sans uppercase tracking-widest text-primary hover:text-primary-hover transition-colors"
                         >
                           {t.documents.table.view}
                         </button>
@@ -259,7 +259,7 @@ export default function DocumentsPage() {
               className="p-8 overflow-y-auto space-y-8"
             >
               <div>
-                <label className="block font-sans text-xs uppercase tracking-widest text-foreground/50 mb-2">
+                <label className="block font-sans text-sm uppercase tracking-widest text-foreground/50 mb-2">
                   {t.documents.modal.name}
                 </label>
                 <input
@@ -268,13 +268,13 @@ export default function DocumentsPage() {
                   value={formData.name}
                   onChange={handleChange}
                   type="text"
-                  className="w-full px-4 py-3 bg-surface border border-border rounded-none text-sm text-foreground focus:border-primary outline-none transition-colors placeholder:text-foreground/20"
+                  className="w-full px-4 py-3 bg-surface border border-border rounded-none text-base text-foreground focus:border-primary outline-none transition-colors placeholder:text-foreground/20"
                   placeholder="e.g. Signed Offer Sheet.pdf"
                 />
               </div>
 
               <div>
-                <label className="block font-sans text-xs uppercase tracking-widest text-foreground/50 mb-2">
+                <label className="block font-sans text-sm uppercase tracking-widest text-foreground/50 mb-2">
                   {t.documents.modal.url}
                 </label>
                 <input
@@ -283,21 +283,21 @@ export default function DocumentsPage() {
                   value={formData.url}
                   onChange={handleChange}
                   type="url"
-                  className="w-full px-4 py-3 bg-surface border border-border rounded-none text-sm text-foreground focus:border-primary outline-none transition-colors font-sans placeholder:text-foreground/20"
+                  className="w-full px-4 py-3 bg-surface border border-border rounded-none text-base text-foreground focus:border-primary outline-none transition-colors font-sans placeholder:text-foreground/20"
                   placeholder="https://storage.example.com/file.pdf"
                 />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div>
-                  <label className="block font-sans text-xs uppercase tracking-widest text-foreground/50 mb-2">
+                  <label className="block font-sans text-sm uppercase tracking-widest text-foreground/50 mb-2">
                     {t.documents.modal.type}
                   </label>
                   <select
                     name="type"
                     value={formData.type}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 bg-surface border border-border rounded-none text-sm text-foreground focus:border-primary outline-none transition-colors appearance-none cursor-pointer"
+                    className="w-full px-4 py-3 bg-surface border border-border rounded-none text-base text-foreground focus:border-primary outline-none transition-colors appearance-none cursor-pointer"
                   >
                     <option value="CONTRACT">
                       {t.documents.modal.typeContract}
@@ -312,7 +312,7 @@ export default function DocumentsPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block font-sans text-xs uppercase tracking-widest text-foreground/50 mb-2">
+                  <label className="block font-sans text-sm uppercase tracking-widest text-foreground/50 mb-2">
                     {t.documents.modal.selectTransaction}
                   </label>
                   <select
@@ -320,7 +320,7 @@ export default function DocumentsPage() {
                     name="transactionId"
                     value={formData.transactionId}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 bg-surface border border-border rounded-none text-sm text-foreground focus:border-primary outline-none transition-colors appearance-none cursor-pointer"
+                    className="w-full px-4 py-3 bg-surface border border-border rounded-none text-base text-foreground focus:border-primary outline-none transition-colors appearance-none cursor-pointer"
                   >
                     <option value="" disabled>
                       -- Select a Deal --
@@ -338,14 +338,14 @@ export default function DocumentsPage() {
                 <button
                   type="button"
                   onClick={() => setIsAddModalOpen(false)}
-                  className="px-6 py-3 bg-transparent border border-border text-foreground/70 rounded-none text-sm uppercase tracking-widest font-medium hover:text-foreground hover:border-foreground transition-colors"
+                  className="px-6 py-3 bg-transparent border border-border text-foreground/70 rounded-none text-base uppercase tracking-widest font-medium hover:text-foreground hover:border-foreground transition-colors"
                 >
                   {t.documents.modal.cancel}
                 </button>
                 <button
                   disabled={isSubmitting}
                   type="submit"
-                  className="px-6 py-3 bg-primary text-background rounded-none text-sm uppercase tracking-widest font-medium hover:bg-primary-hover transition-colors disabled:opacity-50"
+                  className="px-6 py-3 bg-primary text-background rounded-none text-base uppercase tracking-widest font-medium hover:bg-primary-hover transition-colors disabled:opacity-50"
                 >
                   {isSubmitting
                     ? t.documents.modal.saving
@@ -366,7 +366,7 @@ export default function DocumentsPage() {
                 <h2 className="font-serif text-2xl font-light text-foreground">
                   {previewDoc.name}
                 </h2>
-                <p className="font-sans text-xs uppercase tracking-widest text-foreground/50 mt-1">
+                <p className="font-sans text-sm uppercase tracking-widest text-foreground/50 mt-1">
                   {t.documents.preview?.title || "Document Preview"}
                 </p>
               </div>
@@ -375,7 +375,7 @@ export default function DocumentsPage() {
                   href={previewDoc.url}
                   target="_blank"
                   rel="noreferrer"
-                  className="hidden sm:inline-block text-xs uppercase tracking-widest text-primary hover:text-primary-hover transition-colors"
+                  className="hidden sm:inline-block text-sm uppercase tracking-widest text-primary hover:text-primary-hover transition-colors"
                 >
                   {t.documents.preview?.download || "Download Original"}
                 </a>

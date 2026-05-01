@@ -116,39 +116,39 @@ export default function CRMPage() {
   };
 
   return (
-    <div className="space-y-12 animate-in fade-in slide-in-from-bottom-8 duration-700 ease-out text-foreground">
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out text-foreground">
       {/* Header Area */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-b border-border/40 pb-8">
-        <div className="max-w-xl">
-          <h1 className="font-sans text-4xl font-semibold tracking-tight text-foreground">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 pb-6 border-b border-border">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">
             {t.crm.title}
           </h1>
-          <p className="font-sans text-foreground/60 mt-3 text-base leading-relaxed">
+          <p className="text-foreground/50 mt-1 text-sm">
             {t.crm.subtitle}
           </p>
         </div>
         <button
           onClick={() => setIsAddModalOpen(true)}
-          className="px-6 py-2.5 bg-primary text-background hover:opacity-90 transition-opacity duration-300 rounded-xl text-sm font-semibold shadow-md w-full md:w-auto text-center"
+          className="px-4 py-2 bg-primary text-background hover:opacity-90 transition-opacity rounded-lg text-sm font-semibold shadow-sm w-full md:w-auto text-center"
         >
           {t.crm.addClient}
         </button>
       </div>
 
-      <div className="bg-surface ring-1 ring-border/50 rounded-2xl flex flex-col shadow-sm overflow-hidden">
+      <div className="bg-surface border border-border rounded-xl flex flex-col overflow-hidden">
         {/* CRM Toolbar */}
-        <div className="p-5 border-b border-border/40 flex flex-col md:flex-row gap-4 bg-background/50">
+        <div className="p-4 border-b border-border flex flex-col md:flex-row gap-3 bg-background/50">
           <input
             type="text"
             placeholder={t.crm.searchPlaceholder}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="flex-1 px-4 py-2.5 bg-background border border-border/60 rounded-xl font-sans text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all shadow-sm placeholder:text-foreground/40"
+            className="flex-1 px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all placeholder:text-foreground/30"
           />
           <select
             value={filterType}
             onChange={(e) => setFilterType(e.target.value)}
-            className="px-4 py-2.5 bg-background border border-border/60 rounded-xl font-sans text-sm text-foreground/80 outline-none cursor-pointer focus:border-primary focus:ring-1 focus:ring-primary transition-all shadow-sm appearance-none md:w-48"
+            className="px-4 py-2.5 bg-background border border-border/60 rounded-xl font-sans text-base text-foreground/80 outline-none cursor-pointer focus:border-primary focus:ring-1 focus:ring-primary transition-all shadow-sm appearance-none md:w-48"
           >
             <option value="ALL">{t.crm.filters.allTypes}</option>
             <option value="BUYER">{t.crm.modal.typeBuyer}</option>
@@ -158,7 +158,7 @@ export default function CRMPage() {
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="px-4 py-2.5 bg-background border border-border/60 rounded-xl font-sans text-sm text-foreground/80 outline-none cursor-pointer focus:border-primary focus:ring-1 focus:ring-primary transition-all shadow-sm appearance-none md:w-48"
+            className="px-4 py-2.5 bg-background border border-border/60 rounded-xl font-sans text-base text-foreground/80 outline-none cursor-pointer focus:border-primary focus:ring-1 focus:ring-primary transition-all shadow-sm appearance-none md:w-48"
           >
             <option value="ALL">{t.crm.filters.allStatuses}</option>
             <option value="ACTIVE">{t.crm.modal.statusActive}</option>
@@ -170,8 +170,8 @@ export default function CRMPage() {
 
         {/* Data Table */}
         <div className="overflow-x-auto bg-background">
-          <table className="w-full text-left text-sm font-sans">
-            <thead className="bg-surface/30 border-b border-border/40 text-foreground/60 text-xs font-semibold">
+          <table className="w-full text-left text-base font-sans">
+            <thead className="bg-surface/30 border-b border-border/40 text-foreground/60 text-sm font-semibold">
               <tr>
                 <th className="px-6 py-4 font-semibold">
                   {t.crm.table.clientName}
@@ -222,7 +222,7 @@ export default function CRMPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="text-xs font-semibold px-2.5 py-1 rounded-md bg-surface border border-border/40 text-foreground/70">
+                      <span className="text-sm font-semibold px-2.5 py-1 rounded-md bg-surface border border-border/40 text-foreground/70">
                         {client.type === "BUYER"
                           ? t.crm.modal.typeBuyer
                           : client.type === "SELLER"
@@ -238,7 +238,7 @@ export default function CRMPage() {
                     </td>
                     <td className="px-6 py-4">
                       <span
-                        className={`text-xs font-semibold flex items-center gap-2
+                        className={`text-sm font-semibold flex items-center gap-2
                                                 ${client.status === "ACTIVE" ? "text-primary" : ""}
                                                 ${client.status === "IN_CONTRACT" ? "text-foreground/90" : ""}
                                                 ${client.status === "LEAD" ? "text-foreground/50" : ""}
@@ -263,7 +263,7 @@ export default function CRMPage() {
                     <td className="px-6 py-4 text-right">
                       <Link
                         href={`/crm/${client.id}`}
-                        className="text-primary hover:text-primary-hover font-sans text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                        className="text-primary hover:text-primary-hover font-sans text-base font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300"
                       >
                         {t.crm.table.viewProfile} &rarr;
                       </Link>
@@ -276,7 +276,7 @@ export default function CRMPage() {
         </div>
 
         {/* Pagination Footer */}
-        <div className="p-6 border-t border-border flex items-center justify-between text-xs tracking-widest uppercase text-foreground/50 bg-surface/30">
+        <div className="p-6 border-t border-border flex items-center justify-between text-sm tracking-widest uppercase text-foreground/50 bg-surface/30">
           <span>
             {t.crm.pagination.showing}{" "}
             <span className="text-foreground font-serif">
@@ -326,7 +326,7 @@ export default function CRMPage() {
             >
               <div className="grid grid-cols-2 gap-6">
                 <div>
-                  <label className="block font-sans text-xs font-semibold text-foreground/60 mb-2">
+                  <label className="block font-sans text-sm font-semibold text-foreground/60 mb-2">
                     {t.crm.modal.firstName}
                   </label>
                   <input
@@ -335,12 +335,12 @@ export default function CRMPage() {
                     value={formData.firstName}
                     onChange={handleChange}
                     type="text"
-                    className="w-full px-4 py-3 bg-background border border-border/60 rounded-xl text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all placeholder:text-foreground/30 shadow-sm"
+                    className="w-full px-4 py-3 bg-background border border-border/60 rounded-xl text-base text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all placeholder:text-foreground/30 shadow-sm"
                     placeholder="John"
                   />
                 </div>
                 <div>
-                  <label className="block font-sans text-xs font-semibold text-foreground/60 mb-2">
+                  <label className="block font-sans text-sm font-semibold text-foreground/60 mb-2">
                     {t.crm.modal.lastName}
                   </label>
                   <input
@@ -349,14 +349,14 @@ export default function CRMPage() {
                     value={formData.lastName}
                     onChange={handleChange}
                     type="text"
-                    className="w-full px-4 py-3 bg-background border border-border/60 rounded-xl text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all placeholder:text-foreground/30 shadow-sm"
+                    className="w-full px-4 py-3 bg-background border border-border/60 rounded-xl text-base text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all placeholder:text-foreground/30 shadow-sm"
                     placeholder="Doe"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block font-sans text-xs font-semibold text-foreground/60 mb-2">
+                <label className="block font-sans text-sm font-semibold text-foreground/60 mb-2">
                   {t.crm.modal.email}
                 </label>
                 <input
@@ -364,13 +364,13 @@ export default function CRMPage() {
                   value={formData.email}
                   onChange={handleChange}
                   type="email"
-                  className="w-full px-4 py-3 bg-background border border-border/60 rounded-xl text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all placeholder:text-foreground/30 shadow-sm"
+                  className="w-full px-4 py-3 bg-background border border-border/60 rounded-xl text-base text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all placeholder:text-foreground/30 shadow-sm"
                   placeholder="john@example.com"
                 />
               </div>
 
               <div>
-                <label className="block font-sans text-xs font-semibold text-foreground/60 mb-2">
+                <label className="block font-sans text-sm font-semibold text-foreground/60 mb-2">
                   {t.crm.modal.phone}
                 </label>
                 <input
@@ -378,21 +378,21 @@ export default function CRMPage() {
                   value={formData.phone}
                   onChange={handleChange}
                   type="tel"
-                  className="w-full px-4 py-3 bg-background border border-border/60 rounded-xl text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all placeholder:text-foreground/30 shadow-sm"
+                  className="w-full px-4 py-3 bg-background border border-border/60 rounded-xl text-base text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all placeholder:text-foreground/30 shadow-sm"
                   placeholder="+1 (555) 000-0000"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-6">
                 <div>
-                  <label className="block font-sans text-xs font-semibold text-foreground/60 mb-2">
+                  <label className="block font-sans text-sm font-semibold text-foreground/60 mb-2">
                     {t.crm.modal.type}
                   </label>
                   <select
                     name="type"
                     value={formData.type}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 bg-background border border-border/60 rounded-xl text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none cursor-pointer shadow-sm"
+                    className="w-full px-4 py-3 bg-background border border-border/60 rounded-xl text-base text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none cursor-pointer shadow-sm"
                   >
                     <option value="BUYER">{t.crm.modal.typeBuyer}</option>
                     <option value="SELLER">{t.crm.modal.typeSeller}</option>
@@ -400,14 +400,14 @@ export default function CRMPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block font-sans text-xs font-semibold text-foreground/60 mb-2">
+                  <label className="block font-sans text-sm font-semibold text-foreground/60 mb-2">
                     {t.crm.modal.status}
                   </label>
                   <select
                     name="status"
                     value={formData.status}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 bg-background border border-border/60 rounded-xl text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none cursor-pointer shadow-sm"
+                    className="w-full px-4 py-3 bg-background border border-border/60 rounded-xl text-base text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none cursor-pointer shadow-sm"
                   >
                     <option value="LEAD">{t.crm.modal.statusLead}</option>
                     <option value="ACTIVE">{t.crm.modal.statusActive}</option>
@@ -420,7 +420,7 @@ export default function CRMPage() {
               </div>
 
               <div>
-                <label className="block font-sans text-xs font-semibold text-foreground/60 mb-2">
+                <label className="block font-sans text-sm font-semibold text-foreground/60 mb-2">
                   {t.crm.modal.budget}
                 </label>
                 <input
@@ -428,7 +428,7 @@ export default function CRMPage() {
                   value={formData.budget}
                   onChange={handleChange}
                   type="text"
-                  className="w-full px-4 py-3 bg-background border border-border/60 rounded-xl text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all placeholder:text-foreground/30 shadow-sm"
+                  className="w-full px-4 py-3 bg-background border border-border/60 rounded-xl text-base text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all placeholder:text-foreground/30 shadow-sm"
                   placeholder="e.g. $1.2M - $1.5M"
                 />
               </div>
@@ -437,14 +437,14 @@ export default function CRMPage() {
                 <button
                   type="button"
                   onClick={() => setIsAddModalOpen(false)}
-                  className="px-6 py-2.5 bg-surface border border-border/60 text-foreground/70 rounded-xl text-sm font-semibold hover:text-foreground transition-colors shadow-sm"
+                  className="px-6 py-2.5 bg-surface border border-border/60 text-foreground/70 rounded-xl text-base font-semibold hover:text-foreground transition-colors shadow-sm"
                 >
                   {t.crm.modal.cancel}
                 </button>
                 <button
                   disabled={isSubmitting}
                   type="submit"
-                  className="px-6 py-2.5 bg-primary text-background rounded-xl text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 shadow-md"
+                  className="px-6 py-2.5 bg-primary text-background rounded-xl text-base font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 shadow-md"
                 >
                   {isSubmitting ? t.crm.modal.saving : t.crm.modal.save}
                 </button>

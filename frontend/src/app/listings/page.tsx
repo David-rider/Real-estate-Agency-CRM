@@ -225,20 +225,20 @@ export default function ListingsPage() {
   };
 
   return (
-    <div className="space-y-12 animate-in fade-in slide-in-from-bottom-8 duration-700 ease-out text-foreground">
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out text-foreground">
       {/* Header Area */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-b border-border/40 pb-8">
-        <div className="max-w-xl">
-          <h1 className="font-sans text-4xl font-semibold tracking-tight text-foreground">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 pb-6 border-b border-border">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">
             {t.listings.title}
           </h1>
-          <p className="font-sans text-foreground/60 mt-3 text-base leading-relaxed">
+          <p className="text-foreground/50 mt-1 text-sm">
             {t.listings.subtitle}
           </p>
         </div>
         <button
           onClick={() => setIsAddModalOpen(true)}
-          className="px-6 py-2.5 bg-primary text-background hover:opacity-90 transition-opacity duration-300 rounded-xl text-sm font-semibold shadow-md w-full md:w-auto text-center"
+          className="px-6 py-2.5 bg-primary text-background hover:opacity-90 transition-opacity duration-300 rounded-xl text-base font-semibold shadow-md w-full md:w-auto text-center"
         >
           {t.listings.addListing}
         </button>
@@ -251,12 +251,12 @@ export default function ListingsPage() {
           placeholder={t.listings.searchPlaceholder}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="flex-1 max-w-md px-4 py-2.5 bg-background border border-border/60 rounded-xl font-sans text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all shadow-sm placeholder:text-foreground/40"
+          className="flex-1 max-w-md px-4 py-2.5 bg-background border border-border/60 rounded-xl font-sans text-base text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all shadow-sm placeholder:text-foreground/40"
         />
         <select
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value)}
-          className="px-4 py-2.5 bg-background border border-border/60 rounded-xl font-sans text-sm text-foreground/80 outline-none cursor-pointer focus:border-primary focus:ring-1 focus:ring-primary transition-all shadow-sm appearance-none md:w-48"
+          className="px-4 py-2.5 bg-background border border-border/60 rounded-xl font-sans text-base text-foreground/80 outline-none cursor-pointer focus:border-primary focus:ring-1 focus:ring-primary transition-all shadow-sm appearance-none md:w-48"
         >
           <option value="ALL">{t.listings.filters.allStatuses}</option>
           <option value="ACTIVE">{t.listings.modal.statusActive}</option>
@@ -269,10 +269,10 @@ export default function ListingsPage() {
           <option value="SOLD">{t.listings.modal.statusSold}</option>
         </select>
         <div className="flex gap-2 bg-background ring-1 ring-border/40 rounded-xl p-1 md:ml-auto w-full md:w-auto shadow-sm">
-          <button className="flex-1 md:flex-none px-6 py-2 bg-surface rounded-lg text-foreground text-xs font-semibold shadow-sm ring-1 ring-border/50">
+          <button className="flex-1 md:flex-none px-6 py-2 bg-surface rounded-lg text-foreground text-sm font-semibold shadow-sm ring-1 ring-border/50">
             {t.listings.viewOptions.grid}
           </button>
-          <button className="flex-1 md:flex-none px-6 py-2 text-foreground/50 hover:text-foreground text-xs font-medium transition-colors">
+          <button className="flex-1 md:flex-none px-6 py-2 text-foreground/50 hover:text-foreground text-sm font-medium transition-colors">
             {t.listings.viewOptions.list}
           </button>
         </div>
@@ -280,11 +280,11 @@ export default function ListingsPage() {
 
       {/* Property Grid */}
       {loading ? (
-        <div className="py-24 border border-border bg-surface/30 text-center text-foreground/50 tracking-widest uppercase text-xs">
+        <div className="py-24 border border-border bg-surface/30 text-center text-foreground/50 tracking-widest uppercase text-sm">
           {t.listings.table.loading}
         </div>
       ) : filteredProperties.length === 0 ? (
-        <div className="py-24 border border-border bg-surface/30 text-center text-foreground/50 tracking-widest uppercase text-xs">
+        <div className="py-24 border border-border bg-surface/30 text-center text-foreground/50 tracking-widest uppercase text-sm">
           {t.listings.table.noProperties}
         </div>
       ) : (
@@ -309,7 +309,7 @@ export default function ListingsPage() {
                 <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-black/40 to-transparent pointer-events-none" />
                 <div className="absolute top-4 left-4">
                   <span
-                    className={`px-3 py-1 text-xs font-sans font-semibold rounded-md backdrop-blur-md shadow-sm border border-white/20 text-white
+                    className={`px-3 py-1 text-sm font-sans font-semibold rounded-md backdrop-blur-md shadow-sm border border-white/20 text-white
                                         ${prop.status === "ACTIVE" ? "bg-primary/90" : ""}
                                         ${prop.status === "IN_CONTRACT" ? "bg-black/60" : ""}
                                         ${prop.status === "SOLD" ? "bg-green-600/80" : ""}
@@ -330,27 +330,27 @@ export default function ListingsPage() {
                 <h3 className="font-sans text-xl font-semibold text-foreground line-clamp-1 group-hover:text-primary transition-colors duration-300">
                   {prop.address}
                 </h3>
-                <p className="font-sans text-foreground/60 text-sm font-medium mt-1">
+                <p className="font-sans text-foreground/60 text-base font-medium mt-1">
                   {prop.city}, {prop.state} {prop.zip}
                 </p>
 
-                <div className="mt-6 flex items-center gap-6 text-sm text-foreground/80 border-b border-border/40 pb-6 font-sans">
+                <div className="mt-6 flex items-center gap-6 text-base text-foreground/80 border-b border-border/40 pb-6 font-sans">
                   <div className="flex flex-col gap-1">
-                    <span className="text-xs font-medium text-foreground/50">
+                    <span className="text-sm font-medium text-foreground/50">
                       {t.listings.card.beds}
                     </span>
                     <span className="font-sans text-lg font-semibold">{prop.beds}</span>
                   </div>
                   <div className="w-px h-8 bg-border/40" />
                   <div className="flex flex-col gap-1">
-                    <span className="text-xs font-medium text-foreground/50">
+                    <span className="text-sm font-medium text-foreground/50">
                       {t.listings.card.baths}
                     </span>
                     <span className="font-sans text-lg font-semibold">{prop.baths}</span>
                   </div>
                   <div className="w-px h-8 bg-border/40" />
                   <div className="flex flex-col gap-1">
-                    <span className="text-xs font-medium text-foreground/50">
+                    <span className="text-sm font-medium text-foreground/50">
                       {t.listings.card.sqft}
                     </span>
                     <span className="font-sans text-lg font-semibold">
@@ -373,11 +373,11 @@ export default function ListingsPage() {
                         e.stopPropagation();
                         openMediaModal(prop.id);
                       }}
-                      className="font-sans text-xs font-medium text-foreground/60 hover:text-foreground transition-colors duration-300"
+                      className="font-sans text-sm font-medium text-foreground/60 hover:text-foreground transition-colors duration-300"
                     >
                       {t.listings.media.photos}
                     </button>
-                    <button className="font-sans text-sm font-semibold text-primary hover:text-primary-hover transition-colors duration-300 flex items-center gap-1 group/btn">
+                    <button className="font-sans text-base font-semibold text-primary hover:text-primary-hover transition-colors duration-300 flex items-center gap-1 group/btn">
                       {t.listings.card.details}
                       <svg className="w-4 h-4 transform group-hover/btn:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
                     </button>
@@ -391,14 +391,14 @@ export default function ListingsPage() {
 
       {/* Pagination Controls */}
       {totalProperties > 0 && (
-        <div className="flex items-center justify-between text-xs tracking-widest uppercase text-foreground/50 pt-8 border-t border-border">
+        <div className="flex items-center justify-between text-sm tracking-widest uppercase text-foreground/50 pt-8 border-t border-border">
           <span>
             {t.listings.pagination.showing}{" "}
-            <span className="text-foreground font-serif text-sm">
+            <span className="text-foreground font-serif text-base">
               {filteredProperties.length}
             </span>{" "}
             {t.listings.pagination.of}{" "}
-            <span className="text-foreground font-serif text-sm">
+            <span className="text-foreground font-serif text-base">
               {totalProperties}
             </span>{" "}
             {t.listings.pagination.listings}
@@ -444,14 +444,14 @@ export default function ListingsPage() {
               
               <div className="bg-blue-50/50 border border-blue-100 rounded-2xl p-6 mb-8 flex flex-col md:flex-row gap-4 items-end animate-in fade-in duration-500">
                 <div className="flex-1 w-full">
-                  <label className="block font-sans text-xs font-semibold text-blue-900/60 mb-2">
+                  <label className="block font-sans text-sm font-semibold text-blue-900/60 mb-2">
                     Auto-fill from Zillow (ZPID)
                   </label>
                   <input
                     type="text"
                     value={zillowId}
                     onChange={(e) => setZillowId(e.target.value)}
-                    className="w-full px-4 py-3 bg-white border border-blue-200 rounded-xl text-sm text-blue-900 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 outline-none transition-all placeholder:text-blue-900/30 shadow-sm"
+                    className="w-full px-4 py-3 bg-white border border-blue-200 rounded-xl text-base text-blue-900 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 outline-none transition-all placeholder:text-blue-900/30 shadow-sm"
                     placeholder="e.g. 20790691"
                   />
                 </div>
@@ -459,14 +459,14 @@ export default function ListingsPage() {
                   onClick={handleZillowAutofill}
                   disabled={isZillowLoading}
                   type="button"
-                  className="w-full md:w-auto px-6 py-3 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 shadow-md whitespace-nowrap flex-shrink-0"
+                  className="w-full md:w-auto px-6 py-3 bg-blue-600 text-white rounded-xl text-base font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 shadow-md whitespace-nowrap flex-shrink-0"
                 >
                   {isZillowLoading ? "Fetching..." : "Auto-fill Data"}
                 </button>
               </div>
 
               <div>
-                <label className="block font-sans text-xs font-semibold text-foreground/60 mb-2">
+                <label className="block font-sans text-sm font-semibold text-foreground/60 mb-2">
                   {t.listings.modal.street}
                 </label>
                 <input
@@ -475,13 +475,13 @@ export default function ListingsPage() {
                   value={formData.address}
                   onChange={handleChange}
                   type="text"
-                  className="w-full px-4 py-3 bg-background border border-border/60 rounded-xl text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all placeholder:text-foreground/30 shadow-sm"
+                  className="w-full px-4 py-3 bg-background border border-border/60 rounded-xl text-base text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all placeholder:text-foreground/30 shadow-sm"
                   placeholder="123 Example St, Apt 4"
                 />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
-                  <label className="block font-sans text-xs font-semibold text-foreground/60 mb-2">
+                  <label className="block font-sans text-sm font-semibold text-foreground/60 mb-2">
                     {t.listings.modal.city}
                   </label>
                   <input
@@ -490,11 +490,11 @@ export default function ListingsPage() {
                     value={formData.city}
                     onChange={handleChange}
                     type="text"
-                    className="w-full px-4 py-3 bg-background border border-border/60 rounded-xl text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all shadow-sm"
+                    className="w-full px-4 py-3 bg-background border border-border/60 rounded-xl text-base text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all shadow-sm"
                   />
                 </div>
                 <div>
-                  <label className="block font-sans text-xs font-semibold text-foreground/60 mb-2">
+                  <label className="block font-sans text-sm font-semibold text-foreground/60 mb-2">
                     {t.listings.modal.state}
                   </label>
                   <input
@@ -503,11 +503,11 @@ export default function ListingsPage() {
                     value={formData.state}
                     onChange={handleChange}
                     type="text"
-                    className="w-full px-4 py-3 bg-background border border-border/60 rounded-xl text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all shadow-sm"
+                    className="w-full px-4 py-3 bg-background border border-border/60 rounded-xl text-base text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all shadow-sm"
                   />
                 </div>
                 <div>
-                  <label className="block font-sans text-xs font-semibold text-foreground/60 mb-2">
+                  <label className="block font-sans text-sm font-semibold text-foreground/60 mb-2">
                     {t.listings.modal.zip}
                   </label>
                   <input
@@ -516,14 +516,14 @@ export default function ListingsPage() {
                     value={formData.zip}
                     onChange={handleChange}
                     type="text"
-                    className="w-full px-4 py-3 bg-background border border-border/60 rounded-xl text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all shadow-sm"
+                    className="w-full px-4 py-3 bg-background border border-border/60 rounded-xl text-base text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all shadow-sm"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block font-sans text-xs font-semibold text-foreground/60 mb-2">
+                  <label className="block font-sans text-sm font-semibold text-foreground/60 mb-2">
                     {t.listings.modal.price}
                   </label>
                   <input
@@ -533,12 +533,12 @@ export default function ListingsPage() {
                     onChange={handleChange}
                     type="number"
                     min="0"
-                    className="w-full px-4 py-3 bg-background border border-border/60 rounded-xl text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-sans placeholder:text-foreground/30 shadow-sm"
+                    className="w-full px-4 py-3 bg-background border border-border/60 rounded-xl text-base text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-sans placeholder:text-foreground/30 shadow-sm"
                     placeholder="1500000"
                   />
                 </div>
                 <div>
-                  <label className="block font-sans text-xs font-semibold text-foreground/60 mb-2">
+                  <label className="block font-sans text-sm font-semibold text-foreground/60 mb-2">
                     {t.listings.modal.sqft}
                   </label>
                   <input
@@ -547,7 +547,7 @@ export default function ListingsPage() {
                     onChange={handleChange}
                     type="number"
                     min="0"
-                    className="w-full px-4 py-3 bg-background border border-border/60 rounded-xl text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-sans placeholder:text-foreground/30 shadow-sm"
+                    className="w-full px-4 py-3 bg-background border border-border/60 rounded-xl text-base text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-sans placeholder:text-foreground/30 shadow-sm"
                     placeholder="1200"
                   />
                 </div>
@@ -555,7 +555,7 @@ export default function ListingsPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
-                  <label className="block font-sans text-xs font-semibold text-foreground/60 mb-2">
+                  <label className="block font-sans text-sm font-semibold text-foreground/60 mb-2">
                     {t.listings.modal.beds}
                   </label>
                   <input
@@ -566,12 +566,12 @@ export default function ListingsPage() {
                     type="number"
                     step="0.5"
                     min="0"
-                    className="w-full px-4 py-3 bg-background border border-border/60 rounded-xl text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-sans placeholder:text-foreground/30 shadow-sm"
+                    className="w-full px-4 py-3 bg-background border border-border/60 rounded-xl text-base text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-sans placeholder:text-foreground/30 shadow-sm"
                     placeholder="2"
                   />
                 </div>
                 <div>
-                  <label className="block font-sans text-xs font-semibold text-foreground/60 mb-2">
+                  <label className="block font-sans text-sm font-semibold text-foreground/60 mb-2">
                     {t.listings.modal.baths}
                   </label>
                   <input
@@ -582,19 +582,19 @@ export default function ListingsPage() {
                     type="number"
                     step="0.5"
                     min="0"
-                    className="w-full px-4 py-3 bg-background border border-border/60 rounded-xl text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-sans placeholder:text-foreground/30 shadow-sm"
+                    className="w-full px-4 py-3 bg-background border border-border/60 rounded-xl text-base text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-sans placeholder:text-foreground/30 shadow-sm"
                     placeholder="2"
                   />
                 </div>
                 <div>
-                  <label className="block font-sans text-xs font-semibold text-foreground/60 mb-2">
+                  <label className="block font-sans text-sm font-semibold text-foreground/60 mb-2">
                     {t.listings.modal.status}
                   </label>
                   <select
                     name="status"
                     value={formData.status}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 bg-background border border-border/60 rounded-xl text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none cursor-pointer shadow-sm"
+                    className="w-full px-4 py-3 bg-background border border-border/60 rounded-xl text-base text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none cursor-pointer shadow-sm"
                   >
                     <option value="COMING_SOON">
                       {t.listings.modal.statusComingSoon}
@@ -614,14 +614,14 @@ export default function ListingsPage() {
                 <button
                   type="button"
                   onClick={() => setIsAddModalOpen(false)}
-                  className="px-6 py-2.5 bg-surface border border-border/60 text-foreground/70 rounded-xl text-sm font-semibold hover:text-foreground transition-colors shadow-sm"
+                  className="px-6 py-2.5 bg-surface border border-border/60 text-foreground/70 rounded-xl text-base font-semibold hover:text-foreground transition-colors shadow-sm"
                 >
                   {t.listings.modal.cancel}
                 </button>
                 <button
                   disabled={isSubmitting}
                   type="submit"
-                  className="px-6 py-2.5 bg-primary text-background rounded-xl text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 shadow-md"
+                  className="px-6 py-2.5 bg-primary text-background rounded-xl text-base font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 shadow-md"
                 >
                   {isSubmitting
                     ? t.listings.modal.saving
@@ -642,7 +642,7 @@ export default function ListingsPage() {
                 <h2 className="font-sans text-2xl font-semibold text-foreground">
                   {t.listings.media.title}
                 </h2>
-                <p className="font-sans text-sm text-foreground/60 mt-2">
+                <p className="font-sans text-base text-foreground/60 mt-2">
                   {t.listings.media.subtitle}
                 </p>
               </div>
@@ -657,11 +657,11 @@ export default function ListingsPage() {
             <div className="flex-1 overflow-y-auto p-8 custom-scrollbar space-y-8">
               {/* Existing Media Grid */}
               <div>
-                <h3 className="font-sans text-xs uppercase tracking-widest text-foreground/40 mb-4 border-b border-border pb-2">
+                <h3 className="font-sans text-sm uppercase tracking-widest text-foreground/40 mb-4 border-b border-border pb-2">
                   {t.listings.media.currentAssets}
                 </h3>
                 {mediaAssets.length === 0 ? (
-                  <div className="py-12 text-center border border-dashed border-border bg-surface/30 text-foreground/30 font-sans text-xs uppercase tracking-widest">
+                  <div className="py-12 text-center border border-dashed border-border bg-surface/30 text-foreground/30 font-sans text-sm uppercase tracking-widest">
                     {t.listings.media.noMedia}
                   </div>
                 ) : (
@@ -679,11 +679,11 @@ export default function ListingsPage() {
                             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                           />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-surface/50 font-sans text-xs uppercase tracking-widest text-foreground/50">
+                          <div className="w-full h-full flex items-center justify-center bg-surface/50 font-sans text-sm uppercase tracking-widest text-foreground/50">
                             {t.listings.media.videoTour}
                           </div>
                         )}
-                        <div className="absolute top-2 left-2 bg-background/80 backdrop-blur-sm px-2 py-1 text-[10px] font-sans uppercase tracking-widest text-foreground">
+                        <div className="absolute top-2 left-2 bg-background/80 backdrop-blur-sm px-2 py-1 text-xs font-sans uppercase tracking-widest text-foreground">
                           {asset.type}
                         </div>
                       </div>
@@ -695,7 +695,7 @@ export default function ListingsPage() {
 
             {/* Add Media Form Footer */}
             <div className="p-8 border-t border-border/40 bg-background shrink-0">
-              <h3 className="font-sans text-xs font-semibold text-foreground/60 mb-4">
+              <h3 className="font-sans text-sm font-semibold text-foreground/60 mb-4">
                 {t.listings.media.addNew}
               </h3>
               <form
@@ -703,7 +703,7 @@ export default function ListingsPage() {
                 className="flex flex-col md:flex-row gap-4 items-start md:items-end"
               >
                 <div className="flex-1 w-full">
-                  <label className="block font-sans text-xs font-semibold text-foreground/60 mb-1">
+                  <label className="block font-sans text-sm font-semibold text-foreground/60 mb-1">
                     {t.listings.media.assetUrl}
                   </label>
                   <input
@@ -713,18 +713,18 @@ export default function ListingsPage() {
                     onChange={handleMediaChange}
                     type="url"
                     placeholder="https://example.com/image.jpg"
-                    className="w-full px-4 py-2.5 bg-background border border-border/60 rounded-xl text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all placeholder:text-foreground/30 shadow-sm"
+                    className="w-full px-4 py-2.5 bg-background border border-border/60 rounded-xl text-base text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all placeholder:text-foreground/30 shadow-sm"
                   />
                 </div>
                 <div className="w-full md:w-48 shrink-0">
-                  <label className="block font-sans text-xs font-semibold text-foreground/60 mb-1">
+                  <label className="block font-sans text-sm font-semibold text-foreground/60 mb-1">
                     {t.listings.media.assetType}
                   </label>
                   <select
                     name="type"
                     value={mediaFormData.type}
                     onChange={handleMediaChange}
-                    className="w-full px-4 py-2.5 bg-background border border-border/60 rounded-xl text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none cursor-pointer shadow-sm"
+                    className="w-full px-4 py-2.5 bg-background border border-border/60 rounded-xl text-base text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none cursor-pointer shadow-sm"
                   >
                     <option value="IMAGE">{t.listings.media.typeImage}</option>
                     <option value="VIDEO">{t.listings.media.typeVideo}</option>
@@ -736,7 +736,7 @@ export default function ListingsPage() {
                 <button
                   disabled={isMediaSubmitting}
                   type="submit"
-                  className="w-full md:w-auto px-6 py-2.5 bg-primary text-background rounded-xl text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 shrink-0 shadow-md"
+                  className="w-full md:w-auto px-6 py-2.5 bg-primary text-background rounded-xl text-base font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 shrink-0 shadow-md"
                 >
                   {isMediaSubmitting
                     ? t.listings.media.uploading

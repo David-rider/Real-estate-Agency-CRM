@@ -77,10 +77,10 @@ export default function UpgradePage() {
     <div className="min-h-screen bg-background text-foreground pb-24">
       {/* Hero Section */}
       <div className="pt-24 pb-16 px-6 text-center animate-in fade-in slide-in-from-bottom-8 duration-700">
-        <h1 className="font-serif text-5xl md:text-6xl font-light tracking-tight mb-6">
+        <h1 className="text-3xl font-bold tracking-tight mb-4">
           {t.upgrade.title}
         </h1>
-        <p className="font-sans text-lg text-foreground/60 max-w-2xl mx-auto font-light leading-relaxed">
+        <p className="text-sm text-foreground/50 max-w-2xl mx-auto leading-relaxed">
           {t.upgrade.subtitle}
         </p>
 
@@ -88,7 +88,7 @@ export default function UpgradePage() {
         <div className="mt-12 inline-flex items-center gap-4 bg-surface p-1 rounded-full border border-border">
           <button
             onClick={() => setBillingCycle("monthly")}
-            className={`px-6 py-2 rounded-full text-sm font-sans uppercase tracking-widest transition-all ${
+            className={`px-6 py-2 rounded-full text-base font-sans uppercase tracking-widest transition-all ${
               billingCycle === "monthly" ? "bg-background shadow text-foreground" : "text-foreground/50 hover:text-foreground"
             }`}
           >
@@ -96,12 +96,12 @@ export default function UpgradePage() {
           </button>
           <button
             onClick={() => setBillingCycle("annual")}
-            className={`px-6 py-2 rounded-full text-sm font-sans uppercase tracking-widest transition-all flex items-center gap-2 ${
+            className={`px-6 py-2 rounded-full text-base font-sans uppercase tracking-widest transition-all flex items-center gap-2 ${
               billingCycle === "annual" ? "bg-background shadow text-foreground" : "text-foreground/50 hover:text-foreground"
             }`}
           >
             {t.upgrade.annual}
-            <span className="bg-primary/10 text-primary text-[10px] px-2 py-0.5 rounded-full font-medium">
+            <span className="bg-primary/10 text-primary text-xs px-2 py-0.5 rounded-full font-medium">
               {t.upgrade.save}
             </span>
           </button>
@@ -109,20 +109,20 @@ export default function UpgradePage() {
       </div>
 
       {/* Pricing Cards */}
-      <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-8 pb-12 animate-in fade-in slide-in-from-bottom-12 duration-1000 delay-200">
+      <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-6 pb-12 animate-in fade-in slide-in-from-bottom-12 duration-1000 delay-200">
         
         {/* Core Card */}
-        <div className={`p-8 rounded-2xl flex flex-col transition-all duration-300 ${user?.tier === "CORE" ? "bg-surface ring-2 ring-primary/20 shadow-lg" : "bg-background border border-border/50 hover:shadow-md"}`}>
+        <div className={`p-6 rounded-xl flex flex-col transition-all duration-300 ${user?.tier === "CORE" ? "bg-surface ring-2 ring-primary/20 shadow-lg" : "bg-background border border-border hover:shadow-md"}`}>
           <div className="mb-8">
             <h3 className="font-sans font-medium tracking-wide text-2xl mb-2">{t.upgrade.core.name}</h3>
             <div className="flex items-baseline gap-1 mt-4">
               <span className="text-5xl font-light font-sans tracking-tight">{t.upgrade.core.price}</span>
             </div>
-            <p className="text-foreground/50 text-sm mt-4 min-h-[40px] leading-relaxed">{t.upgrade.core.desc}</p>
+            <p className="text-foreground/50 text-base mt-4 min-h-[40px] leading-relaxed">{t.upgrade.core.desc}</p>
           </div>
           <ul className="space-y-4 mb-8 flex-grow">
             {t.upgrade.core.features.map((feat: string, i: number) => (
-              <li key={i} className="flex items-start gap-3 text-sm text-foreground/70">
+              <li key={i} className="flex items-start gap-3 text-base text-foreground/70">
                 <svg className="w-5 h-5 text-primary/70 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 13l4 4L19 7" />
                 </svg>
@@ -142,13 +142,13 @@ export default function UpgradePage() {
             <h3 className="font-sans font-bold tracking-wide text-2xl mb-2 text-primary">{t.upgrade.pro.name}</h3>
             <div className="flex items-baseline gap-1 mt-4">
               <span className="text-5xl font-light font-sans tracking-tight">{billingCycle === 'annual' ? t.upgrade.pro.priceA : t.upgrade.pro.priceM}</span>
-              <span className="text-foreground/40 text-sm font-medium">/{billingCycle === 'annual' ? "yr" : "mo"}</span>
+              <span className="text-foreground/40 text-base font-medium">/{billingCycle === 'annual' ? "yr" : "mo"}</span>
             </div>
-            <p className="text-foreground/60 text-sm mt-4 min-h-[40px] leading-relaxed">{t.upgrade.pro.desc}</p>
+            <p className="text-foreground/60 text-base mt-4 min-h-[40px] leading-relaxed">{t.upgrade.pro.desc}</p>
           </div>
           <ul className="space-y-4 mb-8 flex-grow">
             {t.upgrade.pro.features.map((feat: string, i: number) => (
-              <li key={i} className="flex items-start gap-3 text-sm text-foreground/90 font-medium">
+              <li key={i} className="flex items-start gap-3 text-base text-foreground/90 font-medium">
                 <svg className="w-5 h-5 text-primary shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
@@ -173,13 +173,13 @@ export default function UpgradePage() {
             <h3 className="font-sans font-medium tracking-wide text-2xl mb-2">{t.upgrade.elite.name}</h3>
             <div className="flex items-baseline gap-1 mt-4">
               <span className="text-5xl font-light font-sans tracking-tight">{billingCycle === 'annual' ? t.upgrade.elite.priceA : t.upgrade.elite.priceM}</span>
-              <span className="text-foreground/40 text-sm font-medium">/{billingCycle === 'annual' ? "yr" : "mo"}</span>
+              <span className="text-foreground/40 text-base font-medium">/{billingCycle === 'annual' ? "yr" : "mo"}</span>
             </div>
-            <p className="text-foreground/50 text-sm mt-4 min-h-[40px] leading-relaxed">{t.upgrade.elite.desc}</p>
+            <p className="text-foreground/50 text-base mt-4 min-h-[40px] leading-relaxed">{t.upgrade.elite.desc}</p>
           </div>
           <ul className="space-y-4 mb-8 flex-grow">
             {t.upgrade.elite.features.map((feat: string, i: number) => (
-              <li key={i} className="flex items-start gap-3 text-sm text-foreground/70">
+              <li key={i} className="flex items-start gap-3 text-base text-foreground/70">
                 <svg className="w-5 h-5 text-primary/70 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 13l4 4L19 7" />
                 </svg>
@@ -208,13 +208,13 @@ export default function UpgradePage() {
             <div className="w-full md:w-2/5 bg-surface/50 p-8 md:p-10 border-r border-border/40 border-b md:border-b-0 flex flex-col justify-between">
                <div>
                  <h4 className="font-sans font-medium text-xl mb-6">{t.upgrade.checkout.title}</h4>
-                 <p className="text-sm text-foreground/60 mb-1">{t.upgrade.checkout.desc}</p>
+                 <p className="text-base text-foreground/60 mb-1">{t.upgrade.checkout.desc}</p>
                  <h5 className="font-sans font-bold text-3xl text-primary">{currentPlanObj.name}</h5>
-                 <p className="text-xs font-medium uppercase tracking-widest text-foreground/40 mt-2 mb-8">{billingCycle}</p>
+                 <p className="text-sm font-medium uppercase tracking-widest text-foreground/40 mt-2 mb-8">{billingCycle}</p>
                </div>
                
                <div className="pt-8 border-t border-border/40">
-                 <p className="text-sm text-foreground/60 mb-2 font-medium">{t.upgrade.checkout.total}</p>
+                 <p className="text-base text-foreground/60 mb-2 font-medium">{t.upgrade.checkout.total}</p>
                  <p className="font-sans font-light tracking-tight text-4xl">{currentPrice}</p>
                </div>
             </div>
@@ -225,11 +225,11 @@ export default function UpgradePage() {
                  <>
                    {/* Method Toggle */}
                    <div className="flex gap-6 border-b border-border/40 mb-8 pb-5">
-                     <label className={`cursor-pointer flex items-center gap-2 text-sm font-semibold transition-colors ${paymentMethod === 'cc' ? 'text-primary' : 'text-foreground/40 hover:text-foreground/80'}`}>
+                     <label className={`cursor-pointer flex items-center gap-2 text-base font-semibold transition-colors ${paymentMethod === 'cc' ? 'text-primary' : 'text-foreground/40 hover:text-foreground/80'}`}>
                        <input type="radio" name="method" value="cc" checked={paymentMethod === 'cc'} onChange={() => setPaymentMethod('cc')} className="hidden" />
                        Credit Card
                      </label>
-                     <label className={`cursor-pointer flex items-center gap-2 text-sm font-semibold transition-colors ${paymentMethod === 'paypal' ? 'text-primary' : 'text-foreground/40 hover:text-foreground/80'}`}>
+                     <label className={`cursor-pointer flex items-center gap-2 text-base font-semibold transition-colors ${paymentMethod === 'paypal' ? 'text-primary' : 'text-foreground/40 hover:text-foreground/80'}`}>
                        <input type="radio" name="method" value="paypal" checked={paymentMethod === 'paypal'} onChange={() => setPaymentMethod('paypal')} className="hidden" />
                        PayPal
                      </label>
@@ -239,21 +239,21 @@ export default function UpgradePage() {
                      {paymentMethod === 'cc' ? (
                        <div className="space-y-6 animate-in fade-in">
                           <div className="space-y-2">
-                            <label className="block text-xs font-semibold text-foreground/60">{t.upgrade.checkout.ccNum}</label>
+                            <label className="block text-sm font-semibold text-foreground/60">{t.upgrade.checkout.ccNum}</label>
                             <input type="text" placeholder="0000 0000 0000 0000" required className="w-full px-4 py-3 rounded-xl bg-surface/30 border border-border/60 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-mono text-base placeholder:text-foreground/20" />
                           </div>
                           <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
-                              <label className="block text-xs font-semibold text-foreground/60">{t.upgrade.checkout.expiry}</label>
+                              <label className="block text-sm font-semibold text-foreground/60">{t.upgrade.checkout.expiry}</label>
                               <input type="text" placeholder="MM/YY" required className="w-full px-4 py-3 rounded-xl bg-surface/30 border border-border/60 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-mono text-base placeholder:text-foreground/20" />
                             </div>
                             <div className="space-y-2">
-                              <label className="block text-xs font-semibold text-foreground/60">{t.upgrade.checkout.cvv}</label>
+                              <label className="block text-sm font-semibold text-foreground/60">{t.upgrade.checkout.cvv}</label>
                               <input type="text" placeholder="123" required className="w-full px-4 py-3 rounded-xl bg-surface/30 border border-border/60 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-mono text-base placeholder:text-foreground/20" />
                             </div>
                           </div>
                           <div className="space-y-2">
-                            <label className="block text-xs font-semibold text-foreground/60">{t.upgrade.checkout.nameOnCard}</label>
+                            <label className="block text-sm font-semibold text-foreground/60">{t.upgrade.checkout.nameOnCard}</label>
                             <input type="text" placeholder="John Doe" required className="w-full px-4 py-3 rounded-xl bg-surface/30 border border-border/60 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-sans text-base placeholder:text-foreground/20" />
                           </div>
                        </div>
@@ -262,7 +262,7 @@ export default function UpgradePage() {
                          <svg className="w-16 h-16 text-[#00457C] mb-4 drop-shadow-sm" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944.901C5.026.382 5.474 0 5.998 0h7.46c2.57 0 4.578.543 5.69 1.81 1.01 1.15 1.304 2.42 1.012 4.287-.023.143-.047.288-.077.437-.983 5.05-4.349 6.797-8.647 6.797h-2.19c-.524 0-.968.382-1.05.9l-1.12 7.106z"/>
                          </svg>
-                         <p className="text-foreground/60 text-sm font-medium leading-relaxed max-w-xs mx-auto">You will be redirected to PayPal to complete your secure payment. (Simulated)</p>
+                         <p className="text-foreground/60 text-base font-medium leading-relaxed max-w-xs mx-auto">You will be redirected to PayPal to complete your secure payment. (Simulated)</p>
                        </div>
                      )}
 

@@ -3,10 +3,12 @@
 import React from "react";
 import { useI18n } from "@/lib/i18n/I18nContext";
 import { useAuth } from "@/lib/auth/AuthContext";
+import { useTheme, ThemeName } from "@/lib/theme/ThemeContext";
 
 export default function SettingsPage() {
   const { t } = useI18n();
   const { user } = useAuth();
+  const { theme, setTheme } = useTheme();
   const isAgent = user?.role === "AGENT";
   const [activeTab, setActiveTab] = React.useState(isAgent ? "security" : "users");
   const [users, setUsers] = React.useState<any[]>([]);
@@ -266,21 +268,21 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-8 duration-700 ease-out text-foreground">
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out text-foreground">
       {/* Header Area */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-b border-border/40 pb-8">
-        <div className="max-w-xl">
-          <h1 className="font-sans text-4xl font-semibold tracking-tight text-foreground">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 pb-6 border-b border-border">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">
             {t.settings.title}
           </h1>
-          <p className="font-sans text-foreground/60 mt-3 text-base leading-relaxed">
+          <p className="text-foreground/50 mt-1 text-sm">
             {t.settings.subtitle}
           </p>
         </div>
       </div>
 
       {/* View Toggle */}
-      <div className="flex bg-surface/50 p-1.5 rounded-2xl w-fit font-sans text-sm font-semibold max-w-full overflow-x-auto custom-scrollbar">
+      <div className="flex bg-surface/50 p-1.5 rounded-2xl w-fit font-sans text-base font-semibold max-w-full overflow-x-auto custom-scrollbar">
         {!isAgent && (
           <button
             onClick={() => setActiveTab("users")}
@@ -301,12 +303,18 @@ export default function SettingsPage() {
         >
           {t.settings.tabs.integrations}
         </button>
+        <button
+          onClick={() => setActiveTab("appearance")}
+          className={`px-6 py-2.5 transition-all rounded-xl whitespace-nowrap ${activeTab === "appearance" ? "bg-background text-foreground shadow-sm ring-1 ring-border/50" : "text-foreground/60 hover:text-foreground hover:bg-background/50"}`}
+        >
+          {t.settings.tabs?.appearance || "Appearance"}
+        </button>
       </div>
 
       {/* Main Content */}
       <div className="min-h-[500px]">
         {activeTab === "users" && (
-          <div className="bg-background ring-1 ring-border/50 shadow-sm rounded-2xl overflow-hidden">
+          <div className="bg-background ring-1 ring-border/50 shadow-sm rounded-xl overflow-hidden">
             {(user?.role === "FIRMADMIN" || user?.role === "SUPERADMIN" || user?.role === "MANAGER") && (
               <div className="flex justify-end gap-3 p-5 border-b border-border/40 bg-surface/30">
                 <input 
@@ -319,14 +327,14 @@ export default function SettingsPage() {
                 <button 
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isImporting}
-                  className="px-4 py-2 text-sm font-semibold font-sans border border-border/60 rounded-xl bg-surface hover:bg-background transition-colors text-foreground shadow-sm"
+                  className="px-4 py-2 text-base font-semibold font-sans border border-border/60 rounded-xl bg-surface hover:bg-background transition-colors text-foreground shadow-sm"
                 >
                   {isImporting ? "Importing..." : "Import Users"}
                 </button>
                 <button 
                   onClick={handleExportUsers}
                   disabled={isExporting}
-                  className="px-4 py-2 text-sm font-semibold font-sans border border-primary text-primary rounded-xl hover:bg-primary hover:text-background transition-colors shadow-sm"
+                  className="px-4 py-2 text-base font-semibold font-sans border border-primary text-primary rounded-xl hover:bg-primary hover:text-background transition-colors shadow-sm"
                 >
                   {isExporting ? "Exporting..." : "Export CSV"}
                 </button>
@@ -334,7 +342,7 @@ export default function SettingsPage() {
             )}
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
-                <thead className="bg-surface/50 border-b border-border/40 text-xs font-semibold text-foreground/60 font-sans">
+                <thead className="bg-surface/50 border-b border-border/40 text-sm font-semibold text-foreground/60 font-sans">
                   <tr>
                     <th className="p-4 pl-6 font-semibold whitespace-nowrap">
                       {t.settings.users.name}
@@ -356,12 +364,12 @@ export default function SettingsPage() {
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border/40 font-sans text-sm">
+                <tbody className="divide-y divide-border/40 font-sans text-base">
                   {loading ? (
                     <tr>
                       <td
                         colSpan={6}
-                        className="p-10 text-center text-foreground/50 text-sm font-semibold"
+                        className="p-10 text-center text-foreground/50 text-base font-semibold"
                       >
                         {(t.settings.users as any).loading}
                       </td>
@@ -374,7 +382,7 @@ export default function SettingsPage() {
                       >
                         <td className="p-4 pl-6">
                           <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 border border-border/80 rounded-full bg-surface text-foreground flex items-center justify-center font-sans font-semibold text-sm group-hover:border-primary/50 group-hover:text-primary transition-colors shadow-sm">
+                            <div className="w-9 h-9 border border-border/80 rounded-full bg-surface text-foreground flex items-center justify-center font-sans font-semibold text-base group-hover:border-primary/50 group-hover:text-primary transition-colors shadow-sm">
                               {u.name?.charAt(0) || "U"}
                             </div>
                             <span className="text-foreground font-medium group-hover:text-primary transition-colors">
@@ -385,26 +393,26 @@ export default function SettingsPage() {
                         <td className="p-4 text-foreground/70">{u.email}</td>
                         <td className="p-4">
                           <span
-                            className={`px-2.5 py-1 text-xs font-semibold rounded-md border border-border/60 bg-surface/50 text-foreground/70 ${["FIRMADMIN", "SUPERADMIN"].includes(u.role) ? "border-primary/50 text-primary bg-primary/10" : ""}`}
+                            className={`px-2.5 py-1 text-sm font-semibold rounded-md border border-border/60 bg-surface/50 text-foreground/70 ${["FIRMADMIN", "SUPERADMIN"].includes(u.role) ? "border-primary/50 text-primary bg-primary/10" : ""}`}
                           >
                             {(t as any).roles?.[u.role] || u.role}
                           </span>
                         </td>
                         <td className="p-4">
                           <span
-                            className={`px-2.5 py-1 text-xs font-semibold rounded-md border border-border/60 bg-surface/50 text-foreground/70 ${u.tier === "ELITE" ? "border-primary/30 text-primary bg-primary/5" : ""}`}
+                            className={`px-2.5 py-1 text-sm font-semibold rounded-md border border-border/60 bg-surface/50 text-foreground/70 ${u.tier === "ELITE" ? "border-primary/30 text-primary bg-primary/5" : ""}`}
                           >
                             {(t as any).tiers?.[u.tier] || u.tier}
                           </span>
                         </td>
-                        <td className="p-4 text-foreground/60 text-sm">
+                        <td className="p-4 text-foreground/60 text-base">
                           {new Date(u.createdAt).toLocaleDateString()}
                         </td>
                         <td className="p-4 pr-6 text-right">
                           {["FIRMADMIN", "SUPERADMIN"].includes(user?.role as string) && (
                             <button
                               onClick={() => setEditingUser({ ...u })}
-                              className="text-primary hover:text-primary-hover font-sans text-sm font-semibold transition-colors"
+                              className="text-primary hover:text-primary-hover font-sans text-base font-semibold transition-colors"
                             >
                               {t.settings.users.editUser}
                             </button>
@@ -424,13 +432,13 @@ export default function SettingsPage() {
             <div className="flex justify-end gap-3 mb-4">
               <button
                 onClick={() => handleSortLogs("TIME")}
-                className={`px-5 py-2 text-xs font-semibold rounded-lg font-sans border transition-colors ${sortKey === "TIME" ? "bg-surface ring-1 ring-border/50 text-foreground shadow-sm" : "bg-transparent border-transparent text-foreground/60 hover:text-foreground"}`}
+                className={`px-5 py-2 text-sm font-semibold rounded-lg font-sans border transition-colors ${sortKey === "TIME" ? "bg-surface ring-1 ring-border/50 text-foreground shadow-sm" : "bg-transparent border-transparent text-foreground/60 hover:text-foreground"}`}
               >
                 {t.settings.security.sortTime}
               </button>
               <button
                 onClick={() => handleSortLogs("RISK")}
-                className={`px-5 py-2 text-xs font-semibold rounded-lg font-sans border transition-colors ${sortKey === "RISK" ? "bg-surface ring-1 ring-border/50 text-foreground shadow-sm" : "bg-transparent border-transparent text-foreground/60 hover:text-foreground"}`}
+                className={`px-5 py-2 text-sm font-semibold rounded-lg font-sans border transition-colors ${sortKey === "RISK" ? "bg-surface ring-1 ring-border/50 text-foreground shadow-sm" : "bg-transparent border-transparent text-foreground/60 hover:text-foreground"}`}
               >
                 {t.settings.security.sortRisk}
               </button>
@@ -438,7 +446,7 @@ export default function SettingsPage() {
 
             <div className="bg-background ring-1 ring-border/50 shadow-sm rounded-2xl overflow-hidden">
               <table className="w-full text-left border-collapse">
-                <thead className="bg-surface/50 border-b border-border/40 text-xs font-semibold text-foreground/60 font-sans">
+                <thead className="bg-surface/50 border-b border-border/40 text-sm font-semibold text-foreground/60 font-sans">
                   <tr>
                     <th className="p-4 pl-6 font-semibold whitespace-nowrap">
                       {t.settings.security.timestamp}
@@ -454,18 +462,18 @@ export default function SettingsPage() {
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border/40 font-sans text-sm">
+                <tbody className="divide-y divide-border/40 font-sans text-base">
                   {securityLogs.map((log) => (
                     <tr
                       key={log.id}
                       className="hover:bg-surface/30 transition-colors"
                     >
-                      <td className="p-4 pl-6 text-foreground/60 text-sm">
+                      <td className="p-4 pl-6 text-foreground/60 text-base">
                         {new Date(log.time).toLocaleString()}
                       </td>
                       <td className="p-4">
                         <span
-                          className={`px-2.5 py-1 text-xs font-bold rounded-md border ${getRiskBadgeStyles(log.risk)}`}
+                          className={`px-2.5 py-1 text-sm font-bold rounded-md border ${getRiskBadgeStyles(log.risk)}`}
                         >
                           {(t.settings.security.riskLevels as any)[log.risk] ||
                             log.risk}
@@ -513,13 +521,13 @@ export default function SettingsPage() {
                     <h3 className="font-sans text-xl font-semibold text-foreground group-hover:text-primary transition-colors">
                       {appContent?.name}
                     </h3>
-                    <p className="text-foreground/60 text-sm font-sans mt-2 leading-relaxed">
+                    <p className="text-foreground/60 text-base font-sans mt-2 leading-relaxed">
                       {appContent?.desc}
                     </p>
                   </div>
                   <div className="mt-auto w-full pt-6 border-t border-border/40 flex items-center justify-between">
                     <span
-                      className={`text-sm font-semibold font-sans flex items-center gap-2 ${connected ? "text-primary" : "text-foreground/50"}`}
+                      className={`text-base font-semibold font-sans flex items-center gap-2 ${connected ? "text-primary" : "text-foreground/50"}`}
                     >
                       <span
                         className={`w-2 h-2 rounded-full ${connected ? "bg-primary shadow-[0_0_8px_rgba(var(--primary),0.5)]" : "bg-foreground/20"}`}
@@ -531,7 +539,7 @@ export default function SettingsPage() {
                     <button
                       onClick={() => handleConnectIntegration(integration.id)}
                       disabled={isConnecting}
-                      className={`px-4 py-2 text-xs font-semibold rounded-xl font-sans border transition-all shadow-sm ${connected ? "bg-surface border-border/60 text-foreground hover:bg-background hover:text-red-500 hover:border-red-500/50" : "bg-background border-primary text-primary hover:bg-primary hover:text-background"} ${isConnecting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      className={`px-4 py-2 text-sm font-semibold rounded-xl font-sans border transition-all shadow-sm ${connected ? "bg-surface border-border/60 text-foreground hover:bg-background hover:text-red-500 hover:border-red-500/50" : "bg-background border-primary text-primary hover:bg-primary hover:text-background"} ${isConnecting ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                       {isConnecting ? "..." : (connected
                         ? t.settings.integrations.disconnect
@@ -541,6 +549,56 @@ export default function SettingsPage() {
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {activeTab === "appearance" && (
+          <div className="space-y-8">
+            {/* Theme Selector */}
+            <div>
+              <h3 className="text-base font-semibold text-foreground mb-1">{t.settings.tabs?.appearance || "Appearance"}</h3>
+              <p className="text-sm text-foreground/50 mb-6">Choose your preferred color theme for the platform.</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+                {[
+                  { id: "luxury" as ThemeName, label: "轻奢 Luxury", primary: "#B8977E", bg: "#0C0C0E", surface: "#1A1A1E", fg: "#F0EDE8", desc: "Warm bronze on deep black" },
+                  { id: "modern" as ThemeName, label: "现代 Modern", primary: "#4F7DF3", bg: "#F7F8FA", surface: "#FFFFFF", fg: "#1A1D2E", desc: "Clean blue on bright white" },
+                  { id: "youth" as ThemeName, label: "青春 Youth", primary: "#7C5CFC", bg: "#FAFAFF", surface: "#FFFFFF", fg: "#2D2640", desc: "Vibrant violet with energy" },
+                  { id: "chinese" as ThemeName, label: "中国风 Chinese", primary: "#C43B38", bg: "#FDF6EC", surface: "#FFFDF7", fg: "#3B2415", desc: "Cinnabar red on rice paper" },
+                  { id: "cyberpunk" as ThemeName, label: "赛博 Cyberpunk", primary: "#00F0FF", bg: "#0A0A12", surface: "#12121E", fg: "#E0E8F0", desc: "Neon cyan on dark void" },
+                ].map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => setTheme(t.id)}
+                    className={`group relative p-4 rounded-xl border-2 transition-all duration-300 text-left ${
+                      theme === t.id
+                        ? "border-primary shadow-lg ring-2 ring-primary/20"
+                        : "border-border hover:border-foreground/30 hover:shadow-md"
+                    }`}
+                  >
+                    {/* Swatch Preview */}
+                    <div className="flex gap-1.5 mb-3">
+                      <div className="w-10 h-10 rounded-lg" style={{ backgroundColor: t.bg, border: '1px solid ' + t.primary + '30' }}>
+                        <div className="w-full h-full rounded-lg flex items-center justify-center">
+                          <div className="w-4 h-4 rounded-full" style={{ backgroundColor: t.primary }} />
+                        </div>
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <div className="w-12 h-2 rounded" style={{ backgroundColor: t.surface }} />
+                        <div className="w-8 h-2 rounded" style={{ backgroundColor: t.primary }} />
+                        <div className="w-10 h-2 rounded" style={{ backgroundColor: t.fg + '30' }} />
+                      </div>
+                    </div>
+                    <p className="text-sm font-semibold text-foreground">{t.label}</p>
+                    <p className="text-xs text-foreground/40 mt-0.5">{t.desc}</p>
+                    {theme === t.id && (
+                      <div className="absolute top-2 right-2">
+                        <svg className="w-5 h-5 text-primary" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         )}
       </div>
@@ -562,19 +620,19 @@ export default function SettingsPage() {
             </div>
             <form onSubmit={handleUpdateUser} className="p-8 space-y-6">
               <div>
-                <label className="block font-sans text-xs font-semibold text-foreground/60 mb-2">
+                <label className="block font-sans text-sm font-semibold text-foreground/60 mb-2">
                   {t.settings.users.name}
                 </label>
-                <div className="w-full px-4 py-3 bg-surface border border-border/40 rounded-xl text-sm text-foreground/80 font-sans shadow-inner">
+                <div className="w-full px-4 py-3 bg-surface border border-border/40 rounded-xl text-base text-foreground/80 font-sans shadow-inner">
                   {editingUser.name}
                 </div>
               </div>
               <div>
-                <label className="block font-sans text-xs font-semibold text-foreground/60 mb-2">
+                <label className="block font-sans text-sm font-semibold text-foreground/60 mb-2">
                   {t.settings.users.role}
                 </label>
                 <select
-                  className="w-full px-4 py-3 bg-background border border-border/60 rounded-xl text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none cursor-pointer shadow-sm"
+                  className="w-full px-4 py-3 bg-background border border-border/60 rounded-xl text-base text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none cursor-pointer shadow-sm"
                   value={editingUser.role}
                   onChange={(e) =>
                     setEditingUser({ ...editingUser, role: e.target.value })
@@ -592,11 +650,11 @@ export default function SettingsPage() {
                 </select>
               </div>
               <div>
-                <label className="block font-sans text-xs font-semibold text-foreground/60 mb-2">
+                <label className="block font-sans text-sm font-semibold text-foreground/60 mb-2">
                   {t.settings.users.tier}
                 </label>
                 <select
-                  className="w-full px-4 py-3 bg-background border border-border/60 rounded-xl text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none cursor-pointer shadow-sm"
+                  className="w-full px-4 py-3 bg-background border border-border/60 rounded-xl text-base text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none cursor-pointer shadow-sm"
                   value={editingUser.tier}
                   onChange={(e) =>
                     setEditingUser({ ...editingUser, tier: e.target.value })
@@ -618,14 +676,14 @@ export default function SettingsPage() {
                 <button
                   type="button"
                   onClick={() => setEditingUser(null)}
-                  className="px-6 py-2.5 bg-surface border border-border/60 text-foreground/70 rounded-xl text-sm font-semibold hover:text-foreground transition-colors shadow-sm"
+                  className="px-6 py-2.5 bg-surface border border-border/60 text-foreground/70 rounded-xl text-base font-semibold hover:text-foreground transition-colors shadow-sm"
                 >
                   {t.settings.users.cancel}
                 </button>
                 <button
                   disabled={isSavingUser}
                   type="submit"
-                  className="px-6 py-2.5 bg-primary text-background rounded-xl text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 shadow-md"
+                  className="px-6 py-2.5 bg-primary text-background rounded-xl text-base font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 shadow-md"
                 >
                   {isSavingUser ? "..." : t.settings.users.save}
                 </button>

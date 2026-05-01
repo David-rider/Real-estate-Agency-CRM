@@ -53,30 +53,30 @@ export default function ServicesPage() {
   };
 
   return (
-    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-8 duration-700 ease-out text-foreground pb-12">
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out text-foreground pb-12">
       {/* Header Area */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-b border-border/40 pb-8">
-        <div className="max-w-xl">
-          <h1 className="font-sans text-4xl font-semibold tracking-tight text-foreground">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 pb-6 border-b border-border">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">
             {t.services.title}
           </h1>
-          <p className="font-sans text-foreground/60 mt-3 text-base leading-relaxed">
+          <p className="text-foreground/50 mt-1 text-sm">
             {t.services.subtitle}
           </p>
         </div>
-        <button className="px-6 py-2.5 bg-primary text-background hover:opacity-90 transition-opacity duration-300 rounded-xl text-sm font-semibold shadow-md w-full md:w-auto text-center">
+        <button className="px-4 py-2 bg-primary text-background hover:opacity-90 transition-opacity rounded-lg text-sm font-semibold shadow-sm w-full md:w-auto text-center">
           {t.services.addPartner}
         </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Partner Directory */}
-        <div className="bg-background ring-1 ring-border/50 rounded-2xl shadow-sm p-8 flex flex-col">
-          <div className="flex items-center justify-between mb-8 pb-6 border-b border-border/40">
-            <h2 className="font-sans text-2xl font-semibold text-foreground">
+        <div className="bg-background border border-border rounded-xl p-6 flex flex-col">
+          <div className="flex items-center justify-between mb-5 pb-4 border-b border-border">
+            <h2 className="text-base font-semibold text-foreground">
               {t.services.directoryTitle}
             </h2>
-            <span className="text-xs text-primary border border-primary/20 px-3 py-1 bg-primary/5 rounded-md font-sans font-bold">
+            <span className="text-sm text-primary border border-primary/20 px-3 py-1 bg-primary/5 rounded-md font-sans font-bold">
               {t.services.topRated}
             </span>
           </div>
@@ -91,20 +91,20 @@ export default function ServicesPage() {
                   <h4 className="font-sans text-lg font-semibold text-foreground group-hover:text-primary transition-colors">
                     Goldberg & Associates
                   </h4>
-                  <p className="font-sans text-xs font-medium text-foreground/60 mt-0.5">
+                  <p className="font-sans text-sm font-medium text-foreground/60 mt-0.5">
                     {t.services.attorney}
                   </p>
                 </div>
               </div>
               <div className="flex sm:flex-col items-end justify-between sm:justify-center gap-4 sm:gap-3">
-                <div className="font-sans text-sm font-semibold text-primary flex items-center gap-1.5">
+                <div className="font-sans text-base font-semibold text-primary flex items-center gap-1.5">
                   ★ 4.9{" "}
-                  <span className="text-foreground/50 font-medium text-xs">(124)</span>
+                  <span className="text-foreground/50 font-medium text-sm">(124)</span>
                 </div>
                 <button
                   onClick={() => handleRefer("Goldberg")}
                   disabled={referring === "Goldberg"}
-                  className="font-sans text-sm font-semibold text-foreground/70 hover:text-primary transition-colors disabled:opacity-50 flex items-center gap-1.5 group/btn"
+                  className="font-sans text-base font-semibold text-foreground/70 hover:text-primary transition-colors disabled:opacity-50 flex items-center gap-1.5 group/btn"
                 >
                   {referring === "Goldberg"
                     ? "Referred"
@@ -127,20 +127,20 @@ export default function ServicesPage() {
                   <h4 className="font-sans text-lg font-semibold text-foreground group-hover:text-primary transition-colors">
                     Eagle Eye Inspections
                   </h4>
-                  <p className="font-sans text-xs font-medium text-foreground/60 mt-0.5">
+                  <p className="font-sans text-sm font-medium text-foreground/60 mt-0.5">
                     {t.services.inspector}
                   </p>
                 </div>
               </div>
               <div className="flex sm:flex-col items-end justify-between sm:justify-center gap-4 sm:gap-3">
-                <div className="font-sans text-sm font-semibold text-primary flex items-center gap-1.5">
+                <div className="font-sans text-base font-semibold text-primary flex items-center gap-1.5">
                   ★ 4.7{" "}
-                  <span className="text-foreground/50 font-medium text-xs">(89)</span>
+                  <span className="text-foreground/50 font-medium text-sm">(89)</span>
                 </div>
                 <button
                   onClick={() => handleRefer("EagleEye")}
                   disabled={referring === "EagleEye"}
-                  className="font-sans text-sm font-semibold text-foreground/70 hover:text-primary transition-colors disabled:opacity-50 flex items-center gap-1.5 group/btn"
+                  className="font-sans text-base font-semibold text-foreground/70 hover:text-primary transition-colors disabled:opacity-50 flex items-center gap-1.5 group/btn"
                 >
                   {referring === "EagleEye"
                     ? "Referred"
@@ -175,7 +175,7 @@ export default function ServicesPage() {
             <button
               onClick={handleGift}
               disabled={ordering}
-              className="px-8 py-3.5 bg-primary text-background rounded-xl text-sm font-semibold transition-opacity hover:opacity-90 shadow-md disabled:opacity-50 flex items-center gap-2 w-full sm:w-auto justify-center group/btn"
+              className="px-8 py-3.5 bg-primary text-background rounded-xl text-base font-semibold transition-opacity hover:opacity-90 shadow-md disabled:opacity-50 flex items-center gap-2 w-full sm:w-auto justify-center group/btn"
             >
               {ordering ? (
                 <>

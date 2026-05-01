@@ -22,7 +22,7 @@ export default function AuthLayoutWrapper({ children }: { children: React.ReactN
     }
 
     if (isLoading) {
-        return <div className="flex-1 flex items-center justify-center bg-background text-foreground/50 tracking-widest uppercase text-xs">Loading application state...</div>;
+        return <div className="flex-1 flex items-center justify-center bg-background text-foreground/50 tracking-widest uppercase text-sm">Loading application state...</div>;
     }
 
     return (

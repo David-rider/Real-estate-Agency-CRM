@@ -154,13 +154,13 @@ export default function AppointmentsPage() {
       >
         {/* Date Block */}
         <div className="flex flex-col items-center justify-center pr-6 border-r border-border min-w-[100px]">
-          <span className="text-primary text-sm uppercase tracking-widest font-sans mb-1">
+          <span className="text-primary text-base uppercase tracking-widest font-sans mb-1">
             {month}
           </span>
           <span className="font-serif text-4xl text-foreground font-light">
             {day}
           </span>
-          <span className="text-foreground/40 text-[10px] uppercase tracking-widest mt-2">
+          <span className="text-foreground/40 text-xs uppercase tracking-widest mt-2">
             {time}
           </span>
         </div>
@@ -172,7 +172,7 @@ export default function AppointmentsPage() {
               {apt.title}
             </h3>
             <span
-              className={`text-[10px] px-2 py-1 uppercase tracking-widest border
+              className={`text-xs px-2 py-1 uppercase tracking-widest border
                             ${apt.status === "SCHEDULED" ? "bg-primary/10 border-primary/20 text-primary" : ""}
                             ${apt.status === "COMPLETED" ? "bg-surface border-border text-foreground/50" : ""}
                             ${apt.status === "CANCELLED" ? "bg-red-900/10 border-red-900/20 text-red-500/80" : ""}
@@ -186,7 +186,7 @@ export default function AppointmentsPage() {
             </span>
           </div>
 
-          <div className="flex gap-4 text-xs font-sans uppercase tracking-widest text-foreground/50">
+          <div className="flex gap-4 text-sm font-sans uppercase tracking-widest text-foreground/50">
             {apt.client && (
               <span className="flex items-center gap-1">
                 <span className="w-1 h-1 bg-border rounded-full inline-block mr-1"></span>
@@ -202,7 +202,7 @@ export default function AppointmentsPage() {
           </div>
 
           {apt.notes && (
-            <p className="mt-4 text-sm font-sans text-foreground/70 line-clamp-2 leading-relaxed">
+            <p className="mt-4 text-base font-sans text-foreground/70 line-clamp-2 leading-relaxed">
               {apt.notes}
             </p>
           )}
@@ -243,7 +243,7 @@ export default function AppointmentsPage() {
           <button
             onClick={handleSyncGoogle}
             disabled={isSyncingGoogle}
-            className="px-6 py-3 bg-blue-600/10 text-blue-500 border border-blue-600/20 hover:bg-blue-600/20 transition-colors duration-500 rounded-xl text-sm font-semibold w-full sm:w-auto text-center flex items-center justify-center gap-2"
+            className="px-6 py-3 bg-blue-600/10 text-blue-500 border border-blue-600/20 hover:bg-blue-600/20 transition-colors duration-500 rounded-xl text-base font-semibold w-full sm:w-auto text-center flex items-center justify-center gap-2"
           >
             <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
               <path d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.64 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z"/>
@@ -252,7 +252,7 @@ export default function AppointmentsPage() {
           </button>
           <button
             onClick={() => setIsAddModalOpen(true)}
-            className="px-6 py-3 bg-primary text-background hover:bg-primary-hover transition-colors duration-500 rounded-xl text-sm font-semibold w-full sm:w-auto text-center shadow-md"
+            className="px-6 py-3 bg-primary text-background hover:bg-primary-hover transition-colors duration-500 rounded-xl text-base font-semibold w-full sm:w-auto text-center shadow-md"
           >
             {t.appointments.addMeeting}
           </button>
@@ -263,13 +263,13 @@ export default function AppointmentsPage() {
       <div className="flex border-b border-border">
         <button
           onClick={() => setViewMode("list")}
-          className={`px-8 py-4 font-sans text-xs uppercase tracking-widest transition-colors ${viewMode === "list" ? "border-b-2 border-primary text-foreground" : "text-foreground/40 hover:text-foreground"}`}
+          className={`px-8 py-4 font-sans text-sm uppercase tracking-widest transition-colors ${viewMode === "list" ? "border-b-2 border-primary text-foreground" : "text-foreground/40 hover:text-foreground"}`}
         >
           {t.appointments.list}
         </button>
         <button
           onClick={() => setViewMode("calendar")}
-          className={`px-8 py-4 font-sans text-xs uppercase tracking-widest transition-colors ${viewMode === "calendar" ? "border-b-2 border-primary text-foreground" : "text-foreground/40 hover:text-foreground"}`}
+          className={`px-8 py-4 font-sans text-sm uppercase tracking-widest transition-colors ${viewMode === "calendar" ? "border-b-2 border-primary text-foreground" : "text-foreground/40 hover:text-foreground"}`}
         >
           {t.appointments.calendar}
         </button>
@@ -278,11 +278,11 @@ export default function AppointmentsPage() {
       {/* Main Content */}
       <div className="min-h-[500px]">
         {loading ? (
-          <div className="py-24 border border-border bg-surface/30 text-center text-foreground/50 tracking-widest uppercase text-xs">
+          <div className="py-24 border border-border bg-surface/30 text-center text-foreground/50 tracking-widest uppercase text-sm">
             {t.appointments.loading || "Loading..."}
           </div>
         ) : appointments.length === 0 ? (
-          <div className="py-24 border border-border bg-surface/30 text-center text-foreground/50 tracking-widest uppercase text-xs">
+          <div className="py-24 border border-border bg-surface/30 text-center text-foreground/50 tracking-widest uppercase text-sm">
             {t.appointments.empty}
           </div>
         ) : viewMode === "list" ? (
@@ -293,7 +293,7 @@ export default function AppointmentsPage() {
                 <h2 className="font-serif text-2xl text-foreground font-light mb-6 flex items-center gap-4">
                   {t.appointments.upcoming}
                   <span className="h-px bg-border flex-1"></span>
-                  <span className="text-xs font-sans text-foreground/30 uppercase tracking-widest">
+                  <span className="text-sm font-sans text-foreground/30 uppercase tracking-widest">
                     {upcomingAppointments.length}
                   </span>
                 </h2>
@@ -385,7 +385,7 @@ export default function AppointmentsPage() {
               className="p-8 overflow-y-auto space-y-8"
             >
               <div>
-                <label className="block font-sans text-xs uppercase tracking-widest text-foreground/50 mb-2">
+                <label className="block font-sans text-sm uppercase tracking-widest text-foreground/50 mb-2">
                   {t.appointments.modal.meetingTitle}
                 </label>
                 <input
@@ -394,14 +394,14 @@ export default function AppointmentsPage() {
                   value={formData.title}
                   onChange={handleChange}
                   type="text"
-                  className="w-full px-4 py-3 bg-surface border border-border rounded-none text-sm text-foreground focus:border-primary outline-none transition-colors placeholder:text-foreground/20"
+                  className="w-full px-4 py-3 bg-surface border border-border rounded-none text-base text-foreground focus:border-primary outline-none transition-colors placeholder:text-foreground/20"
                   placeholder="e.g. Property Showing at 123 Main St"
                 />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div>
-                  <label className="block font-sans text-xs uppercase tracking-widest text-foreground/50 mb-2">
+                  <label className="block font-sans text-sm uppercase tracking-widest text-foreground/50 mb-2">
                     {t.appointments.modal.date}
                   </label>
                   <input
@@ -410,18 +410,18 @@ export default function AppointmentsPage() {
                     value={formData.date}
                     onChange={handleChange}
                     type="datetime-local"
-                    className="w-full px-4 py-3 bg-surface border border-border rounded-none text-sm text-foreground focus:border-primary outline-none transition-colors font-sans"
+                    className="w-full px-4 py-3 bg-surface border border-border rounded-none text-base text-foreground focus:border-primary outline-none transition-colors font-sans"
                   />
                 </div>
                 <div>
-                  <label className="block font-sans text-xs uppercase tracking-widest text-foreground/50 mb-2">
+                  <label className="block font-sans text-sm uppercase tracking-widest text-foreground/50 mb-2">
                     {t.appointments.modal.status}
                   </label>
                   <select
                     name="status"
                     value={formData.status}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 bg-surface border border-border rounded-none text-sm text-foreground focus:border-primary outline-none transition-colors appearance-none cursor-pointer"
+                    className="w-full px-4 py-3 bg-surface border border-border rounded-none text-base text-foreground focus:border-primary outline-none transition-colors appearance-none cursor-pointer"
                   >
                     <option value="SCHEDULED">
                       {t.appointments.modal.scheduled}
@@ -438,14 +438,14 @@ export default function AppointmentsPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div>
-                  <label className="block font-sans text-xs uppercase tracking-widest text-foreground/50 mb-2">
+                  <label className="block font-sans text-sm uppercase tracking-widest text-foreground/50 mb-2">
                     {t.appointments.modal.selectClient}
                   </label>
                   <select
                     name="clientId"
                     value={formData.clientId}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 bg-surface border border-border rounded-none text-sm text-foreground focus:border-primary outline-none transition-colors appearance-none cursor-pointer"
+                    className="w-full px-4 py-3 bg-surface border border-border rounded-none text-base text-foreground focus:border-primary outline-none transition-colors appearance-none cursor-pointer"
                   >
                     <option value="">-- None --</option>
                     {clients.map((c) => (
@@ -456,14 +456,14 @@ export default function AppointmentsPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block font-sans text-xs uppercase tracking-widest text-foreground/50 mb-2">
+                  <label className="block font-sans text-sm uppercase tracking-widest text-foreground/50 mb-2">
                     {t.appointments.modal.selectProperty}
                   </label>
                   <select
                     name="propertyId"
                     value={formData.propertyId}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 bg-surface border border-border rounded-none text-sm text-foreground focus:border-primary outline-none transition-colors appearance-none cursor-pointer"
+                    className="w-full px-4 py-3 bg-surface border border-border rounded-none text-base text-foreground focus:border-primary outline-none transition-colors appearance-none cursor-pointer"
                   >
                     <option value="">-- None --</option>
                     {properties.map((p) => (
@@ -476,7 +476,7 @@ export default function AppointmentsPage() {
               </div>
 
               <div>
-                <label className="block font-sans text-xs uppercase tracking-widest text-foreground/50 mb-2">
+                <label className="block font-sans text-sm uppercase tracking-widest text-foreground/50 mb-2">
                   {t.appointments.modal.notes}
                 </label>
                 <textarea
@@ -484,7 +484,7 @@ export default function AppointmentsPage() {
                   value={formData.notes}
                   onChange={handleChange}
                   rows={3}
-                  className="w-full px-4 py-3 bg-surface border border-border rounded-none text-sm text-foreground focus:border-primary outline-none transition-colors placeholder:text-foreground/20"
+                  className="w-full px-4 py-3 bg-surface border border-border rounded-none text-base text-foreground focus:border-primary outline-none transition-colors placeholder:text-foreground/20"
                   placeholder="Optional notes for the meeting..."
                 ></textarea>
               </div>
@@ -493,14 +493,14 @@ export default function AppointmentsPage() {
                 <button
                   type="button"
                   onClick={() => setIsAddModalOpen(false)}
-                  className="px-6 py-3 bg-transparent border border-border text-foreground/70 rounded-none text-sm uppercase tracking-widest font-medium hover:text-foreground hover:border-foreground transition-colors"
+                  className="px-6 py-3 bg-transparent border border-border text-foreground/70 rounded-none text-base uppercase tracking-widest font-medium hover:text-foreground hover:border-foreground transition-colors"
                 >
                   {t.appointments.modal.cancel}
                 </button>
                 <button
                   disabled={isSubmitting}
                   type="submit"
-                  className="px-6 py-3 bg-primary text-background rounded-none text-sm uppercase tracking-widest font-medium hover:bg-primary-hover transition-colors disabled:opacity-50"
+                  className="px-6 py-3 bg-primary text-background rounded-none text-base uppercase tracking-widest font-medium hover:bg-primary-hover transition-colors disabled:opacity-50"
                 >
                   {isSubmitting
                     ? t.appointments.modal.saving

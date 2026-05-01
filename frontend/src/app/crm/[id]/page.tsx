@@ -142,7 +142,7 @@ export default function ClientProfilePage() {
       <div className="flex flex-col gap-6 border-b border-border/40 pb-8">
         <button
           onClick={() => router.back()}
-          className="text-xs uppercase tracking-widest text-foreground/50 hover:text-primary transition-colors flex items-center gap-2 w-fit"
+          className="text-sm uppercase tracking-widest text-foreground/50 hover:text-primary transition-colors flex items-center gap-2 w-fit"
         >
           &larr; {t.crm.table.backToList || "Back to CRM"}
         </button>
@@ -152,10 +152,10 @@ export default function ClientProfilePage() {
               {client.firstName} {client.lastName}
             </h1>
             <div className="flex items-center gap-4 mt-3">
-              <span className="text-xs font-semibold px-3 py-1 bg-primary/10 text-primary rounded-full uppercase tracking-widest">
+              <span className="text-sm font-semibold px-3 py-1 bg-primary/10 text-primary rounded-full uppercase tracking-widest">
                 {client.type}
               </span>
-              <span className="text-xs font-semibold px-3 py-1 bg-surface ring-1 ring-border/50 text-foreground/60 rounded-full uppercase tracking-widest">
+              <span className="text-sm font-semibold px-3 py-1 bg-surface ring-1 ring-border/50 text-foreground/60 rounded-full uppercase tracking-widest">
                 {client.status}
               </span>
             </div>
@@ -163,13 +163,13 @@ export default function ClientProfilePage() {
           <div className="flex gap-4 w-full md:w-auto">
             <button 
               onClick={() => setShowEditModal(true)}
-              className="flex-1 md:flex-none px-6 py-2.5 bg-primary text-background rounded-xl text-sm font-semibold hover:bg-primary-hover transition-colors shadow-sm"
+              className="flex-1 md:flex-none px-6 py-2.5 bg-primary text-background rounded-xl text-base font-semibold hover:bg-primary-hover transition-colors shadow-sm"
             >
               {t.crm.timeline.editProfile || "Edit Profile"}
             </button>
             <button 
               onClick={() => setShowLogModal(true)}
-              className="flex-1 md:flex-none px-6 py-2.5 bg-surface text-foreground ring-1 ring-border/50 rounded-xl text-sm font-semibold hover:bg-background transition-colors shadow-sm"
+              className="flex-1 md:flex-none px-6 py-2.5 bg-surface text-foreground ring-1 ring-border/50 rounded-xl text-base font-semibold hover:bg-background transition-colors shadow-sm"
             >
               {t.crm.timeline.logActivity || "Log Activity"}
             </button>
@@ -181,31 +181,31 @@ export default function ClientProfilePage() {
         {/* Contact Info Sidebar */}
         <div className="lg:col-span-4 space-y-8">
           <div className="bg-background ring-1 ring-border/50 rounded-2xl p-6 shadow-sm space-y-6">
-            <h3 className="font-sans text-sm font-bold uppercase tracking-widest text-foreground/40 border-b border-border/40 pb-4">
+            <h3 className="font-sans text-base font-bold uppercase tracking-widest text-foreground/40 border-b border-border/40 pb-4">
               Contact Details
             </h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-[10px] uppercase tracking-widest text-foreground/30 font-bold mb-1">
+                <label className="block text-xs uppercase tracking-widest text-foreground/30 font-bold mb-1">
                   Email
                 </label>
-                <p className="font-sans text-sm text-foreground/80 break-all">
+                <p className="font-sans text-base text-foreground/80 break-all">
                   {client.email || "N/A"}
                 </p>
               </div>
               <div>
-                <label className="block text-[10px] uppercase tracking-widest text-foreground/30 font-bold mb-1">
+                <label className="block text-xs uppercase tracking-widest text-foreground/30 font-bold mb-1">
                   Phone
                 </label>
-                <p className="font-sans text-sm text-foreground/80">
+                <p className="font-sans text-base text-foreground/80">
                   {client.phone || "N/A"}
                 </p>
               </div>
               <div>
-                <label className="block text-[10px] uppercase tracking-widest text-foreground/30 font-bold mb-1">
+                <label className="block text-xs uppercase tracking-widest text-foreground/30 font-bold mb-1">
                   Budget
                 </label>
-                <p className="font-sans text-sm text-foreground/80">
+                <p className="font-sans text-base text-foreground/80">
                   {client.budget ? `$${parseInt(client.budget).toLocaleString()}` : "N/A"}
                 </p>
               </div>
@@ -217,14 +217,14 @@ export default function ClientProfilePage() {
         <div className="lg:col-span-8 flex flex-col gap-6">
           <h2 className="font-sans text-2xl font-semibold text-foreground flex items-center gap-3">
             Activity History
-            <span className="text-[10px] uppercase tracking-widest bg-primary/10 text-primary px-2 py-0.5 rounded">
+            <span className="text-xs uppercase tracking-widest bg-primary/10 text-primary px-2 py-0.5 rounded">
               Live
             </span>
           </h2>
 
           <div className="relative border-l border-border/60 ml-3 space-y-12 pb-12">
             {timeline.length === 0 ? (
-              <p className="pl-8 text-foreground/40 font-sans text-sm italic">
+              <p className="pl-8 text-foreground/40 font-sans text-base italic">
                 No activity history found for this client.
               </p>
             ) : (
@@ -237,7 +237,7 @@ export default function ClientProfilePage() {
                     <h4 className="font-sans font-bold text-foreground group-hover:text-primary transition-colors">
                       {event.title}
                     </h4>
-                    <span className="text-[10px] font-sans font-semibold text-foreground/30 uppercase tracking-widest">
+                    <span className="text-xs font-sans font-semibold text-foreground/30 uppercase tracking-widest">
                       {new Date(event.date).toLocaleDateString(undefined, {
                         month: "short",
                         day: "numeric",
@@ -247,16 +247,16 @@ export default function ClientProfilePage() {
                       })}
                     </span>
                   </div>
-                  <p className="font-sans text-sm text-foreground/60 mt-1">
+                  <p className="font-sans text-base text-foreground/60 mt-1">
                     {event.description}
                   </p>
                   
                   {event.status && (
                     <div className="mt-3 flex gap-2">
-                      <span className="text-[10px] font-bold uppercase tracking-tighter px-2 py-0.5 bg-surface ring-1 ring-border/50 text-foreground/50 rounded">
+                      <span className="text-xs font-bold uppercase tracking-tighter px-2 py-0.5 bg-surface ring-1 ring-border/50 text-foreground/50 rounded">
                         {event.type}
                       </span>
-                      <span className="text-[10px] font-bold uppercase tracking-tighter px-2 py-0.5 bg-primary/5 text-primary rounded">
+                      <span className="text-xs font-bold uppercase tracking-tighter px-2 py-0.5 bg-primary/5 text-primary rounded">
                         {event.status}
                       </span>
                     </div>
@@ -284,49 +284,49 @@ export default function ClientProfilePage() {
             <form onSubmit={handleUpdateProfile} className="p-6 space-y-6 overflow-y-auto">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] uppercase tracking-widest text-foreground/40 font-bold mb-2">First Name</label>
+                  <label className="block text-xs uppercase tracking-widest text-foreground/40 font-bold mb-2">First Name</label>
                   <input 
                     type="text" 
                     value={editForm.firstName || ""} 
                     onChange={e => setEditForm({...editForm, firstName: e.target.value})}
-                    className="w-full bg-background ring-1 ring-border/50 px-4 py-2.5 rounded-xl text-sm outline-none focus:ring-primary/50 transition-all"
+                    className="w-full bg-background ring-1 ring-border/50 px-4 py-2.5 rounded-xl text-base outline-none focus:ring-primary/50 transition-all"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] uppercase tracking-widest text-foreground/40 font-bold mb-2">Last Name</label>
+                  <label className="block text-xs uppercase tracking-widest text-foreground/40 font-bold mb-2">Last Name</label>
                   <input 
                     type="text" 
                     value={editForm.lastName || ""} 
                     onChange={e => setEditForm({...editForm, lastName: e.target.value})}
-                    className="w-full bg-background ring-1 ring-border/50 px-4 py-2.5 rounded-xl text-sm outline-none focus:ring-primary/50 transition-all"
+                    className="w-full bg-background ring-1 ring-border/50 px-4 py-2.5 rounded-xl text-base outline-none focus:ring-primary/50 transition-all"
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-[10px] uppercase tracking-widest text-foreground/40 font-bold mb-2">Email</label>
+                <label className="block text-xs uppercase tracking-widest text-foreground/40 font-bold mb-2">Email</label>
                 <input 
                   type="email" 
                   value={editForm.email || ""} 
                   onChange={e => setEditForm({...editForm, email: e.target.value})}
-                  className="w-full bg-background ring-1 ring-border/50 px-4 py-2.5 rounded-xl text-sm outline-none focus:ring-primary/50 transition-all"
+                  className="w-full bg-background ring-1 ring-border/50 px-4 py-2.5 rounded-xl text-base outline-none focus:ring-primary/50 transition-all"
                 />
               </div>
               <div>
-                <label className="block text-[10px] uppercase tracking-widest text-foreground/40 font-bold mb-2">Phone</label>
+                <label className="block text-xs uppercase tracking-widest text-foreground/40 font-bold mb-2">Phone</label>
                 <input 
                   type="text" 
                   value={editForm.phone || ""} 
                   onChange={e => setEditForm({...editForm, phone: e.target.value})}
-                  className="w-full bg-background ring-1 ring-border/50 px-4 py-2.5 rounded-xl text-sm outline-none focus:ring-primary/50 transition-all"
+                  className="w-full bg-background ring-1 ring-border/50 px-4 py-2.5 rounded-xl text-base outline-none focus:ring-primary/50 transition-all"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] uppercase tracking-widest text-foreground/40 font-bold mb-2">Type</label>
+                  <label className="block text-xs uppercase tracking-widest text-foreground/40 font-bold mb-2">Type</label>
                   <select 
                     value={editForm.type || "BUYER"} 
                     onChange={e => setEditForm({...editForm, type: e.target.value})}
-                    className="w-full bg-background ring-1 ring-border/50 px-4 py-2.5 rounded-xl text-sm outline-none appearance-none"
+                    className="w-full bg-background ring-1 ring-border/50 px-4 py-2.5 rounded-xl text-base outline-none appearance-none"
                   >
                     <option value="BUYER">BUYER</option>
                     <option value="SELLER">SELLER</option>
@@ -334,11 +334,11 @@ export default function ClientProfilePage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[10px] uppercase tracking-widest text-foreground/40 font-bold mb-2">Stage</label>
+                  <label className="block text-xs uppercase tracking-widest text-foreground/40 font-bold mb-2">Stage</label>
                   <select 
                     value={editForm.funnelStage || "LEAD"} 
                     onChange={e => setEditForm({...editForm, funnelStage: e.target.value})}
-                    className="w-full bg-background ring-1 ring-border/50 px-4 py-2.5 rounded-xl text-sm outline-none appearance-none"
+                    className="w-full bg-background ring-1 ring-border/50 px-4 py-2.5 rounded-xl text-base outline-none appearance-none"
                   >
                     <option value="LEAD">LEAD</option>
                     <option value="QUALIFIED">QUALIFIED</option>
@@ -353,14 +353,14 @@ export default function ClientProfilePage() {
             <div className="p-6 bg-surface border-t border-border/40 flex gap-4">
               <button 
                 onClick={() => setShowEditModal(false)}
-                className="flex-1 py-3 ring-1 ring-border/50 rounded-xl text-sm font-semibold hover:bg-background transition-colors"
+                className="flex-1 py-3 ring-1 ring-border/50 rounded-xl text-base font-semibold hover:bg-background transition-colors"
               >
                 Cancel
               </button>
               <button 
                 onClick={handleUpdateProfile}
                 disabled={saving}
-                className="flex-1 py-3 bg-primary text-background rounded-xl text-sm font-semibold hover:bg-primary-hover transition-colors disabled:opacity-50"
+                className="flex-1 py-3 bg-primary text-background rounded-xl text-base font-semibold hover:bg-primary-hover transition-colors disabled:opacity-50"
               >
                 {saving ? "Saving..." : "Save Changes"}
               </button>
@@ -384,14 +384,14 @@ export default function ClientProfilePage() {
             </div>
             <form onSubmit={handleLogActivity} className="p-6 space-y-6">
               <div>
-                <label className="block text-[10px] uppercase tracking-widest text-foreground/40 font-bold mb-2">Activity Type</label>
+                <label className="block text-xs uppercase tracking-widest text-foreground/40 font-bold mb-2">Activity Type</label>
                 <div className="grid grid-cols-3 gap-2">
                   {["CALL", "MEETING", "NOTE"].map(type => (
                     <button
                       key={type}
                       type="button"
                       onClick={() => setLogForm({...logForm, type})}
-                      className={`py-2 px-3 border rounded-xl text-[10px] font-bold tracking-widest transition-all ${logForm.type === type ? 'bg-primary border-primary text-background shadow-md' : 'border-border/40 text-foreground/50 hover:border-foreground/40'}`}
+                      className={`py-2 px-3 border rounded-xl text-xs font-bold tracking-widest transition-all ${logForm.type === type ? 'bg-primary border-primary text-background shadow-md' : 'border-border/40 text-foreground/50 hover:border-foreground/40'}`}
                     >
                       {type}
                     </button>
@@ -399,37 +399,37 @@ export default function ClientProfilePage() {
                 </div>
               </div>
               <div>
-                <label className="block text-[10px] uppercase tracking-widest text-foreground/40 font-bold mb-2">Subject</label>
+                <label className="block text-xs uppercase tracking-widest text-foreground/40 font-bold mb-2">Subject</label>
                 <input 
                   type="text" 
                   value={logForm.subject} 
                   onChange={e => setLogForm({...logForm, subject: e.target.value})}
                   placeholder="Summarize the interaction..."
-                  className="w-full bg-background ring-1 ring-border/50 px-4 py-2.5 rounded-xl text-sm outline-none focus:ring-primary/50 transition-all placeholder:text-foreground/20"
+                  className="w-full bg-background ring-1 ring-border/50 px-4 py-2.5 rounded-xl text-base outline-none focus:ring-primary/50 transition-all placeholder:text-foreground/20"
                 />
               </div>
               <div>
-                <label className="block text-[10px] uppercase tracking-widest text-foreground/40 font-bold mb-2">Details</label>
+                <label className="block text-xs uppercase tracking-widest text-foreground/40 font-bold mb-2">Details</label>
                 <textarea 
                   value={logForm.content} 
                   onChange={e => setLogForm({...logForm, content: e.target.value})}
                   rows={4}
                   placeholder="Record key takeaways or next steps..."
-                  className="w-full bg-background ring-1 ring-border/50 px-4 py-3 rounded-xl text-sm outline-none focus:ring-primary/50 transition-all resize-none placeholder:text-foreground/20"
+                  className="w-full bg-background ring-1 ring-border/50 px-4 py-3 rounded-xl text-base outline-none focus:ring-primary/50 transition-all resize-none placeholder:text-foreground/20"
                 />
               </div>
               <div className="flex gap-4 pt-4">
                 <button 
                   type="button"
                   onClick={() => setShowLogModal(false)}
-                  className="flex-1 py-3 ring-1 ring-border/50 rounded-xl text-sm font-semibold hover:bg-background transition-colors"
+                  className="flex-1 py-3 ring-1 ring-border/50 rounded-xl text-base font-semibold hover:bg-background transition-colors"
                 >
                   Cancel
                 </button>
                 <button 
                   type="submit"
                   disabled={saving || !logForm.subject}
-                  className="flex-1 py-3 bg-primary text-background rounded-xl text-sm font-semibold hover:bg-primary-hover transition-colors disabled:opacity-50"
+                  className="flex-1 py-3 bg-primary text-background rounded-xl text-base font-semibold hover:bg-primary-hover transition-colors disabled:opacity-50"
                 >
                   {saving ? "Saving..." : "Log Activity"}
                 </button>

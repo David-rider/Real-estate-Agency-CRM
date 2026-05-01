@@ -1,21 +1,25 @@
 import type { Metadata } from "next";
-import { Playfair_Display, Outfit } from "next/font/google";
+import { Inter, Noto_Serif_SC } from "next/font/google";
 import "./globals.css";
 import Sidebar from "@/components/layout/Sidebar";
 import Header from "@/components/layout/Header";
 import { Providers } from "@/components/Providers";
 import { AuthProvider } from "@/lib/auth/AuthContext";
 import { I18nProvider } from "@/lib/i18n/I18nContext";
+import { ThemeProvider } from "@/lib/theme/ThemeContext";
 import AuthLayoutWrapper from "@/lib/auth/AuthLayoutWrapper";
 
-const outfit = Outfit({
-  variable: "--font-outfit",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
+  display: "swap",
 });
 
-const playfair = Playfair_Display({
-  variable: "--font-playfair",
+const notoSerifSC = Noto_Serif_SC({
+  variable: "--font-noto-serif-sc",
   subsets: ["latin"],
+  weight: ["400", "700"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -29,17 +33,19 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" data-theme="luxury" suppressHydrationWarning>
       <body
-        className={`${outfit.variable} ${playfair.variable} font-sans antialiased`}
+        className={`${inter.variable} ${notoSerifSC.variable} font-sans antialiased`}
       >
-        <AuthProvider>
-          <I18nProvider>
-            <Providers>
-              <AuthLayoutWrapper>{children}</AuthLayoutWrapper>
-            </Providers>
-          </I18nProvider>
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <I18nProvider>
+              <Providers>
+                <AuthLayoutWrapper>{children}</AuthLayoutWrapper>
+              </Providers>
+            </I18nProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

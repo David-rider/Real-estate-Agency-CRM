@@ -133,14 +133,14 @@ export default function MarketingPage() {
   };
 
   return (
-    <div className="space-y-12 animate-in fade-in slide-in-from-bottom-8 duration-700 ease-out text-foreground">
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out text-foreground">
       {/* Header Area */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-b border-border pb-8">
-        <div className="max-w-xl">
-          <h1 className="font-serif text-5xl font-light tracking-tight text-foreground">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 pb-6 border-b border-border">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">
             {t.marketing.title}
           </h1>
-          <p className="font-sans text-foreground/60 mt-4 text-base font-light leading-relaxed">
+          <p className="text-foreground/50 mt-1 text-sm">
             {t.marketing.subtitle}
           </p>
         </div>
@@ -150,7 +150,7 @@ export default function MarketingPage() {
         {/* AI Content Generator (Span 5 for asymmetric look) */}
         <div className="lg:col-span-5 bg-surface border border-border p-8 flex flex-col">
           <h2 className="font-serif text-2xl font-light text-foreground mb-8 flex items-center gap-3">
-            <span className="text-primary font-sans text-sm tracking-widest uppercase">
+            <span className="text-primary font-sans text-base tracking-widest uppercase">
               Copilot
             </span>{" "}
             {t.marketing.copilot}
@@ -158,17 +158,17 @@ export default function MarketingPage() {
 
           <div className="space-y-8 flex-1">
             <div>
-              <label className="block font-sans text-xs uppercase tracking-widest text-foreground/50 mb-3">
+              <label className="block font-sans text-sm uppercase tracking-widest text-foreground/50 mb-3">
                 {t.marketing.selectProperty}
               </label>
-              <select className="w-full px-4 py-3 bg-background border border-border rounded-none text-sm text-foreground focus:border-primary outline-none transition-colors appearance-none cursor-pointer">
+              <select className="w-full px-4 py-3 bg-background border border-border rounded-none text-base text-foreground focus:border-primary outline-none transition-colors appearance-none cursor-pointer">
                 <option>124 E 55th St, Apt 4A (Draft)</option>
                 <option>10 Downing St, PH-B</option>
               </select>
             </div>
 
             <div>
-              <label className="block font-sans text-xs uppercase tracking-widest text-foreground/50 mb-3">
+              <label className="block font-sans text-sm uppercase tracking-widest text-foreground/50 mb-3">
                 {t.marketing.contentType || "Content Type"}
               </label>
               <div className="grid grid-cols-3 gap-2">
@@ -180,7 +180,7 @@ export default function MarketingPage() {
                   <button
                     key={type.id}
                     onClick={() => !type.locked && setContentType(type.id)}
-                    className={`px-2 py-2 border text-[10px] uppercase tracking-tighter font-bold transition-all duration-300 relative ${contentType === type.id
+                    className={`px-2 py-2 border text-xs uppercase tracking-tighter font-bold transition-all duration-300 relative ${contentType === type.id
                       ? "bg-primary text-background border-primary"
                       : "bg-background text-foreground/50 border-border hover:border-foreground/80"
                       } ${type.locked ? "opacity-50 cursor-not-allowed grayscale" : ""}`}
@@ -197,10 +197,10 @@ export default function MarketingPage() {
             </div>
 
             <div>
-              <label className="block font-sans text-xs uppercase tracking-widest text-foreground/50 mb-3 flex justify-between items-center">
+              <label className="block font-sans text-sm uppercase tracking-widest text-foreground/50 mb-3 flex justify-between items-center">
                 {t.marketing.tone || "Tone of Voice"}
                 {!canTone && (
-                  <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-bold tracking-tighter">
+                  <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded font-bold tracking-tighter">
                     ELITE
                   </span>
                 )}
@@ -214,7 +214,7 @@ export default function MarketingPage() {
                   <button
                     key={t.id}
                     onClick={() => setTone(t.id)}
-                    className={`px-2 py-2 border text-[10px] uppercase tracking-tighter font-bold transition-all duration-300 ${tone === t.id
+                    className={`px-2 py-2 border text-xs uppercase tracking-tighter font-bold transition-all duration-300 ${tone === t.id
                       ? "bg-primary text-background border-primary"
                       : "bg-background text-foreground/50 border-border hover:border-foreground/80"
                       }`}
@@ -224,14 +224,14 @@ export default function MarketingPage() {
                 ))}
               </div>
               {!canTone && (
-                <p className="text-[10px] text-primary mt-2 font-medium italic">
+                <p className="text-xs text-primary mt-2 font-medium italic">
                   {t.marketing.upgradeElite}
                 </p>
               )}
             </div>
 
             <div>
-              <label className="block font-sans text-xs uppercase tracking-widest text-foreground/50 mb-3">
+              <label className="block font-sans text-sm uppercase tracking-widest text-foreground/50 mb-3">
                 {t.marketing.toneAudience}
               </label>
               <div className="flex flex-wrap gap-3">
@@ -243,7 +243,7 @@ export default function MarketingPage() {
                   <button
                     key={aud}
                     onClick={() => setAudience(aud)}
-                    className={`px-4 py-2 border rounded-none text-xs uppercase tracking-widest font-medium transition-colors duration-300 ${audience === aud
+                    className={`px-4 py-2 border rounded-none text-sm uppercase tracking-widest font-medium transition-colors duration-300 ${audience === aud
                       ? "bg-primary/10 text-primary border-primary"
                       : "bg-background text-foreground/70 border-border hover:border-foreground/50"
                       }`}
@@ -255,13 +255,13 @@ export default function MarketingPage() {
             </div>
 
             <div className="flex-1 flex flex-col">
-              <label className="block font-sans text-xs uppercase tracking-widest text-foreground/50 mb-3">
+              <label className="block font-sans text-sm uppercase tracking-widest text-foreground/50 mb-3">
                 {t.marketing.features}
               </label>
               <textarea
                 value={features}
                 onChange={(e) => setFeatures(e.target.value)}
-                className="flex-1 w-full min-h-[120px] px-4 py-3 bg-background border border-border rounded-none text-sm text-foreground focus:border-primary outline-none resize-none transition-colors placeholder:text-foreground/20 leading-relaxed"
+                className="flex-1 w-full min-h-[120px] px-4 py-3 bg-background border border-border rounded-none text-base text-foreground focus:border-primary outline-none resize-none transition-colors placeholder:text-foreground/20 leading-relaxed"
                 placeholder={t.marketing.featuresPlaceholder}
               />
             </div>
@@ -271,7 +271,7 @@ export default function MarketingPage() {
             <button
               onClick={handleGenerate}
               disabled={generating}
-              className="w-full py-4 bg-primary text-background rounded-none text-sm uppercase tracking-widest font-medium transition-colors hover:bg-primary-hover flex items-center justify-center gap-3 disabled:opacity-50 group"
+              className="w-full py-4 bg-primary text-background rounded-none text-base uppercase tracking-widest font-medium transition-colors hover:bg-primary-hover flex items-center justify-center gap-3 disabled:opacity-50 group"
             >
               {generating ? (
                 <>
@@ -311,21 +311,21 @@ export default function MarketingPage() {
                         const link = `https://cpre.app/share/listing-${Date.now().toString().slice(-6)}`;
                         navigator.clipboard.writeText(`${link}\n\n${fullContent}`);
                       }}
-                      className="text-xs uppercase tracking-widest text-primary hover:text-primary-hover font-bold transition-colors disabled:opacity-50 ring-1 ring-primary/30 px-3 py-1.5 rounded-md bg-primary/5"
+                      className="text-sm uppercase tracking-widest text-primary hover:text-primary-hover font-bold transition-colors disabled:opacity-50 ring-1 ring-primary/30 px-3 py-1.5 rounded-md bg-primary/5"
                       disabled={generating || isStreaming}
                     >
                       {t.marketing.copyLink || "Copy Share Link"}
                     </button>
                     <button
                       onClick={() => navigator.clipboard.writeText(fullContent)}
-                      className="text-xs uppercase tracking-widest text-foreground/60 hover:text-foreground font-medium transition-colors disabled:opacity-50 px-3 py-1.5"
+                      className="text-sm uppercase tracking-widest text-foreground/60 hover:text-foreground font-medium transition-colors disabled:opacity-50 px-3 py-1.5"
                       disabled={generating || isStreaming}
                     >
                       {t.marketing.copy || "Copy Text"}
                     </button>
                   </div>
                 </div>
-                <div className="font-sans text-foreground/80 text-sm leading-relaxed whitespace-pre-wrap overflow-y-auto pr-4 relative">
+                <div className="font-sans text-foreground/80 text-base leading-relaxed whitespace-pre-wrap overflow-y-auto pr-4 relative">
                   {displayedContent}
                   {(generating || isStreaming) && (
                     <span className="inline-block w-1.5 h-4 ml-1 bg-primary animate-pulse align-middle" />
@@ -341,7 +341,7 @@ export default function MarketingPage() {
                     ✨
                   </span>
                 )}
-                <p className="font-sans text-sm tracking-wide text-foreground leading-relaxed">
+                <p className="font-sans text-base tracking-wide text-foreground leading-relaxed">
                   {generating
                     ? t.marketing.generatingDesc
                     : t.marketing.emptyDesc}
@@ -357,7 +357,7 @@ export default function MarketingPage() {
             </h2>
             <div className="space-y-4 overflow-y-auto flex-1 pr-4">
               {tasks.length === 0 ? (
-                <p className="font-sans text-xs uppercase tracking-widest text-foreground/40 text-center mt-12">
+                <p className="font-sans text-sm uppercase tracking-widest text-foreground/40 text-center mt-12">
                   {t.marketing.noTasks}
                 </p>
               ) : (
@@ -367,20 +367,20 @@ export default function MarketingPage() {
                     className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border border-border bg-background hover:border-primary/50 transition-colors group gap-4 sm:gap-0"
                   >
                     <div className="flex items-start sm:items-center gap-4">
-                      <div className="w-10 h-10 border border-border flex items-center justify-center bg-surface text-foreground/50 text-xs font-serif tracking-widest">
+                      <div className="w-10 h-10 border border-border flex items-center justify-center bg-surface text-foreground/50 text-sm font-serif tracking-widest">
                         AI
                       </div>
                       <div>
-                        <p className="font-sans text-sm font-medium text-foreground group-hover:text-primary transition-colors">
+                        <p className="font-sans text-base font-medium text-foreground group-hover:text-primary transition-colors">
                           {task.title}
                         </p>
-                        <p className="font-sans text-xs text-foreground/50 mt-1">
+                        <p className="font-sans text-sm text-foreground/50 mt-1">
                           {new Date(task.createdAt).toLocaleDateString()}
                         </p>
                       </div>
                     </div>
                     <span
-                      className={`text-xs uppercase tracking-widest font-medium ${task.status === "COMPLETED" ? "text-primary" : "text-foreground/50"}`}
+                      className={`text-sm uppercase tracking-widest font-medium ${task.status === "COMPLETED" ? "text-primary" : "text-foreground/50"}`}
                     >
                       {task.status === "COMPLETED"
                         ? t.marketing.done
