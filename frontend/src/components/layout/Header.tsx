@@ -101,14 +101,16 @@ export default function Header() {
                         <svg className="w-3.5 h-3.5 text-foreground/50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
                         </svg>
-                        <span className="uppercase text-xs">{language === 'zh' ? '中文' : language === 'es' ? 'ES' : 'EN'}</span>
+                        <span className="uppercase text-xs">
+                            {language === 'zh-CN' ? '简体' : language === 'zh-TW' ? '繁體' : language === 'es' ? 'ES' : 'EN'}
+                        </span>
                         <svg className={`w-3 h-3 text-foreground/40 transition-transform duration-200 ${isLangDropdownOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                         </svg>
                     </button>
 
                     {isLangDropdownOpen && (
-                        <div className="absolute top-full right-0 mt-2 w-36 bg-surface rounded-xl shadow-lg border border-border overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                        <div className="absolute top-full right-0 mt-2 w-40 bg-surface rounded-xl shadow-lg border border-border overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
                             <button
                                 onClick={() => { setLanguage("en"); setIsLangDropdownOpen(false); }}
                                 className={`w-full text-left px-3 py-2.5 text-sm transition-colors ${language === "en" ? "bg-primary/10 text-primary font-semibold" : "text-foreground/70 hover:bg-surface-hover"}`}
@@ -116,10 +118,16 @@ export default function Header() {
                                 English
                             </button>
                             <button
-                                onClick={() => { setLanguage("zh"); setIsLangDropdownOpen(false); }}
-                                className={`w-full text-left px-3 py-2.5 text-sm transition-colors ${language === "zh" ? "bg-primary/10 text-primary font-semibold" : "text-foreground/70 hover:bg-surface-hover"}`}
+                                onClick={() => { setLanguage("zh-CN"); setIsLangDropdownOpen(false); }}
+                                className={`w-full text-left px-3 py-2.5 text-sm transition-colors ${language === "zh-CN" ? "bg-primary/10 text-primary font-semibold" : "text-foreground/70 hover:bg-surface-hover"}`}
                             >
-                                中文 (Chinese)
+                                简体中文 (Simplified)
+                            </button>
+                            <button
+                                onClick={() => { setLanguage("zh-TW"); setIsLangDropdownOpen(false); }}
+                                className={`w-full text-left px-3 py-2.5 text-sm transition-colors ${language === "zh-TW" ? "bg-primary/10 text-primary font-semibold" : "text-foreground/70 hover:bg-surface-hover"}`}
+                            >
+                                繁體中文 (Traditional)
                             </button>
                             <button
                                 onClick={() => { setLanguage("es"); setIsLangDropdownOpen(false); }}

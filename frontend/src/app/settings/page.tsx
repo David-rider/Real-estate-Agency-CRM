@@ -307,7 +307,7 @@ export default function SettingsPage() {
           onClick={() => setActiveTab("appearance")}
           className={`px-6 py-2.5 transition-all rounded-xl whitespace-nowrap ${activeTab === "appearance" ? "bg-background text-foreground shadow-sm ring-1 ring-border/50" : "text-foreground/60 hover:text-foreground hover:bg-background/50"}`}
         >
-          {t.settings.tabs?.appearance || "Appearance"}
+          {t.settings.tabs.appearance}
         </button>
       </div>
 
@@ -329,14 +329,14 @@ export default function SettingsPage() {
                   disabled={isImporting}
                   className="px-4 py-2 text-base font-semibold font-sans border border-border/60 rounded-xl bg-surface hover:bg-background transition-colors text-foreground shadow-sm"
                 >
-                  {isImporting ? "Importing..." : "Import Users"}
+                  {isImporting ? t.settings.users.importing : t.settings.users.importUsers}
                 </button>
                 <button 
                   onClick={handleExportUsers}
                   disabled={isExporting}
                   className="px-4 py-2 text-base font-semibold font-sans border border-primary text-primary rounded-xl hover:bg-primary hover:text-background transition-colors shadow-sm"
                 >
-                  {isExporting ? "Exporting..." : "Export CSV"}
+                  {isExporting ? t.settings.users.exporting : t.settings.users.exportCsv}
                 </button>
               </div>
             )}
@@ -556,8 +556,8 @@ export default function SettingsPage() {
           <div className="space-y-8">
             {/* Theme Selector */}
             <div>
-              <h3 className="text-base font-semibold text-foreground mb-1">{t.settings.tabs?.appearance || "Appearance"}</h3>
-              <p className="text-sm text-foreground/50 mb-6">Choose your preferred color theme for the platform.</p>
+              <h3 className="text-base font-semibold text-foreground mb-1">{t.settings.appearance.title}</h3>
+              <p className="text-sm text-foreground/50 mb-6">{t.settings.appearance.desc}</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
                 {[
                   { id: "luxury" as ThemeName, label: "轻奢 Luxury", primary: "#B8977E", bg: "#0C0C0E", surface: "#1A1A1E", fg: "#F0EDE8", desc: "Warm bronze on deep black" },

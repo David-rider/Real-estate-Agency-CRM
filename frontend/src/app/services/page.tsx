@@ -106,8 +106,8 @@ export default function ServicesPage() {
                   disabled={referring === "Goldberg"}
                   className="font-sans text-base font-semibold text-foreground/70 hover:text-primary transition-colors disabled:opacity-50 flex items-center gap-1.5 group/btn"
                 >
-                  {referring === "Goldberg"
-                    ? "Referred"
+                  {referring === "Goldberg" || referring === "EagleEye"
+                    ? t.services.referred
                     : t.services.referClient}
                   {referring === "Goldberg" ? (
                     <span className="text-primary font-bold">✓</span>
@@ -180,7 +180,7 @@ export default function ServicesPage() {
               {ordering ? (
                 <>
                   <div className="w-4 h-4 border-2 border-background/30 border-t-background rounded-full animate-spin" />
-                  Processing...
+                  {t.services.processing}
                 </>
               ) : (
                 <>

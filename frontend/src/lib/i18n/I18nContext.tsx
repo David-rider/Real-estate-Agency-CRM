@@ -16,9 +16,17 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
 
     // Load preferred language from localStorage on mount
     useEffect(() => {
-        const saved = localStorage.getItem("preferredLanguage") as Language;
-        if (saved && (saved === "en" || saved === "zh" || saved === "es")) {
-            setLanguage(saved);
+        const saved = localStorage.getItem("preferredLanguage");
+        const validLanguages: Language[] = ["en", "zh-CN", "zh-TW", "es"];
+        
+        if (saved) {
+            // Migration for legacy "zh" key
+            if (saved === "zh") {
+                setLanguage("zh-CN");
+                localStorage.setItem("preferredLanguage", "zh-CN");
+            } else if (validLanguages.includes(saved as Language)) {
+                setLanguage(saved as Language);
+            }
         }
     }, []);
 
