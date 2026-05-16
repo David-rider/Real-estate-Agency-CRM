@@ -10,7 +10,14 @@ export default function AuthLayoutWrapper({ children }: { children: React.ReactN
     const pathname = usePathname();
     const { isLoading } = useAuth();
 
-    const isAuthRoute = pathname === '/login' || pathname === '/signup';
+    const isAuthRoute =
+        pathname === '/login' ||
+        pathname === '/signup' ||
+        pathname === '/forgot-password' ||
+        pathname === '/reset-password' ||
+        pathname === '/verify-email' ||
+        pathname === '/public-listings' ||
+        pathname === '/not-found';
 
     // Always render children immediately if it's the login/signup page to prevent flashes
     if (isAuthRoute) {

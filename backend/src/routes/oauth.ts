@@ -1,6 +1,7 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
+import { OAuth2Client } from 'google-auth-library';
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -21,14 +22,34 @@ const generateToken = (user: any) => {
 };
 
 // POST /api/oauth/google
-// PRODUCTION TODO: verify req.body.idToken using google-auth-library verifyIdToken()
-// and extract email from the verified payload — never trust email from the request body.
 router.post('/google', async (req, res) => {
     try {
-        const { email, name, googleId } = req.body;
+        const { idToken } = req.body;
 
-        if (!email || !googleId) {
-            return res.status(400).json({ error: 'Email and Google ID are required' });
+        if (!idToken) {
+            return res.status(400).json({ error: 'Google ID token is required' });
+        }
+
+        // Verify the ID token with Google
+        let email: string;
+        let name: string;
+        let googleId: string;
+        if (process.env.GOOGLE_CLIENT_ID) {
+            const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+            const ticket = await client.verifyIdToken({ idToken, audience: process.env.GOOGLE_CLIENT_ID });
+            const payload = ticket.getPayload();
+            if (!payload || !payload.email) return res.status(401).json({ error: 'Invalid Google token' });
+            email = payload.email;
+            name = payload.name || payload.email.split('@')[0];
+            googleId = payload.sub;
+        } else {
+            // Dev mode: accept mock token structure (not for production)
+            console.warn('[OAuth] GOOGLE_CLIENT_ID not set — skipping token verification (dev mode)');
+            const mock = req.body;
+            if (!mock.email || !mock.googleId) return res.status(400).json({ error: 'Dev mode: email and googleId required' });
+            email = mock.email;
+            name = mock.name || mock.email.split('@')[0];
+            googleId = mock.googleId;
         }
 
         let user = await prisma.user.findUnique({ where: { email } });

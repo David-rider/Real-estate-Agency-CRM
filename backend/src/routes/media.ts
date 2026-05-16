@@ -1,8 +1,7 @@
 import express from 'express';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../server';
 
 const router = express.Router();
-const prisma = new PrismaClient();
 
 // Get all media assets for an org (optionally filtered by propertyId)
 router.get('/', async (req, res) => {

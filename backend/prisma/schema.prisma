@@ -54,6 +54,11 @@ model User {
   createdAt         DateTime     @default(now())
   updatedAt         DateTime     @updatedAt
 
+  passwordResetToken   String?
+  passwordResetExpiry  DateTime?
+  emailVerifyToken     String?
+  emailVerified        Boolean  @default(false)
+
   clients        Client[]
   properties     Property[]
   transactions   Transaction[]

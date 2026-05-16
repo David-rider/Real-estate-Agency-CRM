@@ -10,15 +10,21 @@ router.get('/', async (req, res) => {
         const orgId = authReq.user?.orgId;
         if (!orgId) return res.status(401).json({ error: 'Unauthorized' });
 
-        const transactions = await prisma.transaction.findMany({
-            where: { orgId },
-            include: {
-                client: true,
-                property: true
-            },
-            orderBy: { createdAt: 'desc' }
-        });
-        res.json(transactions);
+        const page = parseInt(req.query.page as string) || 1;
+        const limit = parseInt(req.query.limit as string) || 20;
+        const skip = (page - 1) * limit;
+
+        const [transactions, total] = await Promise.all([
+            prisma.transaction.findMany({
+                where: { orgId },
+                skip,
+                take: limit,
+                include: { client: true, property: true },
+                orderBy: { createdAt: 'desc' }
+            }),
+            prisma.transaction.count({ where: { orgId } })
+        ]);
+        res.json({ data: transactions, total, page, limit, totalPages: Math.ceil(total / limit) });
     } catch (error) {
         res.status(500).json({ error: 'Failed to fetch transactions' });
     }

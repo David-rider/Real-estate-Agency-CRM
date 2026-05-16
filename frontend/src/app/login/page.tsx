@@ -119,6 +119,9 @@ export default function LoginPage() {
                 <label className="block font-sans text-sm uppercase tracking-widest text-foreground/50 transition-colors group-focus-within:text-primary">
                   {t.login.password}
                 </label>
+                <Link href="/forgot-password" className="text-xs text-foreground/40 hover:text-primary uppercase tracking-widest transition-colors">
+                  Forgot password?
+                </Link>
               </div>
               <input
                 type="password"
