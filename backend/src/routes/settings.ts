@@ -36,7 +36,7 @@ router.put('/users/:id/role', authorizeRole(['SUPERADMIN', 'FIRMADMIN']), async 
         const { role, tier } = req.body;
 
         const updatedUser = await prisma.user.update({
-            where: { id },
+            where: { id, orgId: req.user.orgId },
             data: { role, tier },
             select: {
                 id: true,

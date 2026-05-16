@@ -5,7 +5,11 @@ import { PrismaClient } from '@prisma/client';
 const router = express.Router();
 const prisma = new PrismaClient();
 
-const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key-123';
+const JWT_SECRET = process.env.JWT_SECRET as string;
+if (!JWT_SECRET) {
+    console.error('FATAL ERROR: JWT_SECRET is not defined in environment variables.');
+    process.exit(1);
+}
 
 // Helper to generate token
 const generateToken = (user: any) => {
@@ -17,7 +21,8 @@ const generateToken = (user: any) => {
 };
 
 // POST /api/oauth/google
-// This endpoint expects a verified token or minimal profile data from frontend Google SDK
+// PRODUCTION TODO: verify req.body.idToken using google-auth-library verifyIdToken()
+// and extract email from the verified payload — never trust email from the request body.
 router.post('/google', async (req, res) => {
     try {
         const { email, name, googleId } = req.body;
@@ -30,7 +35,6 @@ router.post('/google', async (req, res) => {
 
         if (!user) {
             // First time login - auto create account and join default org
-            // In a real app, you might want them to choose an org or specify if they are creating one
             let org = await prisma.organization.findFirst();
             if (!org) {
                 org = await prisma.organization.create({
@@ -48,12 +52,13 @@ router.post('/google', async (req, res) => {
                     orgId: org.id
                 }
             });
-        } else if (!user.googleId) {
-            // Link existing account to Google
-            user = await prisma.user.update({
-                where: { email },
-                data: { googleId }
-            });
+        } else if (user.googleId && user.googleId === googleId) {
+            // Existing account with matching googleId — allow login
+        } else {
+            // Account exists but googleId doesn't match or isn't linked.
+            // Reject to prevent account takeover. Linking must be done
+            // through authenticated account settings after password login.
+            return res.status(409).json({ error: 'An account with this email already exists. Please log in with your password and link Google from account settings.' });
         }
 
         const token = generateToken(user);
@@ -65,6 +70,8 @@ router.post('/google', async (req, res) => {
 });
 
 // POST /api/oauth/apple
+// PRODUCTION TODO: verify req.body.identityToken using apple-signin-auth verifyIdToken()
+// and extract email from the verified payload — never trust email from the request body.
 router.post('/apple', async (req, res) => {
     try {
         const { email, name, appleId } = req.body;
@@ -93,11 +100,12 @@ router.post('/apple', async (req, res) => {
                     orgId: org.id
                 }
             });
-        } else if (!user.appleId) {
-            user = await prisma.user.update({
-                where: { email },
-                data: { appleId }
-            });
+        } else if (user.appleId && user.appleId === appleId) {
+            // Existing account with matching appleId — allow login
+        } else {
+            // Account exists but appleId doesn't match or isn't linked.
+            // Reject to prevent account takeover.
+            return res.status(409).json({ error: 'An account with this email already exists. Please log in with your password and link Apple from account settings.' });
         }
 
         const token = generateToken(user);
