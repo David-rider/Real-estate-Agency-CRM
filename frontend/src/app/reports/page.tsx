@@ -5,6 +5,7 @@ import {
     BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
     XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
+import { useI18n } from "@/lib/i18n/I18nContext";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 const token = () => (typeof window !== "undefined" ? localStorage.getItem("token") || "" : "");
@@ -13,7 +14,6 @@ const fmtCurrency = (n: number) =>
     n >= 1_000_000 ? `$${(n / 1_000_000).toFixed(2)}M` : `$${(n / 1000).toFixed(0)}K`;
 
 const COLORS = ["#B8977E", "#4F7DF3", "#7C5CFC", "#10B981", "#F59E0B", "#EF4444"];
-
 const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
 interface DashData {
@@ -34,16 +34,19 @@ interface FinanceMetrics {
 }
 
 export default function ReportsPage() {
+    const { t } = useI18n();
+    const T = (t as any).reports;
+
     const [dashData,    setDashData]    = useState<DashData | null>(null);
     const [finMetrics,  setFinMetrics]  = useState<FinanceMetrics | null>(null);
     const [loading,     setLoading]     = useState(true);
     const [activeTab,   setActiveTab]   = useState("overview");
 
     const TABS = [
-        { key: "overview",    label: "Overview" },
-        { key: "commissions", label: "Commissions" },
-        { key: "pipeline",    label: "Pipeline" },
-        { key: "leaderboard", label: "Leaderboard" },
+        { key: "overview",    label: T?.tabs?.overview    || "Overview" },
+        { key: "commissions", label: T?.tabs?.commissions || "Commissions" },
+        { key: "pipeline",    label: T?.tabs?.pipeline    || "Pipeline" },
+        { key: "leaderboard", label: T?.tabs?.leaderboard || "Leaderboard" },
     ];
 
     const fetchData = useCallback(async () => {
@@ -62,31 +65,32 @@ export default function ReportsPage() {
 
     useEffect(() => { fetchData(); }, [fetchData]);
 
-    // Build monthly chart data from dashData
-    const monthlyChart = dashData?.monthlyData || MONTH_NAMES.slice(0, 6).map((m, i) => ({
+    const monthlyChart = dashData?.monthlyData || MONTH_NAMES.slice(0, 6).map((m) => ({
         month: m,
         deals: Math.floor(Math.random() * 5) + 1,
         commission: (Math.random() * 80_000 + 20_000),
     }));
 
     const pipelineData = dashData?.pipeline || [
-        { stage: "Offer Review",   count: 4 },
-        { stage: "In Contract",    count: 7 },
-        { stage: "Board Package",  count: 3 },
-        { stage: "Clear to Close", count: 5 },
-        { stage: "Closed",         count: 12 },
+        { stage: T?.columns?.OFFER_REVIEW   || "Offer Review",   count: 4 },
+        { stage: T?.columns?.IN_CONTRACT    || "In Contract",    count: 7 },
+        { stage: T?.columns?.BOARD_PACKAGE  || "Board Package",  count: 3 },
+        { stage: T?.columns?.CLEARED_TO_CLOSE || "Clear to Close", count: 5 },
+        { stage: T?.columns?.CLOSED         || "Closed",         count: 12 },
     ];
 
     const leaderboard = finMetrics?.leaderboard || [
-        { agent: "Sarah Chen",    ytd: 420_000 },
-        { agent: "Michael Torres",ytd: 385_000 },
-        { agent: "Jennifer Park", ytd: 310_000 },
-        { agent: "David Kim",     ytd: 275_000 },
-        { agent: "Lisa Johnson",  ytd: 248_000 },
+        { agent: "Sarah Chen",     ytd: 420_000 },
+        { agent: "Michael Torres", ytd: 385_000 },
+        { agent: "Jennifer Park",  ytd: 310_000 },
+        { agent: "David Kim",      ytd: 275_000 },
+        { agent: "Lisa Johnson",   ytd: 248_000 },
     ];
 
     const exportCSV = () => {
-        const rows = [["Agent","YTD Commission"]];
+        const agentLabel = T?.leaderboard?.agent  || "Agent";
+        const ytdLabel   = T?.leaderboard?.ytdGross || "YTD Commission";
+        const rows = [[agentLabel, ytdLabel]];
         leaderboard.forEach(r => rows.push([r.agent, `$${r.ytd.toLocaleString()}`]));
         const csv = rows.map(r => r.join(",")).join("\n");
         const blob = new Blob([csv], { type: "text/csv" });
@@ -101,14 +105,14 @@ export default function ReportsPage() {
             {/* Header */}
             <div className="flex items-start justify-between mb-6 flex-wrap gap-3">
                 <div>
-                    <h1 className="text-2xl font-bold text-foreground">Reports & Analytics</h1>
-                    <p className="text-sm text-foreground/50 mt-0.5">Performance metrics, pipeline health, and commission tracking</p>
+                    <h1 className="text-2xl font-bold text-foreground">{T?.title || "Reports & Analytics"}</h1>
+                    <p className="text-sm text-foreground/50 mt-0.5">{T?.subtitle || "Performance metrics, pipeline health, and commission tracking"}</p>
                 </div>
                 <div className="flex items-center gap-3">
                     <button onClick={exportCSV}
                         className="flex items-center gap-2 px-4 py-2 bg-surface border border-border rounded-lg text-sm text-foreground/60 hover:bg-surface-hover transition-colors">
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-                        Export CSV
+                        {T?.exportCsv || "Export CSV"}
                     </button>
                 </div>
             </div>
@@ -123,10 +127,10 @@ export default function ReportsPage() {
             ) : (
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                     {[
-                        { label: "Active Listings",  value: dashData?.activeListings ?? 0,                  fmt: (v: number) => v.toString() },
-                        { label: "New Leads (30d)",  value: dashData?.newLeads ?? 0,                        fmt: (v: number) => v.toString() },
-                        { label: "Pending Offers",   value: dashData?.pendingOffers ?? 0,                   fmt: (v: number) => v.toString() },
-                        { label: "YTD Commission",   value: finMetrics?.ytdGross ?? dashData?.ytdCommission ?? 0, fmt: fmtCurrency },
+                        { label: T?.kpi?.activeListings || "Active Listings",  value: dashData?.activeListings ?? 0,                       fmt: (v: number) => v.toString() },
+                        { label: T?.kpi?.newLeads       || "New Leads (30d)",  value: dashData?.newLeads ?? 0,                             fmt: (v: number) => v.toString() },
+                        { label: T?.kpi?.pendingOffers  || "Pending Offers",   value: dashData?.pendingOffers ?? 0,                        fmt: (v: number) => v.toString() },
+                        { label: T?.kpi?.ytdCommission  || "YTD Commission",   value: finMetrics?.ytdGross ?? dashData?.ytdCommission ?? 0, fmt: fmtCurrency },
                     ].map(kpi => (
                         <div key={kpi.label} className="bg-surface border border-border rounded-xl p-5">
                             <div className="text-xs text-foreground/40 uppercase tracking-widest mb-2">{kpi.label}</div>
@@ -150,12 +154,11 @@ export default function ReportsPage() {
                 ))}
             </div>
 
-            {/* Tab content */}
+            {/* Overview tab */}
             {activeTab === "overview" && (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Monthly Deals */}
                     <div className="bg-surface border border-border rounded-xl p-6">
-                        <h3 className="text-sm font-semibold text-foreground mb-4">Monthly Deals Closed</h3>
+                        <h3 className="text-sm font-semibold text-foreground mb-4">{T?.charts?.monthlyDeals || "Monthly Deals Closed"}</h3>
                         <ResponsiveContainer width="100%" height={220}>
                             <BarChart data={monthlyChart} margin={{ top: 0, right: 0, bottom: 0, left: -20 }}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
@@ -167,9 +170,8 @@ export default function ReportsPage() {
                         </ResponsiveContainer>
                     </div>
 
-                    {/* Monthly Commission */}
                     <div className="bg-surface border border-border rounded-xl p-6">
-                        <h3 className="text-sm font-semibold text-foreground mb-4">Monthly Commission Revenue</h3>
+                        <h3 className="text-sm font-semibold text-foreground mb-4">{T?.charts?.monthlyCommission || "Monthly Commission Revenue"}</h3>
                         <ResponsiveContainer width="100%" height={220}>
                             <LineChart data={monthlyChart} margin={{ top: 0, right: 0, bottom: 0, left: -20 }}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
@@ -182,9 +184,8 @@ export default function ReportsPage() {
                         </ResponsiveContainer>
                     </div>
 
-                    {/* Pipeline funnel */}
                     <div className="bg-surface border border-border rounded-xl p-6">
-                        <h3 className="text-sm font-semibold text-foreground mb-4">Pipeline Distribution</h3>
+                        <h3 className="text-sm font-semibold text-foreground mb-4">{T?.charts?.pipelineDistribution || "Pipeline Distribution"}</h3>
                         <ResponsiveContainer width="100%" height={220}>
                             <PieChart>
                                 <Pie data={pipelineData} dataKey="count" nameKey="stage" cx="50%" cy="50%" outerRadius={80} label={(props) => `${(props as unknown as Record<string,unknown>).stage} ${((Number(props.percent) || 0) * 100).toFixed(0)}%`}>
@@ -197,9 +198,8 @@ export default function ReportsPage() {
                         </ResponsiveContainer>
                     </div>
 
-                    {/* Client type breakdown */}
                     <div className="bg-surface border border-border rounded-xl p-6">
-                        <h3 className="text-sm font-semibold text-foreground mb-4">Lead Source Breakdown</h3>
+                        <h3 className="text-sm font-semibold text-foreground mb-4">{T?.charts?.leadSource || "Lead Source Breakdown"}</h3>
                         <ResponsiveContainer width="100%" height={220}>
                             <BarChart layout="vertical"
                                 data={[
@@ -221,13 +221,14 @@ export default function ReportsPage() {
                 </div>
             )}
 
+            {/* Commissions tab */}
             {activeTab === "commissions" && (
                 <div className="space-y-6">
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         {[
-                            { label: "YTD Gross",  value: finMetrics?.ytdGross  ?? 0, color: "text-foreground" },
-                            { label: "YTD Net",    value: finMetrics?.ytdNet    ?? 0, color: "text-green-500" },
-                            { label: "Avg per Deal", value: (finMetrics?.ytdGross ?? 0) / Math.max(1, monthlyChart.reduce((s,m)=>s+m.deals,0)), color: "text-primary" },
+                            { label: T?.commission?.ytdGross  || "YTD Gross",    value: finMetrics?.ytdGross  ?? 0, color: "text-foreground" },
+                            { label: T?.commission?.ytdNet    || "YTD Net",      value: finMetrics?.ytdNet    ?? 0, color: "text-green-500" },
+                            { label: T?.commission?.avgPerDeal || "Avg per Deal", value: (finMetrics?.ytdGross ?? 0) / Math.max(1, monthlyChart.reduce((s,m)=>s+m.deals,0)), color: "text-primary" },
                         ].map(m => (
                             <div key={m.label} className="bg-surface border border-border rounded-xl p-5">
                                 <div className="text-xs text-foreground/40 uppercase tracking-widest mb-1">{m.label}</div>
@@ -236,7 +237,7 @@ export default function ReportsPage() {
                         ))}
                     </div>
                     <div className="bg-surface border border-border rounded-xl p-6">
-                        <h3 className="text-sm font-semibold text-foreground mb-4">Gross vs Net Commission by Month</h3>
+                        <h3 className="text-sm font-semibold text-foreground mb-4">{T?.charts?.grossVsNet || "Gross vs Net Commission by Month"}</h3>
                         <ResponsiveContainer width="100%" height={280}>
                             <BarChart data={monthlyChart} margin={{ top: 0, right: 0, bottom: 0, left: -10 }}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
@@ -244,14 +245,15 @@ export default function ReportsPage() {
                                 <YAxis tick={{ fontSize: 11, fill: "var(--color-foreground)", opacity: 0.5 }} axisLine={false} tickLine={false} tickFormatter={v => `$${(v/1000).toFixed(0)}K`} />
                                 <Tooltip formatter={(v) => fmtCurrency(Number(v))} contentStyle={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", borderRadius: 8, fontSize: 12 }} />
                                 <Legend />
-                                <Bar dataKey="commission" name="Gross" fill="var(--color-primary)" radius={[4,4,0,0]} />
-                                <Bar dataKey="commission" name="Net" fill="#10B981" radius={[4,4,0,0]} opacity={0.7} />
+                                <Bar dataKey="commission" name={T?.commission?.gross || "Gross"} fill="var(--color-primary)" radius={[4,4,0,0]} />
+                                <Bar dataKey="commission" name={T?.commission?.net   || "Net"}   fill="#10B981" radius={[4,4,0,0]} opacity={0.7} />
                             </BarChart>
                         </ResponsiveContainer>
                     </div>
                 </div>
             )}
 
+            {/* Pipeline tab */}
             {activeTab === "pipeline" && (
                 <div className="space-y-4">
                     <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
@@ -264,7 +266,7 @@ export default function ReportsPage() {
                         ))}
                     </div>
                     <div className="bg-surface border border-border rounded-xl p-6">
-                        <h3 className="text-sm font-semibold text-foreground mb-4">Stage Distribution</h3>
+                        <h3 className="text-sm font-semibold text-foreground mb-4">{T?.charts?.stageDistribution || "Stage Distribution"}</h3>
                         <ResponsiveContainer width="100%" height={300}>
                             <BarChart data={pipelineData} margin={{ top: 0, right: 0, bottom: 0, left: -20 }}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
@@ -280,19 +282,28 @@ export default function ReportsPage() {
                 </div>
             )}
 
+            {/* Leaderboard tab */}
             {activeTab === "leaderboard" && (
                 <div className="bg-surface border border-border rounded-xl overflow-hidden">
                     <div className="px-6 py-4 border-b border-border flex items-center justify-between">
-                        <h3 className="text-sm font-semibold text-foreground">Agent Leaderboard — YTD</h3>
-                        <button onClick={exportCSV} className="text-xs text-primary hover:underline">Export</button>
+                        <h3 className="text-sm font-semibold text-foreground">{T?.leaderboard?.title || "Agent Leaderboard — YTD"}</h3>
+                        <button onClick={exportCSV} className="text-xs text-primary hover:underline">
+                            {T?.leaderboard?.export || "Export"}
+                        </button>
                     </div>
                     <table className="w-full text-sm">
                         <thead>
                             <tr className="border-b border-border bg-background/50">
                                 <th className="text-left px-6 py-3 text-xs font-semibold uppercase tracking-widest text-foreground/40 w-10">#</th>
-                                <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-widest text-foreground/40">Agent</th>
-                                <th className="text-right px-6 py-3 text-xs font-semibold uppercase tracking-widest text-foreground/40">YTD Gross</th>
-                                <th className="text-right px-6 py-3 text-xs font-semibold uppercase tracking-widest text-foreground/40 hidden sm:table-cell">Share</th>
+                                <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-widest text-foreground/40">
+                                    {T?.leaderboard?.agent || "Agent"}
+                                </th>
+                                <th className="text-right px-6 py-3 text-xs font-semibold uppercase tracking-widest text-foreground/40">
+                                    {T?.leaderboard?.ytdGross || "YTD Gross"}
+                                </th>
+                                <th className="text-right px-6 py-3 text-xs font-semibold uppercase tracking-widest text-foreground/40 hidden sm:table-cell">
+                                    {T?.leaderboard?.share || "Share"}
+                                </th>
                             </tr>
                         </thead>
                         <tbody>

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useToast } from "@/components/ui/Toast";
+import { useI18n } from "@/lib/i18n/I18nContext";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 const token = () => (typeof window !== "undefined" ? localStorage.getItem("token") || "" : "");
@@ -23,25 +24,21 @@ interface Task {
     createdAt: string;
 }
 
-const PRIORITY_CONFIG: Record<Priority, { label: string; color: string; bg: string }> = {
-    URGENT: { label: "Urgent", color: "text-red-500",    bg: "bg-red-500/10 border-red-500/30" },
-    HIGH:   { label: "High",   color: "text-amber-500",  bg: "bg-amber-500/10 border-amber-500/30" },
-    MEDIUM: { label: "Medium", color: "text-primary",    bg: "bg-primary/10 border-primary/30" },
-    LOW:    { label: "Low",    color: "text-foreground/40", bg: "bg-foreground/5 border-border" },
+const PRIORITY_COLORS: Record<Priority, { color: string; bg: string }> = {
+    URGENT: { color: "text-red-500",      bg: "bg-red-500/10 border-red-500/30" },
+    HIGH:   { color: "text-amber-500",    bg: "bg-amber-500/10 border-amber-500/30" },
+    MEDIUM: { color: "text-primary",      bg: "bg-primary/10 border-primary/30" },
+    LOW:    { color: "text-foreground/40", bg: "bg-foreground/5 border-border" },
 };
-
-const STATUS_TABS: { key: string; label: string }[] = [
-    { key: "all",        label: "All" },
-    { key: "PENDING",    label: "To Do" },
-    { key: "IN_PROGRESS",label: "In Progress" },
-    { key: "COMPLETED",  label: "Done" },
-];
 
 const INPUT_CLS = "px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground focus:border-primary outline-none transition-colors";
 const SELECT_CLS = "px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground focus:border-primary outline-none cursor-pointer";
 
 export default function TasksPage() {
     const toast = useToast();
+    const { t } = useI18n();
+    const T = (t as any).tasks;
+
     const [tasks, setTasks] = useState<Task[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState("all");
@@ -61,7 +58,7 @@ export default function TasksPage() {
                 headers: { Authorization: `Bearer ${token()}` },
             });
             if (res.ok) setTasks(await res.json());
-        } catch { toast.error("Failed to load tasks"); }
+        } catch { toast.error(T?.toastLoadError || "Failed to load tasks"); }
         finally { setLoading(false); }
     }, []);
 
@@ -96,13 +93,13 @@ export default function TasksPage() {
                 body: JSON.stringify({ ...form, dueDate: form.dueDate || null }),
             });
             if (res.ok) {
-                toast.success(editTask ? "Task updated" : "Task created");
+                toast.success(editTask ? (T?.toastUpdated || "Task updated") : (T?.toastCreated || "Task created"));
                 setShowForm(false);
                 fetchTasks();
             } else {
-                toast.error("Failed to save task");
+                toast.error(T?.toastError || "Failed to save task");
             }
-        } catch { toast.error("Network error"); }
+        } catch { toast.error(T?.toastNetwork || "Network error"); }
     };
 
     const setStatus = async (task: Task, status: Status) => {
@@ -114,9 +111,9 @@ export default function TasksPage() {
             });
             if (res.ok) {
                 setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status } : t));
-                if (status === "COMPLETED") toast.success("Task completed ✓");
+                if (status === "COMPLETED") toast.success(T?.toastCompleted || "Task completed ✓");
             }
-        } catch { toast.error("Failed to update"); }
+        } catch { toast.error(T?.toastNetwork || "Network error"); }
     };
 
     const deleteTask = async (id: string) => {
@@ -127,13 +124,31 @@ export default function TasksPage() {
             });
             if (res.ok) {
                 setTasks(prev => prev.filter(t => t.id !== id));
-                toast.success("Task deleted");
+                toast.success(T?.toastDeleted || "Task deleted");
             }
-        } catch { toast.error("Failed to delete"); }
+        } catch { toast.error(T?.toastDeleteError || "Failed to delete"); }
     };
 
     const isOverdue = (task: Task) =>
         task.dueDate && task.status !== "COMPLETED" && new Date(task.dueDate) < new Date();
+
+    // Priority labels from translations
+    const priorityLabel = (p: Priority) => {
+        const map: Record<Priority, string> = {
+            URGENT: T?.priorityUrgent || "Urgent",
+            HIGH:   T?.priorityHigh   || "High",
+            MEDIUM: T?.priorityMedium || "Medium",
+            LOW:    T?.priorityLow    || "Low",
+        };
+        return map[p];
+    };
+
+    const STATUS_TABS = [
+        { key: "all",        label: T?.all        || "All" },
+        { key: "PENDING",    label: T?.toDo       || "To Do" },
+        { key: "IN_PROGRESS",label: T?.inProgress || "In Progress" },
+        { key: "COMPLETED",  label: T?.completed  || "Done" },
+    ];
 
     const filtered = tasks.filter(t => {
         const matchTab = activeTab === "all" || t.status === activeTab;
@@ -141,7 +156,6 @@ export default function TasksPage() {
         return matchTab && matchPri;
     });
 
-    // Summary counts
     const counts = {
         pending:    tasks.filter(t => t.status === "PENDING").length,
         inProgress: tasks.filter(t => t.status === "IN_PROGRESS").length,
@@ -154,25 +168,25 @@ export default function TasksPage() {
             {/* Page header */}
             <div className="flex items-start justify-between mb-6 gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-foreground">Tasks</h1>
-                    <p className="text-sm text-foreground/50 mt-0.5">Manage your to-dos, follow-ups, and action items</p>
+                    <h1 className="text-2xl font-bold text-foreground">{T?.title || "Tasks"}</h1>
+                    <p className="text-sm text-foreground/50 mt-0.5">{T?.subtitle || "Manage your to-dos, follow-ups, and action items"}</p>
                 </div>
                 <button
                     onClick={openNew}
                     className="flex items-center gap-2 px-4 py-2 bg-primary text-background rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors flex-shrink-0"
                 >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-                    New Task
+                    {T?.newTask || "New Task"}
                 </button>
             </div>
 
             {/* Summary cards */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
                 {[
-                    { label: "To Do",      value: counts.pending,    color: "text-foreground" },
-                    { label: "In Progress",value: counts.inProgress, color: "text-primary" },
-                    { label: "Overdue",    value: counts.overdue,    color: "text-red-500" },
-                    { label: "Completed",  value: counts.completed,  color: "text-green-500" },
+                    { label: T?.toDo      || "To Do",       value: counts.pending,    color: "text-foreground" },
+                    { label: T?.inProgress|| "In Progress", value: counts.inProgress, color: "text-primary" },
+                    { label: T?.overdue   || "Overdue",     value: counts.overdue,    color: "text-red-500" },
+                    { label: T?.completed || "Completed",   value: counts.completed,  color: "text-green-500" },
                 ].map(card => (
                     <div key={card.label} className="bg-surface border border-border rounded-xl p-4">
                         <div className={`text-2xl font-bold ${card.color}`}>{card.value}</div>
@@ -196,9 +210,9 @@ export default function TasksPage() {
                 </div>
                 {/* Priority filter */}
                 <select className={SELECT_CLS} value={filterPriority} onChange={e => setFilterPriority(e.target.value)}>
-                    <option value="all">All Priorities</option>
+                    <option value="all">{T?.allPriorities || "All Priorities"}</option>
                     {(["URGENT","HIGH","MEDIUM","LOW"] as Priority[]).map(p => (
-                        <option key={p} value={p}>{PRIORITY_CONFIG[p].label}</option>
+                        <option key={p} value={p}>{priorityLabel(p)}</option>
                     ))}
                 </select>
             </div>
@@ -207,20 +221,20 @@ export default function TasksPage() {
             {loading ? (
                 <div className="flex items-center justify-center py-16 text-foreground/40 gap-3">
                     <div className="w-5 h-5 border-2 border-border border-t-primary rounded-full animate-spin" />
-                    Loading tasks...
+                    {T?.loading || "Loading tasks..."}
                 </div>
             ) : filtered.length === 0 ? (
                 <div className="text-center py-16 text-foreground/40">
                     <svg className="w-12 h-12 mx-auto mb-3 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                     </svg>
-                    <p className="text-sm">No tasks found. Create your first task!</p>
+                    <p className="text-sm">{T?.noTasks || "No tasks found. Create your first task!"}</p>
                 </div>
             ) : (
                 <div className="space-y-2">
                     {filtered.map(task => {
                         const overdue = isOverdue(task);
-                        const pcfg = PRIORITY_CONFIG[task.priority];
+                        const pcfg = PRIORITY_COLORS[task.priority];
                         return (
                             <div key={task.id}
                                 className={`bg-surface border rounded-xl p-4 transition-all hover:shadow-sm ${
@@ -252,12 +266,12 @@ export default function TasksPage() {
                                             <div className="flex items-center gap-2 flex-shrink-0">
                                                 {/* Priority badge */}
                                                 <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${pcfg.bg} ${pcfg.color}`}>
-                                                    {pcfg.label}
+                                                    {priorityLabel(task.priority)}
                                                 </span>
-                                                {/* Status */}
+                                                {/* Status badge */}
                                                 {task.status === "IN_PROGRESS" && (
                                                     <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-primary/10 border border-primary/30 text-primary">
-                                                        In Progress
+                                                        {T?.inProgressBadge || "In Progress"}
                                                     </span>
                                                 )}
                                             </div>
@@ -271,7 +285,8 @@ export default function TasksPage() {
                                             {task.dueDate && (
                                                 <span className={`text-xs flex items-center gap-1 ${overdue ? "text-red-500 font-medium" : "text-foreground/40"}`}>
                                                     <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                                                    {overdue ? "Overdue · " : "Due "}{new Date(task.dueDate).toLocaleDateString()}
+                                                    {overdue ? `${T?.overdueLabel || "Overdue"} · ` : `${T?.dueLabel || "Due"} `}
+                                                    {new Date(task.dueDate).toLocaleDateString()}
                                                 </span>
                                             )}
                                         </div>
@@ -312,37 +327,48 @@ export default function TasksPage() {
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 animate-in fade-in duration-200">
                     <div className="bg-surface border border-border rounded-2xl w-full max-w-md shadow-2xl animate-in slide-in-from-bottom-4 duration-300">
                         <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-border">
-                            <h2 className="text-base font-semibold text-foreground">{editTask ? "Edit Task" : "New Task"}</h2>
+                            <h2 className="text-base font-semibold text-foreground">
+                                {editTask ? (T?.modal?.editTitle || "Edit Task") : (T?.modal?.newTitle || "New Task")}
+                            </h2>
                             <button onClick={() => setShowForm(false)} className="p-1.5 text-foreground/40 hover:text-foreground rounded-lg transition-colors">
                                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                             </button>
                         </div>
                         <form onSubmit={handleSubmit} className="p-6 space-y-4">
                             <div>
-                                <label className="block text-xs font-medium text-foreground/60 mb-1.5 uppercase tracking-widest">Task Title *</label>
+                                <label className="block text-xs font-medium text-foreground/60 mb-1.5 uppercase tracking-widest">
+                                    {T?.modal?.taskTitle || "Task Title *"}
+                                </label>
                                 <input className={`${INPUT_CLS} w-full`} value={form.title}
                                     onChange={e => setForm({ ...form, title: e.target.value })}
-                                    placeholder="e.g. Follow up with the Johnsons" required autoFocus />
+                                    placeholder={T?.modal?.placeholder || "e.g. Follow up with the Johnsons"}
+                                    required autoFocus />
                             </div>
                             <div>
-                                <label className="block text-xs font-medium text-foreground/60 mb-1.5 uppercase tracking-widest">Description</label>
+                                <label className="block text-xs font-medium text-foreground/60 mb-1.5 uppercase tracking-widest">
+                                    {T?.modal?.description || "Description"}
+                                </label>
                                 <textarea className={`${INPUT_CLS} w-full resize-none`} rows={3}
                                     value={form.description}
                                     onChange={e => setForm({ ...form, description: e.target.value })}
-                                    placeholder="Additional details..." />
+                                    placeholder={T?.modal?.descPlaceholder || "Additional details..."} />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-xs font-medium text-foreground/60 mb-1.5 uppercase tracking-widest">Priority</label>
+                                    <label className="block text-xs font-medium text-foreground/60 mb-1.5 uppercase tracking-widest">
+                                        {T?.modal?.priority || "Priority"}
+                                    </label>
                                     <select className={`${SELECT_CLS} w-full`} value={form.priority}
                                         onChange={e => setForm({ ...form, priority: e.target.value as Priority })}>
                                         {(["URGENT","HIGH","MEDIUM","LOW"] as Priority[]).map(p => (
-                                            <option key={p} value={p}>{PRIORITY_CONFIG[p].label}</option>
+                                            <option key={p} value={p}>{priorityLabel(p)}</option>
                                         ))}
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-medium text-foreground/60 mb-1.5 uppercase tracking-widest">Due Date</label>
+                                    <label className="block text-xs font-medium text-foreground/60 mb-1.5 uppercase tracking-widest">
+                                        {T?.modal?.dueDate || "Due Date"}
+                                    </label>
                                     <input className={`${INPUT_CLS} w-full`} type="date" value={form.dueDate}
                                         onChange={e => setForm({ ...form, dueDate: e.target.value })} />
                                 </div>
@@ -350,11 +376,11 @@ export default function TasksPage() {
                             <div className="flex gap-3 pt-2">
                                 <button type="button" onClick={() => setShowForm(false)}
                                     className="flex-1 py-2.5 border border-border rounded-lg text-sm text-foreground/60 hover:bg-surface-hover transition-colors">
-                                    Cancel
+                                    {T?.modal?.cancel || "Cancel"}
                                 </button>
                                 <button type="submit"
                                     className="flex-1 py-2.5 bg-primary text-background rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors">
-                                    {editTask ? "Save Changes" : "Create Task"}
+                                    {editTask ? (T?.modal?.saveChanges || "Save Changes") : (T?.modal?.save || "Create Task")}
                                 </button>
                             </div>
                         </form>

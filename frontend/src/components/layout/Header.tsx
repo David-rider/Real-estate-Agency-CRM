@@ -195,7 +195,7 @@ export default function Header({ onMenuToggle }: HeaderProps) {
                             {searchResults.clients.length > 0 && (
                                 <div>
                                     <div className="px-3 py-2 text-[10px] font-semibold uppercase tracking-widest text-foreground/40 bg-background/50">
-                                        Clients
+                                        {(t as any).header?.searchClients || 'Clients'}
                                     </div>
                                     {searchResults.clients.map(c => (
                                         <Link key={c.id} href={`/crm/${c.id}`} onClick={() => { setSearchOpen(false); setSearchQuery(''); }}
@@ -214,7 +214,7 @@ export default function Header({ onMenuToggle }: HeaderProps) {
                             {searchResults.properties.length > 0 && (
                                 <div>
                                     <div className="px-3 py-2 text-[10px] font-semibold uppercase tracking-widest text-foreground/40 bg-background/50">
-                                        Properties
+                                        {(t as any).header?.searchProperties || 'Properties'}
                                     </div>
                                     {searchResults.properties.map(p => (
                                         <Link key={p.id} href={`/listings`} onClick={() => { setSearchOpen(false); setSearchQuery(''); }}
@@ -233,7 +233,7 @@ export default function Header({ onMenuToggle }: HeaderProps) {
                             {searchResults.transactions.length > 0 && (
                                 <div>
                                     <div className="px-3 py-2 text-[10px] font-semibold uppercase tracking-widest text-foreground/40 bg-background/50">
-                                        Transactions
+                                        {(t as any).header?.searchTransactions || 'Transactions'}
                                     </div>
                                     {searchResults.transactions.map(tx => (
                                         <Link key={tx.id} href={`/transactions`} onClick={() => { setSearchOpen(false); setSearchQuery(''); }}
@@ -253,7 +253,7 @@ export default function Header({ onMenuToggle }: HeaderProps) {
                     )}
                     {searchOpen && searchResults && totalResults === 0 && searchQuery.trim().length >= 2 && (
                         <div className="absolute top-full left-0 right-0 mt-2 bg-surface border border-border rounded-xl shadow-xl z-50 px-4 py-6 text-center text-sm text-foreground/40">
-                            No results for "{searchQuery}"
+                            {(t as any).header?.noResults || 'No results for'} &ldquo;{searchQuery}&rdquo;
                         </div>
                     )}
                 </div>
@@ -328,17 +328,19 @@ export default function Header({ onMenuToggle }: HeaderProps) {
                     {notifOpen && (
                         <div className="absolute top-full right-0 mt-2 w-80 bg-surface border border-border rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
                             <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-                                <span className="text-sm font-semibold text-foreground">Notifications</span>
+                                <span className="text-sm font-semibold text-foreground">
+                                    {(t as any).header?.notifications || 'Notifications'}
+                                </span>
                                 {unreadCount > 0 && (
                                     <button onClick={markAllRead} className="text-xs text-primary hover:underline">
-                                        Mark all read
+                                        {(t as any).header?.markAllRead || 'Mark all read'}
                                     </button>
                                 )}
                             </div>
                             <div className="max-h-80 overflow-y-auto">
                                 {notifications.length === 0 ? (
                                     <div className="px-4 py-8 text-center text-sm text-foreground/40">
-                                        You're all caught up!
+                                        {(t as any).header?.noNotifications || "You're all caught up!"}
                                     </div>
                                 ) : notifications.map(n => (
                                     <div

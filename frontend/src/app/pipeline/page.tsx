@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useToast } from "@/components/ui/Toast";
+import { useI18n } from "@/lib/i18n/I18nContext";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 const token = () => (typeof window !== "undefined" ? localStorage.getItem("token") || "" : "");
@@ -19,12 +20,12 @@ interface Transaction {
     agent:    { id: string; name: string };
 }
 
-const COLUMNS: { key: TransStatus; label: string; color: string; accent: string }[] = [
-    { key: "OFFER_REVIEW",     label: "Offer Review",      color: "border-amber-500/40",  accent: "bg-amber-500/10 text-amber-500" },
-    { key: "IN_CONTRACT",      label: "In Contract",       color: "border-blue-500/40",   accent: "bg-blue-500/10 text-blue-500" },
-    { key: "BOARD_PACKAGE",    label: "Board Package",     color: "border-purple-500/40", accent: "bg-purple-500/10 text-purple-500" },
-    { key: "CLEARED_TO_CLOSE", label: "Clear to Close",    color: "border-green-500/40",  accent: "bg-green-500/10 text-green-500" },
-    { key: "CLOSED",           label: "Closed",            color: "border-primary/40",    accent: "bg-primary/10 text-primary" },
+const COLUMN_KEYS: { key: TransStatus; color: string; accent: string }[] = [
+    { key: "OFFER_REVIEW",     color: "border-amber-500/40",  accent: "bg-amber-500/10 text-amber-500" },
+    { key: "IN_CONTRACT",      color: "border-blue-500/40",   accent: "bg-blue-500/10 text-blue-500" },
+    { key: "BOARD_PACKAGE",    color: "border-purple-500/40", accent: "bg-purple-500/10 text-purple-500" },
+    { key: "CLEARED_TO_CLOSE", color: "border-green-500/40",  accent: "bg-green-500/10 text-green-500" },
+    { key: "CLOSED",           color: "border-primary/40",    accent: "bg-primary/10 text-primary" },
 ];
 
 const fmtPrice = (n: number) =>
@@ -37,6 +38,9 @@ const daysSince = (iso: string) => {
 
 export default function PipelinePage() {
     const toast = useToast();
+    const { t } = useI18n();
+    const T = (t as any).pipeline;
+
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [loading, setLoading] = useState(true);
     const [dragging, setDragging] = useState<string | null>(null);
@@ -53,13 +57,12 @@ export default function PipelinePage() {
                 const d = await res.json();
                 setTransactions(d.data || []);
             }
-        } catch { toast.error("Failed to load pipeline"); }
+        } catch { toast.error(T?.loadError || "Failed to load pipeline"); }
         finally { setLoading(false); }
     }, []);
 
     useEffect(() => { fetchAll(); }, [fetchAll]);
 
-    // ── Drag & drop ──────────────────────────────────────────────────────────
     const handleDragStart = (e: React.DragEvent, tx: Transaction) => {
         dragCard.current = tx;
         setDragging(tx.id);
@@ -76,7 +79,6 @@ export default function PipelinePage() {
         const tx = dragCard.current;
         if (!tx || tx.status === targetStatus) return;
 
-        // Optimistic update
         setTransactions(prev =>
             prev.map(t => t.id === tx.id ? { ...t, status: targetStatus } : t)
         );
@@ -88,21 +90,20 @@ export default function PipelinePage() {
                 body: JSON.stringify({ status: targetStatus }),
             });
             if (!res.ok) {
-                // Rollback
                 setTransactions(prev => prev.map(t => t.id === tx.id ? { ...t, status: tx.status } : t));
-                toast.error("Failed to update status");
+                toast.error(T?.updateFail || "Failed to update status");
             } else {
-                toast.success(`Moved to ${COLUMNS.find(c => c.key === targetStatus)?.label}`);
+                const colLabel = T?.columns?.[targetStatus] || targetStatus;
+                toast.success(`${T?.movedTo || "Moved to"} ${colLabel}`);
             }
         } catch {
             setTransactions(prev => prev.map(t => t.id === tx.id ? { ...t, status: tx.status } : t));
-            toast.error("Network error");
+            toast.error(T?.networkError || "Network error");
         }
         setDragging(null);
         setDragOver(null);
     };
 
-    // Summary stats
     const activeTxs = transactions.filter(t => t.status !== "FALLEN_THROUGH");
     const totalValue = activeTxs.reduce((s, t) => s + t.price, 0);
 
@@ -110,37 +111,42 @@ export default function PipelinePage() {
         return (
             <div className="flex items-center justify-center h-64 text-foreground/40 gap-3">
                 <div className="w-5 h-5 border-2 border-border border-t-primary rounded-full animate-spin" />
-                Loading pipeline...
+                {T?.loading || "Loading pipeline..."}
             </div>
         );
     }
+
+    const activeDealLabel = activeTxs.length !== 1
+        ? (T?.activeDeals || "active deals")
+        : (T?.activeDeal  || "active deal");
 
     return (
         <div className="flex flex-col h-full min-h-0">
             {/* Header */}
             <div className="flex items-start justify-between mb-5 flex-wrap gap-3">
                 <div>
-                    <h1 className="text-2xl font-bold text-foreground">Deal Pipeline</h1>
+                    <h1 className="text-2xl font-bold text-foreground">{T?.title || "Deal Pipeline"}</h1>
                     <p className="text-sm text-foreground/50 mt-0.5">
-                        {activeTxs.length} active deal{activeTxs.length !== 1 ? "s" : ""} · {fmtPrice(totalValue)} total value
+                        {activeTxs.length} {activeDealLabel} · {fmtPrice(totalValue)} {T?.subtitle || "total value"}
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
                     <a href="/transactions"
                         className="px-3 py-2 bg-surface border border-border rounded-lg text-sm text-foreground/60 hover:bg-surface-hover transition-colors">
-                        List View
+                        {T?.listView || "List View"}
                     </a>
                     <a href="/transactions"
                         className="flex items-center gap-2 px-4 py-2 bg-primary text-background rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors">
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-                        New Deal
+                        {T?.newDeal || "New Deal"}
                     </a>
                 </div>
             </div>
 
-            {/* Kanban board — horizontal scroll on mobile */}
+            {/* Kanban board */}
             <div className="flex gap-4 overflow-x-auto pb-4 flex-1 min-h-0" style={{ scrollSnapType: "x mandatory" }}>
-                {COLUMNS.map(col => {
+                {COLUMN_KEYS.map(col => {
+                    const colLabel = T?.columns?.[col.key] || col.key;
                     const colTxs = transactions.filter(t => t.status === col.key);
                     const colValue = colTxs.reduce((s, t) => s + t.price, 0);
                     const isOver = dragOver === col.key;
@@ -156,11 +162,10 @@ export default function PipelinePage() {
                             onDragLeave={() => setDragOver(null)}
                             onDrop={() => handleDrop(col.key)}
                         >
-                            {/* Column header */}
                             <div className="px-4 pt-4 pb-3 border-b border-border flex items-center justify-between">
                                 <div>
                                     <div className="flex items-center gap-2">
-                                        <span className="text-sm font-semibold text-foreground">{col.label}</span>
+                                        <span className="text-sm font-semibold text-foreground">{colLabel}</span>
                                         <span className={`px-1.5 py-0.5 rounded-full text-xs font-bold ${col.accent}`}>
                                             {colTxs.length}
                                         </span>
@@ -171,13 +176,12 @@ export default function PipelinePage() {
                                 </div>
                             </div>
 
-                            {/* Cards */}
                             <div className="flex-1 overflow-y-auto p-3 space-y-3 min-h-[200px]">
                                 {colTxs.length === 0 && (
                                     <div className={`rounded-xl border-2 border-dashed p-6 text-center text-xs text-foreground/30 transition-colors ${
                                         isOver ? "border-primary/40 text-primary/50" : "border-border/50"
                                     }`}>
-                                        Drop deals here
+                                        {T?.dropHere || "Drop deals here"}
                                     </div>
                                 )}
                                 {colTxs.map(tx => (
@@ -190,7 +194,6 @@ export default function PipelinePage() {
                                             dragging === tx.id ? "opacity-40 scale-95" : ""
                                         }`}
                                     >
-                                        {/* Property */}
                                         <div className="flex items-start justify-between gap-2 mb-2">
                                             <div className="min-w-0">
                                                 <div className="text-sm font-semibold text-foreground truncate leading-tight">
@@ -206,7 +209,6 @@ export default function PipelinePage() {
                                             </div>
                                         </div>
 
-                                        {/* Client */}
                                         <div className="flex items-center gap-2 mt-3">
                                             <div className="w-6 h-6 rounded-full bg-primary/15 flex items-center justify-center text-[10px] font-bold text-primary flex-shrink-0">
                                                 {tx.client?.firstName?.[0]}{tx.client?.lastName?.[0]}
@@ -216,10 +218,9 @@ export default function PipelinePage() {
                                             </div>
                                         </div>
 
-                                        {/* Footer: days in stage + closing date */}
                                         <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-border/50">
                                             <span className="text-[10px] text-foreground/30">
-                                                {daysSince(tx.createdAt)}d in stage
+                                                {daysSince(tx.createdAt)}{T?.daysInStage || "d in stage"}
                                             </span>
                                             {tx.closingDate && (
                                                 <span className="text-[10px] text-foreground/40 flex items-center gap-1">
@@ -236,7 +237,7 @@ export default function PipelinePage() {
                     );
                 })}
 
-                {/* Fallen Through — collapsed */}
+                {/* Fallen Through */}
                 <div
                     style={{ scrollSnapAlign: "start", minWidth: "220px" }}
                     className="flex flex-col flex-shrink-0 rounded-2xl border-2 border-red-500/20 bg-surface"
@@ -246,7 +247,9 @@ export default function PipelinePage() {
                 >
                     <div className="px-4 pt-4 pb-3 border-b border-border flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                            <span className="text-sm font-semibold text-foreground/60">Fallen Through</span>
+                            <span className="text-sm font-semibold text-foreground/60">
+                                {T?.columns?.FALLEN_THROUGH || "Fallen Through"}
+                            </span>
                             <span className="px-1.5 py-0.5 rounded-full text-xs font-bold bg-red-500/10 text-red-400">
                                 {transactions.filter(t => t.status === "FALLEN_THROUGH").length}
                             </span>
@@ -255,7 +258,7 @@ export default function PipelinePage() {
                     <div className="flex-1 overflow-y-auto p-3 space-y-2 min-h-[120px]">
                         {transactions.filter(t => t.status === "FALLEN_THROUGH").length === 0 && (
                             <div className="rounded-xl border-2 border-dashed border-border/30 p-4 text-center text-xs text-foreground/20">
-                                No fallen deals
+                                {T?.noFallen || "No fallen deals"}
                             </div>
                         )}
                         {transactions.filter(t => t.status === "FALLEN_THROUGH").map(tx => (
@@ -270,7 +273,7 @@ export default function PipelinePage() {
 
             {/* Mobile hint */}
             <div className="mt-2 text-xs text-foreground/30 text-center md:hidden">
-                Drag cards between columns to update status
+                {T?.mobileHint || "Drag cards between columns to update status"}
             </div>
         </div>
     );
