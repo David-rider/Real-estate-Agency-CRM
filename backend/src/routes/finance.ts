@@ -1,9 +1,8 @@
 import express from 'express';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../server';
 import { AuthRequest, requireTier } from '../middleware/authMiddleware';
 
 const router = express.Router();
-const prisma = new PrismaClient();
 
 // GET /api/finance/metrics
 // Gets the high-level YTD metrics and firm leaderboard for the current user

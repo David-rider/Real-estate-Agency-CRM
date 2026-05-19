@@ -5,6 +5,14 @@ import { PrismaClient } from '@prisma/client';
 
 dotenv.config();
 
+// Validate required environment variables
+const requiredEnvVars = ['DATABASE_URL', 'JWT_SECRET'];
+const missingEnvVars = requiredEnvVars.filter(v => !process.env[v]);
+if (missingEnvVars.length > 0) {
+    console.error(`FATAL: Missing required environment variables: ${missingEnvVars.join(', ')}`);
+    process.exit(1);
+}
+
 const app = express();
 const prisma = new PrismaClient();
 const PORT = process.env.PORT || 4000;
@@ -28,6 +36,9 @@ import oauthRoutes from './routes/oauth';
 import importExportRoutes from './routes/importExport';
 import paymentRoutes from './routes/payments';
 import integrationsRoutes from './routes/integrations';
+import tasksRoutes from './routes/tasks';
+import notificationsRoutes from './routes/notifications';
+import searchRoutes from './routes/search';
 
 import { authenticateToken } from './middleware/authMiddleware';
 
@@ -37,6 +48,8 @@ app.use(cors({
     origin: allowedOrigins,
     credentials: true,
 }));
+// Stripe webhook needs raw body — must be before express.json()
+app.use('/api/payments/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json());
 
 // Routes
@@ -60,15 +73,35 @@ app.use('/api/marketing-tasks', authenticateToken, marketingTasksRoutes);
 app.use('/api/referrals', authenticateToken, referralsRoutes);
 app.use('/api/gifts', authenticateToken, giftsRoutes);
 app.use('/api/integrations', authenticateToken, integrationsRoutes);
+app.use('/api/tasks',         tasksRoutes);
+app.use('/api/notifications', notificationsRoutes);
+app.use('/api/search',        searchRoutes);
+app.use('/api/payments',      paymentRoutes);
 
 // Basic Health Check Route
-app.get('/api/health', (req, res) => {
-    res.status(200).json({ status: 'ok', message: 'Real Estate Brokerage Management Platform Agent CRM API is running.', timestamp: new Date().toISOString() });
+app.get('/api/health', async (req, res) => {
+    try {
+        await prisma.$queryRaw`SELECT 1`;
+        res.status(200).json({ status: 'ok', db: 'connected', timestamp: new Date().toISOString() });
+    } catch {
+        res.status(503).json({ status: 'error', db: 'disconnected', timestamp: new Date().toISOString() });
+    }
 });
 
 // Start Server
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+const server = app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT} [${process.env.NODE_ENV || 'development'}]`);
 });
+
+const shutdown = async (signal: string) => {
+    console.log(`${signal} received — shutting down gracefully`);
+    server.close(async () => {
+        await prisma.$disconnect();
+        console.log('Database disconnected. Bye.');
+        process.exit(0);
+    });
+};
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
 
 export { app, prisma };

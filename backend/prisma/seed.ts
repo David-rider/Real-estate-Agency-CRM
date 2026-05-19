@@ -23,13 +23,13 @@ async function main() {
     });
 
     // Hash password for all default users
-    const defaultPassword = await bcrypt.hash('password123', 10);
+    const defaultPassword = await bcrypt.hash('USA%100', 10);
 
     // 1. Create Default Users (Roles: Admin, Manager, Agent)
     const adminUser = await prisma.user.create({
         data: {
             name: 'System Admin',
-            email: 'admin@cpre.com',
+            email: 'admin@xyz.com',
             password: defaultPassword,
             role: Role.SUPERADMIN,
             tier: Tier.ELITE,
@@ -40,7 +40,7 @@ async function main() {
     const managerUser = await prisma.user.create({
         data: {
             name: 'Regional Manager',
-            email: 'manager@cpre.com',
+            email: 'manager@xyz.com',
             password: defaultPassword,
             role: Role.MANAGER,
             tier: Tier.PRO,
@@ -51,7 +51,7 @@ async function main() {
     const agentUser = await prisma.user.create({
         data: {
             name: 'Sarah Agent',
-            email: 'agent@cpre.com',
+            email: 'agent@xyz.com',
             password: defaultPassword,
             role: Role.AGENT,
             tier: Tier.CORE,

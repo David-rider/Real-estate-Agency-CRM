@@ -127,7 +127,7 @@ export default function SignupPage() {
                 value={formData.email}
                 onChange={handleChange}
                 className="w-full px-0 py-3 bg-transparent border-b border-border focus:border-primary outline-none transition-colors font-sans text-base text-foreground placeholder:text-foreground/20"
-                placeholder="agent@cpre.com"
+                placeholder="agent@xyz.com"
               />
             </div>
 

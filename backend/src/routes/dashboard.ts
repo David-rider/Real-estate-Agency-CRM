@@ -1,9 +1,8 @@
 import { Router } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../server';
 import { AuthRequest } from '../middleware/authMiddleware';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 router.get('/', async (req: AuthRequest, res) => {
     try {
