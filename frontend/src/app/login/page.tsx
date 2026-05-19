@@ -110,7 +110,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full px-0 py-3 bg-transparent border-b border-border focus:border-primary outline-none transition-colors font-sans text-base text-foreground placeholder:text-foreground/20"
-                placeholder="agent@cpre.com"
+                placeholder="agent@xyz.com"
               />
             </div>
 
@@ -189,7 +189,30 @@ export default function LoginPage() {
             </div>
           </form>
 
-          <div className="mt-12 pt-8 border-t border-border flex flex-col gap-4 font-sans text-base text-foreground/50">
+          {/* Demo credentials */}
+          <div className="mt-10 p-4 bg-surface border border-border/60 rounded-lg">
+            <p className="text-xs font-sans uppercase tracking-widest text-foreground/40 mb-3">Demo Accounts</p>
+            <div className="space-y-1.5">
+              {[
+                { role: 'Admin',   email: 'admin@xyz.com' },
+                { role: 'Manager', email: 'manager@xyz.com' },
+                { role: 'Agent',   email: 'agent@xyz.com' },
+              ].map(({ role, email }) => (
+                <button
+                  key={email}
+                  type="button"
+                  onClick={() => { setEmail(email); setPassword('USA%100'); }}
+                  className="w-full flex items-center justify-between px-3 py-2 rounded hover:bg-background transition-colors group"
+                >
+                  <span className="text-xs uppercase tracking-widest text-foreground/40 group-hover:text-foreground/60 transition-colors">{role}</span>
+                  <span className="text-xs font-mono text-foreground/50 group-hover:text-primary transition-colors">{email}</span>
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-foreground/30 mt-2 pl-1">Password: <span className="font-mono">USA%100</span></p>
+          </div>
+
+          <div className="mt-8 pt-8 border-t border-border flex flex-col gap-4 font-sans text-base text-foreground/50">
             <p>
               {t.login.noAccount}{" "}
               <Link
@@ -208,15 +231,10 @@ export default function LoginPage() {
                 onChange={(e) => setLanguage(e.target.value as any)}
                 className="bg-transparent border-b border-border text-foreground outline-none text-base pb-1 cursor-pointer hover:border-primary transition-colors focus:border-primary"
               >
-                <option value="en" className="bg-surface">
-                  English
-                </option>
-                <option value="zh" className="bg-surface">
-                  中文 (Simplified)
-                </option>
-                <option value="es" className="bg-surface">
-                  Español
-                </option>
+                <option value="en" className="bg-surface">English</option>
+                <option value="zh-CN" className="bg-surface">中文（简体）</option>
+                <option value="zh-TW" className="bg-surface">中文（繁體）</option>
+                <option value="es" className="bg-surface">Español</option>
               </select>
             </div>
           </div>
