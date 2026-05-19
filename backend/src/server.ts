@@ -36,6 +36,9 @@ import oauthRoutes from './routes/oauth';
 import importExportRoutes from './routes/importExport';
 import paymentRoutes from './routes/payments';
 import integrationsRoutes from './routes/integrations';
+import tasksRoutes from './routes/tasks';
+import notificationsRoutes from './routes/notifications';
+import searchRoutes from './routes/search';
 
 import { authenticateToken } from './middleware/authMiddleware';
 
@@ -70,6 +73,10 @@ app.use('/api/marketing-tasks', authenticateToken, marketingTasksRoutes);
 app.use('/api/referrals', authenticateToken, referralsRoutes);
 app.use('/api/gifts', authenticateToken, giftsRoutes);
 app.use('/api/integrations', authenticateToken, integrationsRoutes);
+app.use('/api/tasks',         tasksRoutes);
+app.use('/api/notifications', notificationsRoutes);
+app.use('/api/search',        searchRoutes);
+app.use('/api/payments',      paymentRoutes);
 
 // Basic Health Check Route
 app.get('/api/health', async (req, res) => {

@@ -11,11 +11,18 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ─── Organization ─────────────────────────────────────────────────────────────
+
 model Organization {
   id                String   @id @default(uuid())
   name              String
   subscription      SubTier  @default(BASIC)
   preferredLanguage String   @default("en")
+  website           String?
+  address           String?
+  phone             String?
+  licenseNumber     String?
+  logoUrl           String?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
@@ -31,6 +38,10 @@ model Organization {
   marketingTasks MarketingTask[]
   referrals      Referral[]
   giftOrders     GiftOrder[]
+  tasks          Task[]
+  notes          Note[]
+  notifications  Notification[]
+  auditLogs      AuditLog[]
 }
 
 enum SubTier {
@@ -38,6 +49,8 @@ enum SubTier {
   PRO
   ENTERPRISE
 }
+
+// ─── User ─────────────────────────────────────────────────────────────────────
 
 model User {
   id                String       @id @default(uuid())
@@ -51,13 +64,25 @@ model User {
   preferredLanguage String       @default("en")
   orgId             String
   organization      Organization @relation(fields: [orgId], references: [id])
-  createdAt         DateTime     @default(now())
-  updatedAt         DateTime     @updatedAt
 
-  passwordResetToken   String?
-  passwordResetExpiry  DateTime?
-  emailVerifyToken     String?
-  emailVerified        Boolean  @default(false)
+  // Profile fields
+  avatarUrl     String?
+  phone         String?
+  title         String?
+  licenseNumber String?
+  linkedIn      String?
+  bio           String?
+  timezone      String   @default("America/New_York")
+
+  // Auth fields
+  passwordResetToken  String?
+  passwordResetExpiry DateTime?
+  emailVerifyToken    String?
+  emailVerified       Boolean  @default(false)
+  lastLoginAt         DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   clients        Client[]
   properties     Property[]
@@ -66,9 +91,13 @@ model User {
   offers         Offer[]
   appointments   Appointment[]
   marketingTasks MarketingTask[]
-  referralsGiven Referral[]    @relation("Referrer")
-  referralsRecv  Referral[]    @relation("Referee")
+  referralsGiven Referral[]      @relation("Referrer")
+  referralsRecv  Referral[]      @relation("Referee")
   giftOrders     GiftOrder[]
+  tasks          Task[]
+  notes          Note[]
+  notifications  Notification[]
+  auditLogs      AuditLog[]
 }
 
 enum Role {
@@ -89,6 +118,8 @@ enum Tier {
   ELITE
 }
 
+// ─── Client ──────────────────────────────────────────────────────────────────
+
 model Client {
   id             String       @id @default(uuid())
   firstName      String
@@ -97,26 +128,39 @@ model Client {
   phone          String?
   type           ClientType   @default(BUYER)
   status         ClientStatus @default(ACTIVE)
-  targetMoveDate DateTime?
   funnelStage    ClientFunnel @default(LEAD)
-  budget         String?
-  agentId        String
-  agent          User         @relation(fields: [agentId], references: [id])
-  orgId          String
-  organization   Organization @relation(fields: [orgId], references: [id])
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+
+  // Extended fields
+  source              String?   // Referral, Zillow, StreetEasy, Website, etc.
+  tags                String?   // Comma-separated tags
+  notes               String?   // Quick notes field
+  budget              String?
+  targetMoveDate      DateTime?
+  lastContactedAt     DateTime?
+  preferredContact    String?   // email | phone | text | any
+  referredBy          String?   // free-text referrer name
+  coAgentId           String?   // co-agent on same client
+
+  agentId      String
+  agent        User         @relation(fields: [agentId], references: [id])
+  orgId        String
+  organization Organization @relation(fields: [orgId], references: [id])
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
 
   transactions Transaction[]
   offers       Offer[]
   appointments Appointment[]
   giftOrders   GiftOrder[]
+  clientNotes  Note[]
 }
 
 enum ClientType {
   BUYER
   SELLER
   REFERRAL
+  RENTER
+  INVESTOR
 }
 
 enum ClientStatus {
@@ -124,6 +168,7 @@ enum ClientStatus {
   ACTIVE
   IN_CONTRACT
   CLOSED
+  ARCHIVED
 }
 
 enum ClientFunnel {
@@ -136,18 +181,35 @@ enum ClientFunnel {
   ARCHIVED
 }
 
+// ─── Property ────────────────────────────────────────────────────────────────
+
 model Property {
-  id           String       @id @default(uuid())
-  address      String
-  city         String
-  state        String
-  zip          String
-  price        Float
-  beds         Float
-  baths        Float
-  sqft         Int?
-  description  String?
-  status       PropStatus   @default(ACTIVE)
+  id          String     @id @default(uuid())
+  address     String
+  city        String
+  state       String
+  zip         String
+  price       Float
+  beds        Float
+  baths       Float
+  sqft        Int?
+  description String?
+  status      PropStatus @default(ACTIVE)
+
+  // Extended fields
+  propertyType    String?   // CONDO | COOP | TOWNHOUSE | SINGLE_FAMILY | MULTI_FAMILY | COMMERCIAL | LAND
+  neighborhood    String?
+  yearBuilt       Int?
+  mlsNumber       String?
+  hoaFee          Float?
+  parkingSpaces   Int?
+  virtualTourUrl  String?
+  featuredImage   String?
+  featured        Boolean  @default(false)
+  listingDate     DateTime?
+  expirationDate  DateTime?
+  daysOnMarket    Int?
+
   agentId      String
   agent        User         @relation(fields: [agentId], references: [id])
   orgId        String
@@ -155,10 +217,11 @@ model Property {
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 
-  transactions Transaction[]
-  offers       Offer[]
-  appointments Appointment[]
-  mediaAssets  MediaAsset[]
+  transactions  Transaction[]
+  offers        Offer[]
+  appointments  Appointment[]
+  mediaAssets   MediaAsset[]
+  propertyNotes Note[]
 }
 
 enum PropStatus {
@@ -166,25 +229,42 @@ enum PropStatus {
   ACTIVE
   IN_CONTRACT
   SOLD
+  WITHDRAWN
+  EXPIRED
 }
 
-model Transaction {
-  id           String       @id @default(uuid())
-  propertyId   String
-  property     Property     @relation(fields: [propertyId], references: [id])
-  clientId     String
-  client       Client       @relation(fields: [clientId], references: [id])
-  agentId      String
-  agent        User         @relation(fields: [agentId], references: [id])
-  orgId        String
-  organization Organization @relation(fields: [orgId], references: [id])
-  price        Float
-  status       TransStatus  @default(OFFER_REVIEW)
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+// ─── Transaction ─────────────────────────────────────────────────────────────
 
-  commissions Commission[]
-  documents   Document[]
+model Transaction {
+  id         String      @id @default(uuid())
+  propertyId String
+  property   Property    @relation(fields: [propertyId], references: [id])
+  clientId   String
+  client     Client      @relation(fields: [clientId], references: [id])
+  agentId    String
+  agent      User        @relation(fields: [agentId], references: [id])
+  orgId      String
+  organization Organization @relation(fields: [orgId], references: [id])
+  price      Float
+  status     TransStatus @default(OFFER_REVIEW)
+
+  // Timeline fields
+  acceptedPrice     Float?
+  contractDate      DateTime?
+  inspectionDate    DateTime?
+  boardPackageDate  DateTime?
+  clearToCloseDate  DateTime?
+  closingDate       DateTime?
+  contingencies     String?   // comma-separated: FINANCING, INSPECTION, APPRAISAL, SALE_OF_HOME
+  notes             String?
+  coAgentId         String?   // co-broker agent
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  commissions       Commission[]
+  documents         Document[]
+  transactionNotes  Note[]
 }
 
 enum TransStatus {
@@ -196,43 +276,52 @@ enum TransStatus {
   FALLEN_THROUGH
 }
 
+// ─── Commission ──────────────────────────────────────────────────────────────
+
 model Commission {
-  id               String       @id @default(uuid())
+  id               String      @id @default(uuid())
   transactionId    String
-  transaction      Transaction  @relation(fields: [transactionId], references: [id])
+  transaction      Transaction @relation(fields: [transactionId], references: [id])
   agentId          String
-  agent            User         @relation(fields: [agentId], references: [id])
+  agent            User        @relation(fields: [agentId], references: [id])
   orgId            String
   organization     Organization @relation(fields: [orgId], references: [id])
   grossAmount      Float
   firmSplitPercent Float
   overridePercent  Float
   netPayout        Float
-  status           CommStatus   @default(PENDING)
+  status           CommStatus  @default(PENDING)
   paidAt           DateTime?
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
+  notes            String?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
 }
 
 enum CommStatus {
   PENDING
   PAID
+  DISPUTED
 }
 
+// ─── Offer ───────────────────────────────────────────────────────────────────
+
 model Offer {
-  id           String       @id @default(uuid())
+  id           String      @id @default(uuid())
   amount       Float
-  status       OfferStatus  @default(PENDING)
+  status       OfferStatus @default(PENDING)
+  notes        String?
+  expiresAt    DateTime?
+  counterAmount Float?
   propertyId   String
-  property     Property     @relation(fields: [propertyId], references: [id])
+  property     Property    @relation(fields: [propertyId], references: [id])
   clientId     String
-  client       Client       @relation(fields: [clientId], references: [id])
+  client       Client      @relation(fields: [clientId], references: [id])
   agentId      String
-  agent        User         @relation(fields: [agentId], references: [id])
+  agent        User        @relation(fields: [agentId], references: [id])
   orgId        String
   organization Organization @relation(fields: [orgId], references: [id])
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
 }
 
 enum OfferStatus {
@@ -240,27 +329,51 @@ enum OfferStatus {
   ACCEPTED
   REJECTED
   COUNTER
+  WITHDRAWN
+  EXPIRED
 }
+
+// ─── Document ────────────────────────────────────────────────────────────────
 
 model Document {
-  id            String       @id @default(uuid())
+  id            String      @id @default(uuid())
   name          String
   url           String
-  type          String
-  transactionId String
-  transaction   Transaction  @relation(fields: [transactionId], references: [id])
+  type          String      // CONTRACT | INSPECTION | APPRAISAL | BOARD_PACKAGE | ID | DISCLOSURE | OTHER
+  sizeBytes     Int?
+  mimeType      String?
+  version       Int         @default(1)
+  signatureRequired Boolean @default(false)
+  signedAt      DateTime?
+
+  transactionId String?
+  transaction   Transaction? @relation(fields: [transactionId], references: [id])
+  uploadedById  String?
   orgId         String
   organization  Organization @relation(fields: [orgId], references: [id])
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 }
 
+// ─── Appointment ─────────────────────────────────────────────────────────────
+
 model Appointment {
-  id           String        @id @default(uuid())
-  title        String
-  date         DateTime
-  notes        String?
-  status       AppointStatus @default(SCHEDULED)
+  id     String        @id @default(uuid())
+  title  String
+  date   DateTime
+  endDate DateTime?
+  notes  String?
+  status AppointStatus @default(SCHEDULED)
+  type   ApptType      @default(MEETING)
+
+  // Extended fields
+  durationMin       Int?     @default(60)
+  location          String?
+  virtualLink       String?
+  confirmationSent  Boolean  @default(false)
+  reminderSent      Boolean  @default(false)
+  colorCode         String?
+
   agentId      String
   agent        User          @relation(fields: [agentId], references: [id])
   clientId     String?
@@ -275,28 +388,50 @@ model Appointment {
 
 enum AppointStatus {
   SCHEDULED
+  CONFIRMED
   COMPLETED
   CANCELLED
   NO_SHOW
+  RESCHEDULED
 }
 
-model MediaAsset {
-  id           String       @id @default(uuid())
-  url          String
-  type         String
-  propertyId   String
-  property     Property     @relation(fields: [propertyId], references: [id])
-  orgId        String
-  organization Organization @relation(fields: [orgId], references: [id])
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+enum ApptType {
+  SHOWING
+  MEETING
+  CALL
+  OPEN_HOUSE
+  INSPECTION
+  CLOSING
+  FOLLOW_UP
 }
+
+// ─── MediaAsset ──────────────────────────────────────────────────────────────
+
+model MediaAsset {
+  id         String   @id @default(uuid())
+  url        String
+  type       String   // image | video | floorplan | 3d_tour
+  caption    String?
+  sortOrder  Int      @default(0)
+  sizeBytes  Int?
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id])
+  orgId      String
+  organization Organization @relation(fields: [orgId], references: [id])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+// ─── MarketingTask ───────────────────────────────────────────────────────────
 
 model MarketingTask {
   id           String       @id @default(uuid())
   title        String
   content      String?
-  status       String       @default("PENDING")
+  status       String       @default("PENDING")  // PENDING | IN_PROGRESS | PUBLISHED | ARCHIVED
+  channel      String?      // email | instagram | facebook | linkedin | twitter
+  scheduledAt  DateTime?
+  publishedAt  DateTime?
   agentId      String
   agent        User         @relation(fields: [agentId], references: [id])
   orgId        String
@@ -305,23 +440,32 @@ model MarketingTask {
   updatedAt    DateTime     @updatedAt
 }
 
+// ─── Referral ────────────────────────────────────────────────────────────────
+
 model Referral {
   id           String       @id @default(uuid())
   referrerId   String
   referrer     User         @relation("Referrer", fields: [referrerId], references: [id])
   refereeId    String
   referee      User         @relation("Referee", fields: [refereeId], references: [id])
-  status       String       @default("PENDING")
+  status       String       @default("PENDING")  // PENDING | ACCEPTED | PAID
+  feeAmount    Float?
+  notes        String?
   orgId        String
   organization Organization @relation(fields: [orgId], references: [id])
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 }
 
+// ─── GiftOrder ───────────────────────────────────────────────────────────────
+
 model GiftOrder {
   id           String       @id @default(uuid())
   item         String
-  status       String       @default("ORDERED")
+  status       String       @default("ORDERED")  // ORDERED | SHIPPED | DELIVERED | CANCELLED
+  amount       Float?
+  trackingNum  String?
+  deliveredAt  DateTime?
   clientId     String
   client       Client       @relation(fields: [clientId], references: [id])
   agentId      String
@@ -332,3 +476,113 @@ model GiftOrder {
   updatedAt    DateTime     @updatedAt
 }
 
+// ─── Task (Agent To-Do) ───────────────────────────────────────────────────────
+
+model Task {
+  id          String     @id @default(uuid())
+  title       String
+  description String?
+  status      TaskStatus @default(PENDING)
+  priority    TaskPriority @default(MEDIUM)
+  dueDate     DateTime?
+  completedAt DateTime?
+
+  // Linked entities (all optional)
+  linkedClientId      String?
+  linkedPropertyId    String?
+  linkedTransactionId String?
+
+  agentId      String
+  agent        User         @relation(fields: [agentId], references: [id])
+  orgId        String
+  organization Organization @relation(fields: [orgId], references: [id])
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+// ─── Note ────────────────────────────────────────────────────────────────────
+
+model Note {
+  id      String @id @default(uuid())
+  content String
+  type    String @default("NOTE")  // NOTE | CALL | EMAIL | MEETING | SHOWING | SYSTEM
+
+  // Linked to one of these (all optional, at least one expected)
+  clientId      String?
+  client        Client?      @relation(fields: [clientId], references: [id])
+  propertyId    String?
+  property      Property?    @relation(fields: [propertyId], references: [id])
+  transactionId String?
+  transaction   Transaction? @relation(fields: [transactionId], references: [id])
+
+  authorId     String
+  author       User         @relation(fields: [authorId], references: [id])
+  orgId        String
+  organization Organization @relation(fields: [orgId], references: [id])
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+}
+
+// ─── Notification ─────────────────────────────────────────────────────────────
+
+model Notification {
+  id        String           @id @default(uuid())
+  type      NotifType
+  title     String
+  message   String
+  readAt    DateTime?
+  link      String?          // deep-link path e.g. /crm/123
+  metadata  String?          // JSON blob for extra context
+
+  userId       String
+  user         User         @relation(fields: [userId], references: [id])
+  orgId        String
+  organization Organization @relation(fields: [orgId], references: [id])
+  createdAt    DateTime     @default(now())
+}
+
+enum NotifType {
+  NEW_CLIENT
+  OFFER_RECEIVED
+  OFFER_ACCEPTED
+  OFFER_REJECTED
+  APPOINTMENT_REMINDER
+  TRANSACTION_UPDATE
+  COMMISSION_PAID
+  TASK_DUE
+  DOCUMENT_SIGNED
+  SYSTEM
+}
+
+// ─── AuditLog ────────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  action    String   // CREATE_CLIENT, UPDATE_ROLE, DELETE_PROPERTY, etc.
+  entity    String   // Client | User | Property | Transaction | etc.
+  entityId  String?
+  before    String?  // JSON snapshot before change
+  after     String?  // JSON snapshot after change
+  ipAddress String?
+  userAgent String?
+
+  userId       String
+  user         User         @relation(fields: [userId], references: [id])
+  orgId        String
+  organization Organization @relation(fields: [orgId], references: [id])
+  createdAt    DateTime     @default(now())
+}

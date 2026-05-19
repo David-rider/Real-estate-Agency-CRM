@@ -23,8 +23,21 @@ const notoSerifSC = Noto_Serif_SC({
 });
 
 export const metadata: Metadata = {
-  title: "Real Estate Brokerage Management Platform Agent CRM",
-  description: "Real Estate SaaS Platform",
+  title: "Real Estate CRM — Agent & Brokerage Management Platform",
+  description: "Professional real estate brokerage management platform. Manage clients, listings, transactions, commissions and marketing from one place.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "RE CRM",
+  },
+  formatDetection: { telephone: false },
+  other: {
+    "mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-capable": "yes",
+    "application-name": "RE CRM",
+    "msapplication-TileColor": "#B8977E",
+  },
 };
 
 export default function RootLayout({
