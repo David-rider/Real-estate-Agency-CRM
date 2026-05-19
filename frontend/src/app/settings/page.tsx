@@ -978,7 +978,7 @@ export default function SettingsPage() {
       <SectionHeader title="Appearance" description="Customize how the platform looks for you" />
       <SettingRow label="Theme" description="Affects your view only">
         <div className="flex gap-2">
-          {(["light", "dark", "midnight", "sepia"] as ThemeName[]).map((t) => (
+          {(["luxury", "modern", "youth", "chinese", "cyberpunk"] as ThemeName[]).map((t) => (
             <button key={t} onClick={() => setTheme(t)} className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors capitalize ${theme === t ? "bg-primary text-background border-primary" : "bg-surface border-border text-foreground/60 hover:border-primary/50"}`}>
               {t}
             </button>

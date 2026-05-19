@@ -176,7 +176,7 @@ export default function ReportsPage() {
                                 <XAxis dataKey="month" tick={{ fontSize: 11, fill: "var(--color-foreground)", opacity: 0.5 }} axisLine={false} tickLine={false} />
                                 <YAxis tick={{ fontSize: 11, fill: "var(--color-foreground)", opacity: 0.5 }} axisLine={false} tickLine={false}
                                     tickFormatter={v => `$${(v/1000).toFixed(0)}K`} />
-                                <Tooltip formatter={(v: number) => fmtCurrency(v)} contentStyle={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", borderRadius: 8, fontSize: 12 }} />
+                                <Tooltip formatter={(v) => fmtCurrency(Number(v))} contentStyle={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", borderRadius: 8, fontSize: 12 }} />
                                 <Line type="monotone" dataKey="commission" stroke="var(--color-primary)" strokeWidth={2.5} dot={{ fill: "var(--color-primary)", r: 4 }} />
                             </LineChart>
                         </ResponsiveContainer>
@@ -187,7 +187,7 @@ export default function ReportsPage() {
                         <h3 className="text-sm font-semibold text-foreground mb-4">Pipeline Distribution</h3>
                         <ResponsiveContainer width="100%" height={220}>
                             <PieChart>
-                                <Pie data={pipelineData} dataKey="count" nameKey="stage" cx="50%" cy="50%" outerRadius={80} label={({ stage, percent }) => `${stage} ${(percent * 100).toFixed(0)}%`}>
+                                <Pie data={pipelineData} dataKey="count" nameKey="stage" cx="50%" cy="50%" outerRadius={80} label={(props) => `${(props as unknown as Record<string,unknown>).stage} ${((Number(props.percent) || 0) * 100).toFixed(0)}%`}>
                                     {pipelineData.map((_, i) => (
                                         <Cell key={i} fill={COLORS[i % COLORS.length]} />
                                     ))}
@@ -242,7 +242,7 @@ export default function ReportsPage() {
                                 <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
                                 <XAxis dataKey="month" tick={{ fontSize: 11, fill: "var(--color-foreground)", opacity: 0.5 }} axisLine={false} tickLine={false} />
                                 <YAxis tick={{ fontSize: 11, fill: "var(--color-foreground)", opacity: 0.5 }} axisLine={false} tickLine={false} tickFormatter={v => `$${(v/1000).toFixed(0)}K`} />
-                                <Tooltip formatter={(v: number) => fmtCurrency(v)} contentStyle={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", borderRadius: 8, fontSize: 12 }} />
+                                <Tooltip formatter={(v) => fmtCurrency(Number(v))} contentStyle={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", borderRadius: 8, fontSize: 12 }} />
                                 <Legend />
                                 <Bar dataKey="commission" name="Gross" fill="var(--color-primary)" radius={[4,4,0,0]} />
                                 <Bar dataKey="commission" name="Net" fill="#10B981" radius={[4,4,0,0]} opacity={0.7} />
