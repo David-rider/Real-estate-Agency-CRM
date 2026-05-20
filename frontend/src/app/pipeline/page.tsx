@@ -39,7 +39,7 @@ const daysSince = (iso: string) => {
 export default function PipelinePage() {
     const toast = useToast();
     const { t } = useI18n();
-    const T = (t as any).pipeline;
+    const T = (t as any).pipeline ?? {};
 
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [loading, setLoading] = useState(true);
@@ -57,7 +57,7 @@ export default function PipelinePage() {
                 const d = await res.json();
                 setTransactions(d.data || []);
             }
-        } catch { toast.error(T?.loadError || "Failed to load pipeline"); }
+        } catch { toast.error(T.loadError); }
         finally { setLoading(false); }
     }, []);
 
@@ -91,14 +91,14 @@ export default function PipelinePage() {
             });
             if (!res.ok) {
                 setTransactions(prev => prev.map(t => t.id === tx.id ? { ...t, status: tx.status } : t));
-                toast.error(T?.updateFail || "Failed to update status");
+                toast.error(T.updateFail);
             } else {
-                const colLabel = T?.columns?.[targetStatus] || targetStatus;
-                toast.success(`${T?.movedTo || "Moved to"} ${colLabel}`);
+                const colLabel = T.columns?.[targetStatus];
+                toast.success(`${T.movedTo} ${colLabel}`);
             }
         } catch {
             setTransactions(prev => prev.map(t => t.id === tx.id ? { ...t, status: tx.status } : t));
-            toast.error(T?.networkError || "Network error");
+            toast.error(T.networkError);
         }
         setDragging(null);
         setDragOver(null);
@@ -111,34 +111,32 @@ export default function PipelinePage() {
         return (
             <div className="flex items-center justify-center h-64 text-foreground/40 gap-3">
                 <div className="w-5 h-5 border-2 border-border border-t-primary rounded-full animate-spin" />
-                {T?.loading || "Loading pipeline..."}
+                {T.loading}
             </div>
         );
     }
 
-    const activeDealLabel = activeTxs.length !== 1
-        ? (T?.activeDeals || "active deals")
-        : (T?.activeDeal  || "active deal");
+    const activeDealLabel = activeTxs.length !== 1 ? T.activeDeals : T.activeDeal;
 
     return (
         <div className="flex flex-col h-full min-h-0">
             {/* Header */}
             <div className="flex items-start justify-between mb-5 flex-wrap gap-3">
                 <div>
-                    <h1 className="text-2xl font-bold text-foreground">{T?.title || "Deal Pipeline"}</h1>
+                    <h1 className="text-2xl font-bold text-foreground">{T.title}</h1>
                     <p className="text-sm text-foreground/50 mt-0.5">
-                        {activeTxs.length} {activeDealLabel} · {fmtPrice(totalValue)} {T?.subtitle || "total value"}
+                        {activeTxs.length} {activeDealLabel} · {fmtPrice(totalValue)} {T.subtitle}
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
                     <a href="/transactions"
                         className="px-3 py-2 bg-surface border border-border rounded-lg text-sm text-foreground/60 hover:bg-surface-hover transition-colors">
-                        {T?.listView || "List View"}
+                        {T.listView}
                     </a>
                     <a href="/transactions"
                         className="flex items-center gap-2 px-4 py-2 bg-primary text-background rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors">
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-                        {T?.newDeal || "New Deal"}
+                        {T.newDeal}
                     </a>
                 </div>
             </div>
@@ -146,7 +144,7 @@ export default function PipelinePage() {
             {/* Kanban board */}
             <div className="flex gap-4 overflow-x-auto pb-4 flex-1 min-h-0" style={{ scrollSnapType: "x mandatory" }}>
                 {COLUMN_KEYS.map(col => {
-                    const colLabel = T?.columns?.[col.key] || col.key;
+                    const colLabel = T.columns?.[col.key];
                     const colTxs = transactions.filter(t => t.status === col.key);
                     const colValue = colTxs.reduce((s, t) => s + t.price, 0);
                     const isOver = dragOver === col.key;
@@ -181,7 +179,7 @@ export default function PipelinePage() {
                                     <div className={`rounded-xl border-2 border-dashed p-6 text-center text-xs text-foreground/30 transition-colors ${
                                         isOver ? "border-primary/40 text-primary/50" : "border-border/50"
                                     }`}>
-                                        {T?.dropHere || "Drop deals here"}
+                                        {T.dropHere}
                                     </div>
                                 )}
                                 {colTxs.map(tx => (
@@ -220,7 +218,7 @@ export default function PipelinePage() {
 
                                         <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-border/50">
                                             <span className="text-[10px] text-foreground/30">
-                                                {daysSince(tx.createdAt)}{T?.daysInStage || "d in stage"}
+                                                {daysSince(tx.createdAt)}{T.daysInStage}
                                             </span>
                                             {tx.closingDate && (
                                                 <span className="text-[10px] text-foreground/40 flex items-center gap-1">
@@ -248,7 +246,7 @@ export default function PipelinePage() {
                     <div className="px-4 pt-4 pb-3 border-b border-border flex items-center justify-between">
                         <div className="flex items-center gap-2">
                             <span className="text-sm font-semibold text-foreground/60">
-                                {T?.columns?.FALLEN_THROUGH || "Fallen Through"}
+                                {T.columns?.FALLEN_THROUGH}
                             </span>
                             <span className="px-1.5 py-0.5 rounded-full text-xs font-bold bg-red-500/10 text-red-400">
                                 {transactions.filter(t => t.status === "FALLEN_THROUGH").length}
@@ -258,7 +256,7 @@ export default function PipelinePage() {
                     <div className="flex-1 overflow-y-auto p-3 space-y-2 min-h-[120px]">
                         {transactions.filter(t => t.status === "FALLEN_THROUGH").length === 0 && (
                             <div className="rounded-xl border-2 border-dashed border-border/30 p-4 text-center text-xs text-foreground/20">
-                                {T?.noFallen || "No fallen deals"}
+                                {T.noFallen}
                             </div>
                         )}
                         {transactions.filter(t => t.status === "FALLEN_THROUGH").map(tx => (
@@ -273,7 +271,7 @@ export default function PipelinePage() {
 
             {/* Mobile hint */}
             <div className="mt-2 text-xs text-foreground/30 text-center md:hidden">
-                {T?.mobileHint || "Drag cards between columns to update status"}
+                {T.mobileHint}
             </div>
         </div>
     );
