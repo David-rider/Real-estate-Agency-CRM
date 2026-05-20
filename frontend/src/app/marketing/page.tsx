@@ -169,13 +169,13 @@ export default function MarketingPage() {
 
             <div>
               <label className="block font-sans text-sm uppercase tracking-widest text-foreground/50 mb-3">
-                {t.marketing.contentType || "Content Type"}
+                {t.marketing.contentType}
               </label>
               <div className="grid grid-cols-3 gap-2">
                 {[
-                  { id: "LISTING", label: t.marketing.types?.listing || "Listing", locked: false },
-                  { id: "SOCIAL", label: t.marketing.types?.social || "Social", locked: !canSocialEmail },
-                  { id: "EMAIL", label: t.marketing.types?.email || "Email", locked: !canSocialEmail },
+                  { id: "LISTING", label: t.marketing.types?.listing, locked: false },
+                  { id: "SOCIAL", label: t.marketing.types?.social, locked: !canSocialEmail },
+                  { id: "EMAIL", label: t.marketing.types?.email, locked: !canSocialEmail },
                 ].map((type) => (
                   <button
                     key={type.id}
@@ -198,7 +198,7 @@ export default function MarketingPage() {
 
             <div>
               <label className="block font-sans text-sm uppercase tracking-widest text-foreground/50 mb-3 flex justify-between items-center">
-                {t.marketing.tone || "Tone of Voice"}
+                {t.marketing.tone}
                 {!canTone && (
                   <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded font-bold tracking-tighter">
                     ELITE
@@ -207,9 +207,9 @@ export default function MarketingPage() {
               </label>
               <div className={`grid grid-cols-3 gap-2 ${!canTone ? "opacity-40 grayscale pointer-events-none" : ""}`}>
                 {[
-                  { id: "professional", label: t.marketing.tonesElite?.professional || "Prof." },
-                  { id: "casual", label: t.marketing.tonesElite?.casual || "Casual" },
-                  { id: "enthusiastic", label: t.marketing.tonesElite?.enthusiastic || "Enth." },
+                  { id: "professional", label: t.marketing.tonesElite?.professional },
+                  { id: "casual", label: t.marketing.tonesElite?.casual },
+                  { id: "enthusiastic", label: t.marketing.tonesElite?.enthusiastic },
                 ].map((t) => (
                   <button
                     key={t.id}
@@ -314,14 +314,14 @@ export default function MarketingPage() {
                       className="text-sm uppercase tracking-widest text-primary hover:text-primary-hover font-bold transition-colors disabled:opacity-50 ring-1 ring-primary/30 px-3 py-1.5 rounded-md bg-primary/5"
                       disabled={generating || isStreaming}
                     >
-                      {t.marketing.copyLink || "Copy Share Link"}
+                      {t.marketing.copyLink}
                     </button>
                     <button
                       onClick={() => navigator.clipboard.writeText(fullContent)}
                       className="text-sm uppercase tracking-widest text-foreground/60 hover:text-foreground font-medium transition-colors disabled:opacity-50 px-3 py-1.5"
                       disabled={generating || isStreaming}
                     >
-                      {t.marketing.copy || "Copy Text"}
+                      {t.marketing.copy}
                     </button>
                   </div>
                 </div>

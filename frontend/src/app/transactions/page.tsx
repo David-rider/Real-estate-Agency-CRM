@@ -239,11 +239,10 @@ export default function TransactionsPage() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 pb-6 border-b border-border">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            {t.transactions.title || "Transactions & Offers"}
+            {t.transactions.title}
           </h1>
           <p className="text-foreground/50 mt-1 text-sm">
-            {t.transactions.subtitle ||
-              "Manage your active pipeline and track incoming offers."}
+            {t.transactions.subtitle}
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto shrink-0">

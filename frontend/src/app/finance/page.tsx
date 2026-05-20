@@ -114,11 +114,11 @@ export default function FinancePage() {
         );
       } else {
         const err = await res.json();
-        alert(err.error || "Failed to request payout");
+        alert(err.error || (t.finance as any).payoutFail || "Failed to request payout");
       }
     } catch (error) {
       console.error("Request Payout Error", error);
-      alert("Failed to request payout");
+      alert((t.finance as any).payoutFail || "Failed to request payout");
     } finally {
       setRequestingPayout(false);
     }
@@ -314,7 +314,7 @@ export default function FinancePage() {
                 ${metrics?.ytdGross?.toLocaleString() || 0}
               </p>
               <div className="pb-1.5 text-primary font-sans text-base font-semibold">
-                + {metrics?.topPercent || "TOP 10%"}
+                + {metrics?.topPercent || t.finance.topPercent}
               </div>
             </div>
           </div>
@@ -371,10 +371,10 @@ export default function FinancePage() {
         )}
         <div className="mb-8">
           <h2 className="font-sans text-2xl font-semibold text-foreground">
-            {t.finance.projectionsTitle || "Revenue Projection"}
+            {t.finance.projectionsTitle}
           </h2>
           <p className="font-sans text-base text-foreground/50 mt-1">
-            {t.finance.projectionsSubtitle || "Estimated income based on active listings & pending offers"}
+            {t.finance.projectionsSubtitle}
           </p>
         </div>
         <div className="h-[350px] w-full">
@@ -408,7 +408,7 @@ export default function FinancePage() {
                   fontSize: "12px",
                   fontWeight: "semibold"
                 }}
-                formatter={(value: any) => [`$${value.toLocaleString()}`, "Estimated Revenue"]}
+                formatter={(value: any) => [`$${value.toLocaleString()}`, (t.finance as any).estimatedRevenue ?? "Estimated Revenue"]}
               />
               <Area 
                 type="monotone" 

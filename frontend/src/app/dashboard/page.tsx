@@ -17,6 +17,7 @@ import React from "react";
 
 export default function DashboardPage() {
   const { t } = useI18n();
+  const D = t.dashboard as any;
 
   const [dashboardData, setDashboardData] = React.useState({
     activeListings: 0,
@@ -26,12 +27,7 @@ export default function DashboardPage() {
       { name: "Jan", deals: 0, commission: 0 },
       { name: "Feb", deals: 0, commission: 0 },
     ],
-    funnelData: [
-      { name: "Total Leads", value: 0 },
-      { name: "Active", value: 0 },
-      { name: "In Contract", value: 0 },
-      { name: "Closed", value: 0 },
-    ],
+    funnelData: [] as { name: string; value: number }[],
     ytdCommission: 0,
     actionItems: [] as any[],
   });
@@ -56,7 +52,18 @@ export default function DashboardPage() {
         return res.json();
       })
       .then((data) => {
-        setDashboardData(data);
+        // Inject translated funnel labels from the API numeric data
+        const fl = D.funnelLabels ?? {};
+        const labeled = Array.isArray(data.funnelData) ? data.funnelData.map((row: any, i: number) => ({
+          ...row,
+          name: [fl.totalLeads, fl.active, fl.inContract, fl.closed][i] ?? row.name,
+        })) : [
+          { name: fl.totalLeads ?? "Total Leads", value: 0 },
+          { name: fl.active     ?? "Active",       value: 0 },
+          { name: fl.inContract ?? "In Contract",  value: 0 },
+          { name: fl.closed     ?? "Closed",       value: 0 },
+        ];
+        setDashboardData({ ...data, funnelData: labeled });
         setLoading(false);
       })
       .catch((err) => {
@@ -193,7 +200,7 @@ export default function DashboardPage() {
         <div className="flex flex-col bg-surface border border-border rounded-xl p-5">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-base font-semibold text-foreground">
-              {t.dashboard.charts?.timeline || "Performance Timeline"}
+              {D.charts?.timeline}
             </h2>
             <select className="text-sm border border-border rounded-lg bg-background py-1 px-2 text-foreground/70 outline-none hover:border-foreground/30 transition-colors cursor-pointer appearance-none">
               <option>{t.dashboard.thisMonth}</option>
@@ -212,8 +219,8 @@ export default function DashboardPage() {
                 <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{ fill: "var(--foreground)", fontSize: 11, opacity: 0.4 }} />
                 <Tooltip cursor={{ fill: "var(--surface-hover)" }} contentStyle={{ borderRadius: "8px", backgroundColor: "var(--surface)", border: "1px solid var(--border)", color: "var(--foreground)", fontSize: "12px" }} />
                 <Legend wrapperStyle={{ fontSize: "11px" }} />
-                <Bar yAxisId="right" dataKey="deals" name={t.dashboard.charts?.dealsClosed || "Deals Closed"} fill="var(--primary)" barSize={24} opacity={0.3} radius={[4, 4, 0, 0]} />
-                <Area yAxisId="left" type="monotone" dataKey="commission" name={t.dashboard.charts?.netCommission || "Net Commission"} fill="var(--primary)" stroke="var(--primary)" opacity={0.5} />
+                <Bar yAxisId="right" dataKey="deals" name={D.charts?.dealsClosed} fill="var(--primary)" barSize={24} opacity={0.3} radius={[4, 4, 0, 0]} />
+                <Area yAxisId="left" type="monotone" dataKey="commission" name={D.charts?.netCommission} fill="var(--primary)" stroke="var(--primary)" opacity={0.5} />
               </ComposedChart>
             </ResponsiveContainer>
           </div>
@@ -222,7 +229,7 @@ export default function DashboardPage() {
         {/* Pipeline Funnel */}
         <div className="flex flex-col bg-surface border border-border rounded-xl p-5">
           <h2 className="text-base font-semibold text-foreground mb-4">
-            {t.dashboard.charts?.funnel || "Conversion Funnel"}
+            {D.charts?.funnel}
           </h2>
           <div className="h-72 w-full">
             <ResponsiveContainer width="100%" height="100%">

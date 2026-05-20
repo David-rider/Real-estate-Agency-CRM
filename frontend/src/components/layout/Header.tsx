@@ -341,7 +341,7 @@ export default function Header({ onMenuToggle }: HeaderProps) {
                             <div className="max-h-80 overflow-y-auto">
                                 {notifications.length === 0 ? (
                                     <div className="px-4 py-8 text-center text-sm text-foreground/40">
-                                        {(t as any).header?.noNotifications || "You're all caught up!"}
+                                        {(t as any).header?.noNotifications}
                                     </div>
                                 ) : notifications.map(n => (
                                     <div

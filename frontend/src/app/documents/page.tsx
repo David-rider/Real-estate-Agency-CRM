@@ -367,7 +367,7 @@ export default function DocumentsPage() {
                   {previewDoc.name}
                 </h2>
                 <p className="font-sans text-sm uppercase tracking-widest text-foreground/50 mt-1">
-                  {t.documents.preview?.title || "Document Preview"}
+                  {t.documents.preview?.title}
                 </p>
               </div>
               <div className="flex items-center gap-6">
@@ -377,7 +377,7 @@ export default function DocumentsPage() {
                   rel="noreferrer"
                   className="hidden sm:inline-block text-sm uppercase tracking-widest text-primary hover:text-primary-hover transition-colors"
                 >
-                  {t.documents.preview?.download || "Download Original"}
+                  {t.documents.preview?.download}
                 </a>
                 <button
                   onClick={() => setPreviewDoc(null)}

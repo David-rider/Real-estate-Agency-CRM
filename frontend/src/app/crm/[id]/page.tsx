@@ -131,7 +131,7 @@ export default function ClientProfilePage() {
   if (!client) {
     return (
       <div className="p-12 text-center text-foreground/50 font-sans">
-        Client not found.
+        {t.crm.timeline.clientNotFound ?? "Client not found."}
       </div>
     );
   }
@@ -144,7 +144,7 @@ export default function ClientProfilePage() {
           onClick={() => router.back()}
           className="text-sm uppercase tracking-widest text-foreground/50 hover:text-primary transition-colors flex items-center gap-2 w-fit"
         >
-          &larr; {t.crm.table.backToList || "Back to CRM"}
+          &larr; {t.crm.table.backToList}
         </button>
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
           <div>
@@ -165,13 +165,13 @@ export default function ClientProfilePage() {
               onClick={() => setShowEditModal(true)}
               className="flex-1 md:flex-none px-6 py-2.5 bg-primary text-background rounded-xl text-base font-semibold hover:bg-primary-hover transition-colors shadow-sm"
             >
-              {t.crm.timeline.editProfile || "Edit Profile"}
+              {t.crm.timeline.editProfile}
             </button>
             <button 
               onClick={() => setShowLogModal(true)}
               className="flex-1 md:flex-none px-6 py-2.5 bg-surface text-foreground ring-1 ring-border/50 rounded-xl text-base font-semibold hover:bg-background transition-colors shadow-sm"
             >
-              {t.crm.timeline.logActivity || "Log Activity"}
+              {t.crm.timeline.logActivity}
             </button>
           </div>
         </div>
@@ -182,12 +182,12 @@ export default function ClientProfilePage() {
         <div className="lg:col-span-4 space-y-8">
           <div className="bg-background ring-1 ring-border/50 rounded-2xl p-6 shadow-sm space-y-6">
             <h3 className="font-sans text-base font-bold uppercase tracking-widest text-foreground/40 border-b border-border/40 pb-4">
-              Contact Details
+              {t.crm.timeline.contactDetails}
             </h3>
             <div className="space-y-4">
               <div>
                 <label className="block text-xs uppercase tracking-widest text-foreground/30 font-bold mb-1">
-                  Email
+                  {t.crm.timeline.email}
                 </label>
                 <p className="font-sans text-base text-foreground/80 break-all">
                   {client.email || "N/A"}
@@ -195,7 +195,7 @@ export default function ClientProfilePage() {
               </div>
               <div>
                 <label className="block text-xs uppercase tracking-widest text-foreground/30 font-bold mb-1">
-                  Phone
+                  {t.crm.timeline.phone}
                 </label>
                 <p className="font-sans text-base text-foreground/80">
                   {client.phone || "N/A"}
@@ -203,7 +203,7 @@ export default function ClientProfilePage() {
               </div>
               <div>
                 <label className="block text-xs uppercase tracking-widest text-foreground/30 font-bold mb-1">
-                  Budget
+                  {t.crm.timeline.budget}
                 </label>
                 <p className="font-sans text-base text-foreground/80">
                   {client.budget ? `$${parseInt(client.budget).toLocaleString()}` : "N/A"}
@@ -216,16 +216,16 @@ export default function ClientProfilePage() {
         {/* Timeline Area */}
         <div className="lg:col-span-8 flex flex-col gap-6">
           <h2 className="font-sans text-2xl font-semibold text-foreground flex items-center gap-3">
-            Activity History
+            {t.crm.timeline.title}
             <span className="text-xs uppercase tracking-widest bg-primary/10 text-primary px-2 py-0.5 rounded">
-              Live
+              {t.crm.timeline.live}
             </span>
           </h2>
 
           <div className="relative border-l border-border/60 ml-3 space-y-12 pb-12">
             {timeline.length === 0 ? (
               <p className="pl-8 text-foreground/40 font-sans text-base italic">
-                No activity history found for this client.
+                {t.crm.timeline.noHistory}
               </p>
             ) : (
               timeline.map((event) => (
@@ -273,7 +273,7 @@ export default function ClientProfilePage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-300">
           <div className="bg-surface ring-1 ring-border shadow-2xl rounded-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
             <div className="p-6 border-b border-border/40 flex justify-between items-center">
-              <h3 className="font-sans text-xl font-bold">{(t.crm.timeline as any).modals?.editTitle || "Edit Profile"}</h3>
+              <h3 className="font-sans text-xl font-bold">{(t.crm.timeline as any).modals?.editTitle}</h3>
               <button 
                 onClick={() => setShowEditModal(false)}
                 className="text-foreground/40 hover:text-foreground transition-colors"
@@ -284,7 +284,7 @@ export default function ClientProfilePage() {
             <form onSubmit={handleUpdateProfile} className="p-6 space-y-6 overflow-y-auto">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs uppercase tracking-widest text-foreground/40 font-bold mb-2">First Name</label>
+                  <label className="block text-xs uppercase tracking-widest text-foreground/40 font-bold mb-2">{t.crm.modal.firstName}</label>
                   <input 
                     type="text" 
                     value={editForm.firstName || ""} 
@@ -293,7 +293,7 @@ export default function ClientProfilePage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs uppercase tracking-widest text-foreground/40 font-bold mb-2">Last Name</label>
+                  <label className="block text-xs uppercase tracking-widest text-foreground/40 font-bold mb-2">{t.crm.modal.lastName}</label>
                   <input 
                     type="text" 
                     value={editForm.lastName || ""} 
@@ -303,7 +303,7 @@ export default function ClientProfilePage() {
                 </div>
               </div>
               <div>
-                <label className="block text-xs uppercase tracking-widest text-foreground/40 font-bold mb-2">Email</label>
+                <label className="block text-xs uppercase tracking-widest text-foreground/40 font-bold mb-2">{t.crm.timeline.email}</label>
                 <input 
                   type="email" 
                   value={editForm.email || ""} 
@@ -312,7 +312,7 @@ export default function ClientProfilePage() {
                 />
               </div>
               <div>
-                <label className="block text-xs uppercase tracking-widest text-foreground/40 font-bold mb-2">Phone</label>
+                <label className="block text-xs uppercase tracking-widest text-foreground/40 font-bold mb-2">{t.crm.timeline.phone}</label>
                 <input 
                   type="text" 
                   value={editForm.phone || ""} 
@@ -322,7 +322,7 @@ export default function ClientProfilePage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs uppercase tracking-widest text-foreground/40 font-bold mb-2">Type</label>
+                  <label className="block text-xs uppercase tracking-widest text-foreground/40 font-bold mb-2">{t.crm.modal.type}</label>
                   <select 
                     value={editForm.type || "BUYER"} 
                     onChange={e => setEditForm({...editForm, type: e.target.value})}
@@ -334,7 +334,7 @@ export default function ClientProfilePage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs uppercase tracking-widest text-foreground/40 font-bold mb-2">Stage</label>
+                  <label className="block text-xs uppercase tracking-widest text-foreground/40 font-bold mb-2">{t.crm.modal.stage ?? "Stage"}</label>
                   <select 
                     value={editForm.funnelStage || "LEAD"} 
                     onChange={e => setEditForm({...editForm, funnelStage: e.target.value})}
@@ -351,18 +351,18 @@ export default function ClientProfilePage() {
               </div>
             </form>
             <div className="p-6 bg-surface border-t border-border/40 flex gap-4">
-              <button 
+              <button
                 onClick={() => setShowEditModal(false)}
                 className="flex-1 py-3 ring-1 ring-border/50 rounded-xl text-base font-semibold hover:bg-background transition-colors"
               >
-                Cancel
+                {(t.crm.timeline as any).modals?.cancel ?? "Cancel"}
               </button>
-              <button 
+              <button
                 onClick={handleUpdateProfile}
                 disabled={saving}
                 className="flex-1 py-3 bg-primary text-background rounded-xl text-base font-semibold hover:bg-primary-hover transition-colors disabled:opacity-50"
               >
-                {saving ? "Saving..." : "Save Changes"}
+                {saving ? ((t.crm.timeline as any).modals?.saving ?? "Saving...") : ((t.crm.timeline as any).modals?.saveChanges ?? "Save Changes")}
               </button>
             </div>
           </div>
@@ -374,7 +374,7 @@ export default function ClientProfilePage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-300">
           <div className="bg-surface ring-1 ring-border shadow-2xl rounded-2xl w-full max-w-lg flex flex-col">
             <div className="p-6 border-b border-border/40 flex justify-between items-center">
-              <h3 className="font-sans text-xl font-bold">{(t.crm.timeline as any).modals?.logTitle || "Log Activity"}</h3>
+              <h3 className="font-sans text-xl font-bold">{(t.crm.timeline as any).modals?.logTitle}</h3>
               <button 
                 onClick={() => setShowLogModal(false)}
                 className="text-foreground/40 hover:text-foreground transition-colors"
@@ -384,7 +384,7 @@ export default function ClientProfilePage() {
             </div>
             <form onSubmit={handleLogActivity} className="p-6 space-y-6">
               <div>
-                <label className="block text-xs uppercase tracking-widest text-foreground/40 font-bold mb-2">Activity Type</label>
+                <label className="block text-xs uppercase tracking-widest text-foreground/40 font-bold mb-2">{(t.crm.timeline as any).modals?.activityType ?? "Activity Type"}</label>
                 <div className="grid grid-cols-3 gap-2">
                   {["CALL", "MEETING", "NOTE"].map(type => (
                     <button
@@ -399,7 +399,7 @@ export default function ClientProfilePage() {
                 </div>
               </div>
               <div>
-                <label className="block text-xs uppercase tracking-widest text-foreground/40 font-bold mb-2">Subject</label>
+                <label className="block text-xs uppercase tracking-widest text-foreground/40 font-bold mb-2">{(t.crm.timeline as any).modals?.subject ?? "Subject"}</label>
                 <input 
                   type="text" 
                   value={logForm.subject} 
@@ -409,7 +409,7 @@ export default function ClientProfilePage() {
                 />
               </div>
               <div>
-                <label className="block text-xs uppercase tracking-widest text-foreground/40 font-bold mb-2">Details</label>
+                <label className="block text-xs uppercase tracking-widest text-foreground/40 font-bold mb-2">{(t.crm.timeline as any).modals?.details ?? "Details"}</label>
                 <textarea 
                   value={logForm.content} 
                   onChange={e => setLogForm({...logForm, content: e.target.value})}
@@ -419,19 +419,19 @@ export default function ClientProfilePage() {
                 />
               </div>
               <div className="flex gap-4 pt-4">
-                <button 
+                <button
                   type="button"
                   onClick={() => setShowLogModal(false)}
                   className="flex-1 py-3 ring-1 ring-border/50 rounded-xl text-base font-semibold hover:bg-background transition-colors"
                 >
-                  Cancel
+                  {(t.crm.timeline as any).modals?.cancel ?? "Cancel"}
                 </button>
-                <button 
+                <button
                   type="submit"
                   disabled={saving || !logForm.subject}
                   className="flex-1 py-3 bg-primary text-background rounded-xl text-base font-semibold hover:bg-primary-hover transition-colors disabled:opacity-50"
                 >
-                  {saving ? "Saving..." : "Log Activity"}
+                  {saving ? ((t.crm.timeline as any).modals?.saving ?? "Saving...") : ((t.crm.timeline as any).modals?.logActivityBtn ?? "Log Activity")}
                 </button>
               </div>
             </form>

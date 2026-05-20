@@ -412,7 +412,7 @@ export default function CRMPage() {
                     <option value="LEAD">{t.crm.modal.statusLead}</option>
                     <option value="ACTIVE">{t.crm.modal.statusActive}</option>
                     <option value="IN_CONTRACT">
-                      {t.crm.modal.statusInContract || "In-Contract"}
+                      {t.crm.modal.statusInContract}
                     </option>
                     <option value="CLOSED">{t.crm.modal.statusClosed}</option>
                   </select>
