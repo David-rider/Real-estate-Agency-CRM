@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "audit:i18n": "node scripts/i18n-audit.js"
   },
   "dependencies": {
     "@types/react-big-calendar": "^1.16.3",
