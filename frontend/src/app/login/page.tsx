@@ -73,9 +73,6 @@ export default function LoginPage() {
         <div className="flex-1 flex flex-col justify-center px-8 lg:px-24 py-8">
           <div className="max-w-md w-full mx-auto">
             <div className="mb-12">
-              <div className="w-12 h-12 bg-surface border border-border flex items-center justify-center font-serif text-2xl text-primary mb-8">
-                C
-              </div>
               <h1 className="text-3xl font-bold text-foreground mb-4">
                 {t.login.welcomeBack}
               </h1>

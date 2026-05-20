@@ -657,6 +657,13 @@ export const translations = {
         densitySpacious: "Spacious",
         dateFormat: "Date Format",
         numberFormat: "Number Format",
+        themeNames: {
+          luxury:    "Luxury",
+          modern:    "Modern",
+          youth:     "Youth",
+          chinese:   "Chinese",
+          cyberpunk: "Cyberpunk",
+        },
       },
       integrations: {
         title: "Integrations",
@@ -1620,6 +1627,13 @@ export const translations = {
         densitySpacious: "宽松",
         dateFormat: "日期格式",
         numberFormat: "数字格式",
+        themeNames: {
+          luxury:    "奢华典雅",
+          modern:    "现代简约",
+          youth:     "青春活力",
+          chinese:   "国风雅韵",
+          cyberpunk: "赛博朋克",
+        },
       },
       integrations: {
         title: "第三方集成",
@@ -2583,6 +2597,13 @@ export const translations = {
         densitySpacious: "寬鬆",
         dateFormat: "日期格式",
         numberFormat: "數字格式",
+        themeNames: {
+          luxury:    "奢華典雅",
+          modern:    "現代簡約",
+          youth:     "青春活力",
+          chinese:   "國風雅韻",
+          cyberpunk: "賽博朋克",
+        },
       },
       integrations: {
         title: "第三方整合",
@@ -3455,7 +3476,27 @@ export const translations = {
       },
       appearance: {
         title: "Apariencia",
-        desc: "Elija su tema de color preferido para la plataforma.",
+        desc: "Personaliza el aspecto de la plataforma",
+        theme: "Tema",
+        themeDesc: "Solo afecta tu vista",
+        sidebarPosition: "Posición del panel lateral",
+        sidebarPositionDesc: "Ubicación de la navegación",
+        sidebarLeft: "Izquierda (predeterminado)",
+        sidebarCollapsed: "Contraído",
+        density: "Densidad",
+        densityDesc: "Espaciado compacto o cómodo",
+        densityComfortable: "Cómodo",
+        densityCompact: "Compacto",
+        densitySpacious: "Espacioso",
+        dateFormat: "Formato de fecha",
+        numberFormat: "Formato de número",
+        themeNames: {
+          luxury:    "Lujo",
+          modern:    "Moderno",
+          youth:     "Juvenil",
+          chinese:   "Chino",
+          cyberpunk: "Ciberpunk",
+        },
       }
     },
     upgrade: {

@@ -605,7 +605,9 @@ export default function SettingsPage() {
         <SettingRow label={AP.theme ?? "Theme"} description={AP.themeDesc}>
           <div className="flex gap-2 flex-wrap">
             {(["luxury","modern","youth","chinese","cyberpunk"] as ThemeName[]).map((th) => (
-              <button key={th} onClick={() => setTheme(th)} className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors capitalize ${theme === th ? "bg-primary text-background border-primary" : "bg-surface border-border text-foreground/60 hover:border-primary/50"}`}>{th}</button>
+              <button key={th} onClick={() => setTheme(th)} className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${theme === th ? "bg-primary text-background border-primary" : "bg-surface border-border text-foreground/60 hover:border-primary/50"}`}>
+                {(AP.themeNames as any)?.[th] ?? th}
+              </button>
             ))}
           </div>
         </SettingRow>
