@@ -143,12 +143,13 @@ export default function Header({ onMenuToggle }: HeaderProps) {
         return d.toLocaleDateString();
     };
 
+    const themeNames = (t as any).settings?.appearance?.themeNames ?? {};
     const themes: { id: ThemeName; label: string; color: string }[] = [
-        { id: "luxury",    label: "Luxury",    color: "#B8977E" },
-        { id: "modern",    label: "Modern",    color: "#4F7DF3" },
-        { id: "youth",     label: "Youth",     color: "#7C5CFC" },
-        { id: "chinese",   label: "Chinese",   color: "#C43B38" },
-        { id: "cyberpunk", label: "Cyberpunk", color: "#00F0FF" },
+        { id: "luxury",    label: themeNames.luxury    ?? "Luxury",    color: "#B8977E" },
+        { id: "modern",    label: themeNames.modern    ?? "Modern",    color: "#4F7DF3" },
+        { id: "youth",     label: themeNames.youth     ?? "Youth",     color: "#7C5CFC" },
+        { id: "chinese",   label: themeNames.chinese   ?? "Chinese",   color: "#C43B38" },
+        { id: "cyberpunk", label: themeNames.cyberpunk ?? "Cyberpunk", color: "#00F0FF" },
     ];
 
     const totalResults = searchResults
