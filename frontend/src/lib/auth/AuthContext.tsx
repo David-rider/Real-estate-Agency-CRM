@@ -52,12 +52,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     useEffect(() => {
         if (isLoading) return;
 
-        const publicRoutes = ['/login', '/signup'];
+        const publicRoutes = ['/login', '/signup', '/forgot-password', '/reset-password', '/verify-email', '/public-listings'];
         // Route protection
         if (!token && !publicRoutes.includes(pathname)) {
             router.push('/login');
-        } else if (token && publicRoutes.includes(pathname)) {
-            router.push('/dashboard'); // or wherever they should go after login
+        } else if (token && (pathname === '/login' || pathname === '/signup')) {
+            router.push('/dashboard');
         }
     }, [token, pathname, isLoading, router]);
 
