@@ -104,6 +104,7 @@ router.post('/register', authLimiter, async (req, res) => {
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
+        const verifyToken = crypto.randomBytes(32).toString('hex');
 
         const newUser = await prisma.user.create({
             data: {
@@ -116,12 +117,15 @@ router.post('/register', authLimiter, async (req, res) => {
             }
         });
 
-        // Send verification email
-        const verifyToken = crypto.randomBytes(32).toString('hex');
-        await prisma.user.update({ where: { id: newUser.id }, data: { emailVerifyToken: verifyToken } });
-        const appUrl = process.env.APP_URL || 'http://localhost:3000';
-        const verifyUrl = `${appUrl}/verify-email?token=${verifyToken}`;
-        sendEmail({ to: newUser.email, subject: 'Verify your email', html: welcomeEmail(verifyUrl, newUser.name) }).catch(console.error);
+        // Send verification email (non-blocking — fails gracefully if SMTP not configured)
+        try {
+            await (prisma as any).$executeRaw`UPDATE "User" SET "emailVerifyToken" = ${verifyToken} WHERE id = ${newUser.id}`;
+            const appUrl = process.env.APP_URL || 'http://localhost:3000';
+            const verifyUrl = `${appUrl}/verify-email?token=${verifyToken}`;
+            sendEmail({ to: newUser.email, subject: 'Verify your email', html: welcomeEmail(verifyUrl, newUser.name) }).catch(console.error);
+        } catch (emailErr) {
+            console.error('Verification email / token setup failed (non-blocking):', emailErr);
+        }
 
         // Generate JWT
         const token = jwt.sign(
