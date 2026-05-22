@@ -1,0 +1,46 @@
+services:
+  - type: web
+    name: recrm-api
+    env: node
+    region: oregon
+    plan: free
+    rootDir: backend
+    buildCommand: npm install && npx prisma generate
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false          # Set manually in Render dashboard
+      - key: JWT_SECRET
+        generateValue: true  # Render auto-generates a secure value
+      - key: APP_URL
+        sync: false          # Your Render service URL e.g. https://recrm-api.onrender.com
+      - key: FRONTEND_URL
+        sync: false          # Your Vercel URL e.g. https://your-app.vercel.app
+      # --- Email (optional — uses console.log fallback if not set) ---
+      - key: EMAIL_PROVIDER
+        value: resend        # resend | sendgrid | smtp
+      - key: EMAIL_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        sync: false          # e.g. noreply@yourdomain.com
+      - key: EMAIL_FROM_NAME
+        value: Real Estate CRM
+      # --- Google OAuth (optional) ---
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      # --- Stripe (optional) ---
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: STRIPE_PRICE_PRO_MONTHLY
+        sync: false
+      - key: STRIPE_PRICE_PRO_ANNUAL
+        sync: false
+      - key: STRIPE_PRICE_ELITE_MONTHLY
+        sync: false
+      - key: STRIPE_PRICE_ELITE_ANNUAL
+        sync: false
