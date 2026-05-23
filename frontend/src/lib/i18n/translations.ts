@@ -96,6 +96,12 @@ export const translations = {
       heroTitleP2: "Avant-Garde",
       heroSubtitle:
         "A workspace designed to match the caliber of the properties you represent.",
+      // Invite mode
+      inviteTitle: "Accept Invitation",
+      inviteSubtitle: "Set up your account to join your team.",
+      inviteBanner: "You have been invited to join a team. Complete your profile to get started.",
+      inviteJoining: "Joining invited organization",
+      acceptInvite: "Accept & Join",
     },
     forgotPassword: {
       title: "Forgot Password?",
@@ -1128,6 +1134,11 @@ export const translations = {
       heroTitleP1: "加入",
       heroTitleP2: "先锋派",
       heroSubtitle: "一个与您所代理的顶级房源相得益彰的专业工作空间。",
+      inviteTitle: "接受邀请",
+      inviteSubtitle: "完善您的账户信息以加入团队。",
+      inviteBanner: "您已被邀请加入团队，请完成注册以开始使用。",
+      inviteJoining: "正在加入受邀团队",
+      acceptInvite: "接受并加入",
     },
     forgotPassword: {
       title: "忘记密码？",
@@ -2152,6 +2163,11 @@ export const translations = {
       heroTitleP1: "加入",
       heroTitleP2: "先鋒派",
       heroSubtitle: "一個與您所代理的頂級房源相得益彰的專業工作空間。",
+      inviteTitle: "接受邀請",
+      inviteSubtitle: "完善您的帳戶信息以加入團隊。",
+      inviteBanner: "您已被邀請加入團隊，請完成注冊以開始使用。",
+      inviteJoining: "正在加入受邀團隊",
+      acceptInvite: "接受並加入",
     },
     forgotPassword: {
       title: "忘記密碼？",
@@ -3181,6 +3197,11 @@ export const translations = {
       heroTitleP2: "Vanguardia",
       heroSubtitle:
         "Un espacio de trabajo diseñado para igualar el calibre de las propiedades que representas.",
+      inviteTitle: "Aceptar Invitación",
+      inviteSubtitle: "Configure su cuenta para unirse al equipo.",
+      inviteBanner: "Has sido invitado a unirte a un equipo. Completa tu perfil para comenzar.",
+      inviteJoining: "Uniéndose a la organización invitada",
+      acceptInvite: "Aceptar y Unirse",
     },
     forgotPassword: {
       title: "¿Olvidó su contraseña?",

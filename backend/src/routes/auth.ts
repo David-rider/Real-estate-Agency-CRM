@@ -218,6 +218,73 @@ router.post('/reset-password', authLimiter, async (req, res) => {
     }
 });
 
+// POST /api/auth/accept-invite
+// Allows an invited user to create their account and join an existing org
+router.post('/accept-invite', authLimiter, async (req, res) => {
+    try {
+        const { name, email, password, orgId, role } = req.body;
+
+        if (!name || !email || !password || !orgId) {
+            return res.status(400).json({ error: 'Name, email, password, and orgId are required' });
+        }
+        if (password.length < 8) {
+            return res.status(400).json({ error: 'Password must be at least 8 characters' });
+        }
+
+        // Verify org exists
+        const org = await prisma.organization.findUnique({ where: { id: orgId } });
+        if (!org) {
+            return res.status(404).json({ error: 'Organization not found. Your invite link may be invalid.' });
+        }
+
+        // Check email not already taken
+        const existingUser = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
+        if (existingUser) {
+            return res.status(400).json({ error: 'An account with this email already exists. Please log in.' });
+        }
+
+        // Whitelist allowed roles (prevent privilege escalation)
+        const safeRoles = ['AGENT', 'MANAGER', 'ATTORNEY', 'LENDER', 'TITLECO', 'MARKETING', 'OFFICE_SUPPORT'];
+        const assignedRole = safeRoles.includes(role) ? role : 'AGENT';
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        const newUser = await prisma.user.create({
+            data: {
+                name,
+                email: email.toLowerCase(),
+                password: hashedPassword,
+                role: assignedRole as any,
+                tier: 'CORE',
+                orgId: org.id,
+            },
+        });
+
+        // Generate JWT
+        const token = jwt.sign(
+            { userId: newUser.id, role: newUser.role, tier: newUser.tier, orgId: newUser.orgId },
+            JWT_SECRET,
+            { expiresIn: '24h' }
+        );
+
+        res.status(201).json({
+            message: 'Account created successfully. Welcome to the team!',
+            token,
+            user: {
+                id: newUser.id,
+                name: newUser.name,
+                email: newUser.email,
+                role: newUser.role,
+                tier: newUser.tier,
+                orgId: newUser.orgId,
+            },
+        });
+    } catch (error) {
+        console.error('Accept invite error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 // POST /api/auth/verify-email
 router.post('/verify-email', async (req, res) => {
     try {

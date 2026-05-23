@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useI18n } from "@/lib/i18n/I18nContext";
 import { useAuth } from "@/lib/auth/AuthContext";
+import { useToast } from "@/components/ui/Toast";
 import {
   AreaChart,
   Area,
@@ -16,6 +17,7 @@ import {
 export default function FinancePage() {
   const { t } = useI18n();
   const { token } = useAuth();
+  const toast = useToast();
 
   const [metrics, setMetrics] = useState<any>(null);
   const [commissions, setCommissions] = useState<any[]>([]);
@@ -56,10 +58,9 @@ export default function FinancePage() {
           projRes.status === 401 ||
           projRes.status === 403
         ) {
-          alert(
-            t.finance?.sessionExpired ||
-              "Your session has expired. Please log out and log back in.",
-          );
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          window.location.href = "/login";
           return;
         }
 
@@ -114,11 +115,11 @@ export default function FinancePage() {
         );
       } else {
         const err = await res.json();
-        alert(err.error || (t.finance as any).payoutFail || "Failed to request payout");
+        toast.error(err.error || (t.finance as any).payoutFail || "Failed to request payout");
       }
     } catch (error) {
       console.error("Request Payout Error", error);
-      alert((t.finance as any).payoutFail || "Failed to request payout");
+      toast.error((t.finance as any).payoutFail || "Failed to request payout");
     } finally {
       setRequestingPayout(false);
     }

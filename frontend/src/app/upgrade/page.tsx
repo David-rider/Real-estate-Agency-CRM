@@ -3,12 +3,14 @@
 import React, { useState } from "react";
 import { useI18n } from "@/lib/i18n/I18nContext";
 import { useAuth } from "@/lib/auth/AuthContext";
+import { useToast } from "@/components/ui/Toast";
 import { useRouter } from "next/navigation";
 
 export default function UpgradePage() {
   const { t } = useI18n();
   const { user, updateUser } = useAuth();
   const router = useRouter();
+  const toast = useToast();
 
   const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">("annual");
   const [selectedPlan, setSelectedPlan] = useState<"CORE" | "PRO" | "ELITE">((user?.tier as "CORE" | "PRO" | "ELITE") || "CORE");
@@ -65,9 +67,9 @@ export default function UpgradePage() {
       }
       setCheckoutSuccess(true);
       
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert(t.upgrade.checkout.sessionExpired);
+      toast.error(err?.message || t.upgrade.checkout.sessionExpired || "Checkout failed. Please try again.");
     } finally {
       setIsProcessing(false);
     }

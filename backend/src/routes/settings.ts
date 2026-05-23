@@ -120,7 +120,8 @@ router.post('/invite', authorizeRole(['SUPERADMIN', 'FIRMADMIN', 'MANAGER']), as
 
         // Generate invite token (stored as emailVerifyToken on a placeholder user)
         const inviteToken = crypto.randomBytes(32).toString('hex');
-        const inviterName = req.user.name || req.user.email;
+        const inviter = await prisma.user.findUnique({ where: { id: req.user.userId }, select: { name: true, email: true } });
+        const inviterName = inviter?.name || inviter?.email || 'A team member';
         const org = await prisma.organization.findUnique({ where: { id: req.user.orgId } });
         const appUrl = process.env.APP_URL || 'http://localhost:3000';
 

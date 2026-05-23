@@ -40,10 +40,6 @@ export default function DashboardPage() {
     })
       .then((res) => {
         if (res.status === 401 || res.status === 403) {
-          alert(
-            t.dashboard?.sessionExpired ||
-              "Your session has expired. Please log out and log back in.",
-          );
           localStorage.removeItem("token");
           localStorage.removeItem("user");
           window.location.href = "/login";

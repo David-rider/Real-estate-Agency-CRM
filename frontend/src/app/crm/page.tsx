@@ -2,10 +2,12 @@
 
 import React from "react";
 import { useI18n } from "@/lib/i18n/I18nContext";
+import { useToast } from "@/components/ui/Toast";
 import Link from "next/link";
 
 export default function CRMPage() {
   const { t } = useI18n();
+  const toast = useToast();
 
   const [clients, setClients] = React.useState<any[]>([]);
   const [totalClients, setTotalClients] = React.useState(0);
@@ -35,10 +37,6 @@ export default function CRMPage() {
     })
       .then((res) => {
         if (res.status === 401 || res.status === 403) {
-          alert(
-            t.crm?.table?.sessionExpired ||
-              "Your session has expired. Please log out and log back in.",
-          );
           localStorage.removeItem("token");
           localStorage.removeItem("user");
           window.location.href = "/login";
@@ -106,7 +104,7 @@ export default function CRMPage() {
         fetchClients();
       } else {
         const errData = await res.json().catch(() => ({}));
-        alert(`Failed to add client: ${errData.error || res.statusText}`);
+        toast.error(errData.error || "Failed to add client. Please try again.");
       }
     } catch (error) {
       console.error(error);

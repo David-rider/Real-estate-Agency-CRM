@@ -2,9 +2,11 @@
 
 import React from "react";
 import { useI18n } from "@/lib/i18n/I18nContext";
+import { useToast } from "@/components/ui/Toast";
 
 export default function TransactionsPage() {
   const { t } = useI18n();
+  const toast = useToast();
 
   const [transactions, setTransactions] = React.useState<any[]>([]);
   const [offers, setOffers] = React.useState<any[]>([]);
@@ -123,7 +125,7 @@ export default function TransactionsPage() {
       }
     } catch (error) {
       console.error(error);
-      alert("Failed to add deal");
+      toast.error(t.transactions.offers?.modal?.title ? "Failed to create deal" : "Failed to create deal");
     } finally {
       setIsSubmitting(false);
     }
@@ -148,7 +150,7 @@ export default function TransactionsPage() {
       setOfferFormData({ propertyId: "", clientId: "", amount: "" });
     } catch (error) {
       console.error(error);
-      alert("Failed to add offer");
+      toast.error("Failed to record offer. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -195,13 +197,13 @@ export default function TransactionsPage() {
       });
       if (res.ok) {
         const data = await res.json();
-        alert(`Success: ${data.message} (Envelope ID: ${data.envelopeId})`);
+        toast.success(`${data.message} — Envelope: ${data.envelopeId}`);
       } else {
-        alert("Failed to send DocuSign envelope.");
+        toast.error("Failed to send DocuSign envelope.");
       }
     } catch (error) {
       console.error(error);
-      alert("Network error sending DocuSign.");
+      toast.error("Network error. Please try again.");
     } finally {
       setSendingDocuSign(null);
     }

@@ -2,9 +2,11 @@
 
 import React from "react";
 import { useI18n } from "@/lib/i18n/I18nContext";
+import { useToast } from "@/components/ui/Toast";
 
 export default function ListingsPage() {
   const { t } = useI18n();
+  const toast = useToast();
 
   const [properties, setProperties] = React.useState<any[]>([]);
   const [totalProperties, setTotalProperties] = React.useState(0);
@@ -141,13 +143,12 @@ export default function ListingsPage() {
         });
         fetchProperties();
       } else if (res.status === 401 || res.status === 403) {
-        alert(
-          t.listings?.modal?.sessionExpired ||
-            "Your session has expired. Please log out and log back in.",
-        );
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        window.location.href = "/login";
       } else {
         const errData = await res.json().catch(() => ({}));
-        alert(`Failed to add listing: ${errData.error || res.statusText}`);
+        toast.error(errData.error || "Failed to add listing. Please try again.");
       }
     } catch (error) {
       console.error(error);
@@ -158,7 +159,7 @@ export default function ListingsPage() {
 
   const handleZillowAutofill = async (e: React.MouseEvent) => {
     e.preventDefault();
-    if (!zillowId) return alert("Please enter a Zillow Property ID (zpid).");
+    if (!zillowId) { toast.error("Please enter a Zillow Property ID (zpid)."); return; }
     
     setIsZillowLoading(true);
     try {
@@ -184,11 +185,11 @@ export default function ListingsPage() {
         }));
         // alert(`Autofilled data from Zillow for property ID: ${zillowId}`);
       } else {
-        alert("Failed to fetch property details from Zillow.");
+        toast.error("Failed to fetch property details from Zillow.");
       }
     } catch (error) {
       console.error(error);
-      alert("Network error fetching Zillow data.");
+      toast.error("Network error. Could not reach Zillow integration.");
     } finally {
       setIsZillowLoading(false);
     }
@@ -218,7 +219,7 @@ export default function ListingsPage() {
       setMediaFormData({ url: "", type: "IMAGE" });
     } catch (error) {
       console.error(error);
-      alert("Failed to add media asset");
+      toast.error("Failed to add media asset. Please check the URL and try again.");
     } finally {
       setIsMediaSubmitting(false);
     }

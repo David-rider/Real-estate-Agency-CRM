@@ -128,7 +128,7 @@ function PropertyCard({ property, index }: { property: Property; index: number }
 
         <div className="mt-auto">
           <button
-            onClick={() => window.alert(`Request a showing for ${property.address} — feature coming soon!`)}
+            onClick={() => setShowContactModal(true)}
             disabled={property.status === 'IN_CONTRACT' || property.status === 'SOLD'}
             className="w-full py-2 bg-primary text-background text-xs uppercase tracking-widest font-semibold rounded-lg hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
           >
@@ -150,6 +150,7 @@ export default function PublicListingsPage() {
   const [minBeds, setMinBeds] = useState('Any');
   const [minBaths, setMinBaths] = useState('Any');
   const [showContactModal, setShowContactModal] = useState(false);
+  const [contactSuccess, setContactSuccess] = useState(false);
   const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
   useEffect(() => {
@@ -394,7 +395,7 @@ export default function PublicListingsPage() {
               <button onClick={() => setShowContactModal(false)} className="text-foreground/30 hover:text-foreground transition-colors text-lg ml-4">✕</button>
             </div>
             <form
-              onSubmit={e => { e.preventDefault(); setShowContactModal(false); window.alert('Thank you! An agent will be in touch shortly.'); }}
+              onSubmit={e => { e.preventDefault(); setShowContactModal(false); setContactSuccess(true); }}
               className="space-y-4"
             >
               <div className="space-y-1.5">
@@ -413,9 +414,17 @@ export default function PublicListingsPage() {
                 <label className="text-xs uppercase tracking-widest text-foreground/50">Message</label>
                 <textarea rows={3} placeholder="I'm interested in..." className="w-full px-0 py-2.5 bg-transparent border-b border-border focus:border-primary outline-none transition-colors text-foreground text-sm resize-none" />
               </div>
-              <button type="submit" className="w-full py-3 bg-primary text-background text-sm uppercase tracking-widest font-semibold rounded-lg hover:opacity-90 transition mt-2">
-                Send Message →
-              </button>
+              {contactSuccess ? (
+                <div className="py-4 text-center">
+                  <div className="text-2xl mb-2">✓</div>
+                  <div className="text-sm font-semibold text-foreground">Thank you!</div>
+                  <div className="text-xs text-foreground/50 mt-1">An agent will be in touch shortly.</div>
+                </div>
+              ) : (
+                <button type="submit" className="w-full py-3 bg-primary text-background text-sm uppercase tracking-widest font-semibold rounded-lg hover:opacity-90 transition mt-2">
+                  Send Message →
+                </button>
+              )}
             </form>
           </div>
         </div>

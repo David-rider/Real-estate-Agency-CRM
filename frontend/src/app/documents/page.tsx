@@ -2,9 +2,11 @@
 
 import React from "react";
 import { useI18n } from "@/lib/i18n/I18nContext";
+import { useToast } from "@/components/ui/Toast";
 
 export default function DocumentsPage() {
   const { t } = useI18n();
+  const toast = useToast();
 
   const [documents, setDocuments] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -81,7 +83,7 @@ export default function DocumentsPage() {
         setFormData({ name: "", url: "", type: "CONTRACT", transactionId: "" });
         fetchDocuments();
       } else {
-        alert("Failed to upload document");
+        toast.error("Failed to upload document. Please try again.");
       }
     } catch (error) {
       console.error(error);

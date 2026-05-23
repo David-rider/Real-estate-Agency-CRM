@@ -2,15 +2,17 @@
 
 import React from "react";
 import { useI18n } from "@/lib/i18n/I18nContext";
+import { useToast } from "@/components/ui/Toast";
 import { Calendar, dateFnsLocalizer } from "react-big-calendar";
 import { format, parse, startOfWeek, getDay } from "date-fns";
 import { enUS, zhCN, es } from "date-fns/locale";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 
 const locales = {
-  en: enUS,
-  zh: zhCN,
-  es: es,
+  en:     enUS,
+  "zh-CN": zhCN,
+  "zh-TW": zhCN,   // date-fns only has zhCN; close enough for calendar headers
+  es:     es,
 };
 const localizer = dateFnsLocalizer({
   format,
@@ -22,6 +24,7 @@ const localizer = dateFnsLocalizer({
 
 export default function AppointmentsPage() {
   const { t, language } = useI18n();
+  const toast = useToast();
 
   const [appointments, setAppointments] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -111,8 +114,9 @@ export default function AppointmentsPage() {
           propertyId: "",
         });
         fetchAppointments();
+        toast.success(t.appointments.modal.save ?? "Meeting scheduled");
       } else {
-        alert(t.appointments.failSchedule ?? "Failed to schedule appointment");
+        toast.error(t.appointments.failSchedule ?? "Failed to schedule appointment");
       }
     } catch (error) {
       console.error(error);
@@ -123,10 +127,10 @@ export default function AppointmentsPage() {
 
   const handleSyncGoogle = async () => {
     setIsSyncingGoogle(true);
-    // Simulate background sync with Google API
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    // Placeholder: Google Calendar OAuth integration — coming soon
+    await new Promise(resolve => setTimeout(resolve, 1200));
     setIsSyncingGoogle(false);
-    alert(t.appointments.syncSuccess ?? "Appointments successfully synced to your Google Calendar!");
+    toast.info(t.appointments.syncSuccess ?? "Google Calendar sync is coming soon.");
   };
 
   const upcomingAppointments = appointments.filter(
@@ -221,10 +225,14 @@ export default function AppointmentsPage() {
   }));
 
   const handleSelectEvent = (event: any) => {
-    // You could open an edit modal here. For now we will just show details.
-    alert(
-      `${event.title}\nClient: ${event.raw.client?.firstName || "None"}\nProperty: ${event.raw.property?.address || "None"}\nNotes: ${event.raw.notes || "None"}`,
-    );
+    // Show a brief toast with appointment details; edit modal can be added later
+    const clientName = event.raw.client
+      ? `${event.raw.client.firstName} ${event.raw.client.lastName}`
+      : null;
+    const parts = [event.title];
+    if (clientName) parts.push(`Client: ${clientName}`);
+    if (event.raw.property?.address) parts.push(`Property: ${event.raw.property.address}`);
+    toast.info(parts.join(" · "));
   };
 
   return (
