@@ -58,7 +58,7 @@ app.use('/api/oauth', oauthRoutes);
 
 // Protected Routes
 app.use('/api/clients', authenticateToken, clientRoutes);
-app.use('/api/properties', authenticateToken, propertyRoutes);
+app.use('/api/properties', propertyRoutes); // Public /public route + self-managed auth via router.use(authenticateToken)
 app.use('/api/transactions', authenticateToken, transactionRoutes);
 app.use('/api/dashboard', authenticateToken, dashboardRoutes);
 app.use('/api/marketing', authenticateToken, marketingRoutes);

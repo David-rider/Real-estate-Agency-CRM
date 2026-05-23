@@ -4,7 +4,51 @@ import { authenticateToken, AuthRequest } from '../middleware/authMiddleware';
 
 const router = Router();
 
-// All property routes require auth
+// GET /api/properties/public — unauthenticated public listings showcase
+// Returns active properties across all orgs (for public listings portal)
+router.get('/public', async (_req, res) => {
+    try {
+        const properties = await prisma.property.findMany({
+            where: { status: 'ACTIVE' },
+            take: 24,
+            orderBy: { createdAt: 'desc' },
+            select: {
+                id:           true,
+                address:      true,
+                city:         true,
+                state:        true,
+                zip:          true,
+                price:        true,
+                beds:         true,
+                baths:        true,
+                sqft:         true,
+                status:       true,
+                mediaAssets:  { take: 1, orderBy: { sortOrder: 'asc' }, select: { url: true } },
+            },
+        });
+
+        const result = properties.map(p => ({
+            id:       p.id,
+            address:  p.address,
+            city:     p.city,
+            state:    p.state,
+            zip:      p.zip,
+            price:    p.price,
+            beds:     p.beds,
+            baths:    p.baths,
+            sqft:     p.sqft,
+            status:   p.status,
+            imageUrl: p.mediaAssets[0]?.url ?? null,
+        }));
+
+        res.json(result);
+    } catch (error) {
+        console.error('Public listings error:', error);
+        res.status(500).json({ error: 'Failed to fetch public listings' });
+    }
+});
+
+// All other property routes require auth
 router.use(authenticateToken);
 
 // GET /api/properties — paginated list with filters
