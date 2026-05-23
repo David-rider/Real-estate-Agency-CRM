@@ -72,7 +72,7 @@ function formatPrice(price: number) {
   return `$${price.toLocaleString()}`;
 }
 
-function PropertyCard({ property, index }: { property: Property; index: number }) {
+function PropertyCard({ property, index, onContact }: { property: Property; index: number; onContact: () => void }) {
   const imgSrc = property.imageUrl || UNSPLASH_IMAGES[index % UNSPLASH_IMAGES.length];
   const statusColor = STATUS_COLORS[property.status] || STATUS_COLORS.SOLD;
   const statusLabel = STATUS_LABELS[property.status] || property.status;
@@ -128,7 +128,7 @@ function PropertyCard({ property, index }: { property: Property; index: number }
 
         <div className="mt-auto">
           <button
-            onClick={() => setShowContactModal(true)}
+            onClick={onContact}
             disabled={property.status === 'IN_CONTRACT' || property.status === 'SOLD'}
             className="w-full py-2 bg-primary text-background text-xs uppercase tracking-widest font-semibold rounded-lg hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
           >
@@ -344,7 +344,7 @@ export default function PublicListingsPage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {filtered.map((p, i) => (
-              <PropertyCard key={p.id} property={p} index={i} />
+              <PropertyCard key={p.id} property={p} index={i} onContact={() => setShowContactModal(true)} />
             ))}
           </div>
         )}
@@ -392,7 +392,7 @@ export default function PublicListingsPage() {
                 <h2 className="text-lg font-bold text-foreground">Contact an Agent</h2>
                 <p className="text-foreground/50 text-sm mt-1">We&apos;ll get back to you within 24 hours.</p>
               </div>
-              <button onClick={() => setShowContactModal(false)} className="text-foreground/30 hover:text-foreground transition-colors text-lg ml-4">✕</button>
+              <button onClick={() => { setShowContactModal(false); setContactSuccess(false); }} className="text-foreground/30 hover:text-foreground transition-colors text-lg ml-4">✕</button>
             </div>
             <form
               onSubmit={e => { e.preventDefault(); setShowContactModal(false); setContactSuccess(true); }}
