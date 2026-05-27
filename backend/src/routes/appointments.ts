@@ -1,6 +1,7 @@
 import express from 'express';
 import { prisma } from '../server';
 import { AuthRequest } from '../middleware/authMiddleware';
+import { createNotification } from './notifications';
 
 const router = express.Router();
 
@@ -47,6 +48,15 @@ router.post('/', async (req: AuthRequest, res) => {
                 orgId
             }
         });
+
+        // Notify the agent about the new appointment
+        const apptDate = new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        await createNotification(
+            agentId, orgId, 'APPOINTMENT',
+            'Appointment Scheduled',
+            `"${title}" has been scheduled for ${apptDate}.`,
+            '/appointments'
+        );
 
         res.status(201).json(newAppointment);
     } catch (error) {

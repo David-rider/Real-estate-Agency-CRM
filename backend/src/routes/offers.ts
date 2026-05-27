@@ -1,6 +1,7 @@
 import express from 'express';
 import { prisma } from '../server';
 import { AuthRequest } from '../middleware/authMiddleware';
+import { createNotification } from './notifications';
 
 const router = express.Router();
 
@@ -44,6 +45,15 @@ router.post('/', async (req: AuthRequest, res) => {
                 status: 'PENDING'
             }
         });
+
+        // Notify the agent about the new offer
+        const property = await prisma.property.findUnique({ where: { id: propertyId }, select: { address: true } });
+        await createNotification(
+            agentId, orgId, 'OFFER',
+            'New Offer Submitted',
+            `A new offer of $${parseFloat(amount).toLocaleString()} has been submitted for ${property?.address || 'a property'}.`,
+            '/transactions'
+        );
 
         res.status(201).json(newOffer);
     } catch (error) {

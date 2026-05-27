@@ -21,7 +21,7 @@ router.get('/', async (req, res) => {
 router.post('/', async (req, res) => {
     try {
         const orgId = (req as any).user?.orgId;
-        const referrerId = (req as any).user?.id;
+        const referrerId = (req as any).user?.userId;
         const { refereeId, status } = req.body;
         const referral = await prisma.referral.create({
             data: { referrerId, refereeId, status: status || 'PENDING', orgId }

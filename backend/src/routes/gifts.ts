@@ -21,7 +21,7 @@ router.get('/', async (req, res) => {
 router.post('/', async (req, res) => {
     try {
         const orgId = (req as any).user?.orgId;
-        const agentId = (req as any).user?.id;
+        const agentId = (req as any).user?.userId;
         const { item, clientId, status } = req.body;
         const gift = await prisma.giftOrder.create({
             data: { item, clientId, agentId, status: status || 'ORDERED', orgId }
