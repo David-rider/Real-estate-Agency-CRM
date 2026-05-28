@@ -34,16 +34,7 @@ const nextConfig: NextConfig = {
     ];
   },
 
-  // Redirect bare root to dashboard
-  async redirects() {
-    return [
-      {
-        source:      "/",
-        destination: "/dashboard",
-        permanent:   false,
-      },
-    ];
-  },
+  // No root redirect — / now serves the public marketing landing page
 
   // Enable React strict mode for better dev warnings
   reactStrictMode: true,
