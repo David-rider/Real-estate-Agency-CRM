@@ -1,0 +1,26 @@
+# Local documentation — not synced to GitHub
+docs/
+
+# Dependencies
+node_modules/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Office temp files
+~$*
+
+# Local scripts
+read_excel.py
+read_xlsx_custom.py
+
+# Env files
+.env
+.env.local
+.env*.local
+
+# OS
+.DS_Store
+Thumbs.db
