@@ -64,7 +64,7 @@ router.patch('/:id', async (req: AuthRequest, res) => {
         if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
 
         const existing = await prisma.task.findFirst({
-            where: { id: req.params.id, agentId: req.user.userId },
+            where: { id: String(req.params.id), agentId: req.user.userId },
         });
         if (!existing) return res.status(404).json({ error: 'Task not found' });
 
@@ -78,7 +78,7 @@ router.patch('/:id', async (req: AuthRequest, res) => {
         if (status === 'COMPLETED')    data.completedAt = new Date();
         if (status === 'PENDING' || status === 'IN_PROGRESS') data.completedAt = null;
 
-        const updated = await prisma.task.update({ where: { id: req.params.id }, data });
+        const updated = await prisma.task.update({ where: { id: String(req.params.id) }, data });
         res.json(updated);
     } catch (error) {
         console.error(error);
@@ -92,11 +92,11 @@ router.delete('/:id', async (req: AuthRequest, res) => {
         if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
 
         const existing = await prisma.task.findFirst({
-            where: { id: req.params.id, agentId: req.user.userId },
+            where: { id: String(req.params.id), agentId: req.user.userId },
         });
         if (!existing) return res.status(404).json({ error: 'Task not found' });
 
-        await prisma.task.delete({ where: { id: req.params.id } });
+        await prisma.task.delete({ where: { id: String(req.params.id) } });
         res.json({ message: 'Task deleted' });
     } catch (error) {
         console.error(error);

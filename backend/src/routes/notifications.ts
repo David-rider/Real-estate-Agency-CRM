@@ -40,7 +40,7 @@ router.patch('/:id/read', async (req: AuthRequest, res) => {
         if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
 
         await prisma.notification.updateMany({
-            where: { id: req.params.id, userId: req.user.userId },
+            where: { id: String(req.params.id), userId: req.user.userId },
             data:  { readAt: new Date() },
         });
         res.json({ ok: true });

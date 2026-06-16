@@ -53,7 +53,7 @@ router.get('/:id', async (req: AuthRequest, res) => {
         if (!orgId) return res.status(401).json({ error: 'Unauthorized' });
 
         const transaction = await prisma.transaction.findFirst({
-            where: { id: req.params.id, orgId },
+            where: { id: String(req.params.id), orgId },
             include: {
                 client:      true,
                 property:    { include: { mediaAssets: { take: 1 } } },
@@ -114,7 +114,7 @@ router.patch('/:id', async (req: AuthRequest, res) => {
         if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
 
         const existing = await prisma.transaction.findFirst({
-            where: { id: req.params.id, orgId: req.user.orgId },
+            where: { id: String(req.params.id), orgId: req.user.orgId },
         });
         if (!existing) return res.status(404).json({ error: 'Transaction not found' });
 
@@ -137,7 +137,7 @@ router.patch('/:id', async (req: AuthRequest, res) => {
         if (data.acceptedPrice) data.acceptedPrice = parseFloat(data.acceptedPrice);
 
         const updated = await prisma.transaction.update({
-            where: { id: req.params.id },
+            where: { id: String(req.params.id) },
             data,
             include: {
                 client:   { select: { firstName: true, lastName: true } },

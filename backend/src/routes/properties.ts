@@ -107,7 +107,7 @@ router.get('/:id', async (req: AuthRequest, res) => {
         if (!orgId) return res.status(401).json({ error: 'Unauthorized' });
 
         const property = await prisma.property.findFirst({
-            where: { id: req.params.id, orgId },
+            where: { id: String(req.params.id), orgId },
             include: {
                 agent:        { select: { id: true, name: true, email: true, phone: true, avatarUrl: true } },
                 mediaAssets:  { orderBy: { sortOrder: 'asc' } },
@@ -182,7 +182,7 @@ router.patch('/:id', async (req: AuthRequest, res) => {
 
         // Verify ownership (agents can only edit own; managers can edit org)
         const existing = await prisma.property.findFirst({
-            where: { id: req.params.id, orgId: req.user.orgId },
+            where: { id: String(req.params.id), orgId: req.user.orgId },
         });
         if (!existing) return res.status(404).json({ error: 'Property not found' });
 
@@ -208,7 +208,7 @@ router.patch('/:id', async (req: AuthRequest, res) => {
         if (data.hoaFee)        data.hoaFee         = parseFloat(data.hoaFee);
         if (data.listingDate)   data.listingDate    = new Date(data.listingDate);
 
-        const updated = await prisma.property.update({ where: { id: req.params.id }, data });
+        const updated = await prisma.property.update({ where: { id: String(req.params.id) }, data });
         res.json(updated);
     } catch (error) {
         console.error(error);
@@ -222,7 +222,7 @@ router.delete('/:id', async (req: AuthRequest, res) => {
         if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
 
         const existing = await prisma.property.findFirst({
-            where: { id: req.params.id, orgId: req.user.orgId },
+            where: { id: String(req.params.id), orgId: req.user.orgId },
         });
         if (!existing) return res.status(404).json({ error: 'Property not found' });
 
@@ -231,7 +231,7 @@ router.delete('/:id', async (req: AuthRequest, res) => {
         if (!canDelete) return res.status(403).json({ error: 'Forbidden' });
 
         await prisma.property.update({
-            where: { id: req.params.id },
+            where: { id: String(req.params.id) },
             data:  { status: 'WITHDRAWN' },
         });
         res.json({ message: 'Property withdrawn' });

@@ -38,8 +38,13 @@ router.patch('/users/:id', authorizeRole(['SUPERADMIN', 'FIRMADMIN', 'MANAGER'])
             return res.status(403).json({ error: 'Insufficient permissions to assign this role' });
         }
 
+        const target = await prisma.user.findFirst({
+            where: { id: String(req.params.id), orgId: req.user.orgId },
+        });
+        if (!target) return res.status(404).json({ error: 'User not found in your organization' });
+
         const updated = await prisma.user.update({
-            where:  { id: req.params.id, orgId: req.user.orgId },
+            where:  { id: target.id },
             data:   { ...(role ? { role } : {}), ...(tier ? { tier } : {}) },
             select: { id: true, name: true, role: true, tier: true },
         });
@@ -55,8 +60,13 @@ router.put('/users/:id/role', authorizeRole(['SUPERADMIN', 'FIRMADMIN']), async 
     try {
         if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
         const { role, tier } = req.body;
+        const target = await prisma.user.findFirst({
+            where: { id: String(req.params.id), orgId: req.user.orgId },
+        });
+        if (!target) return res.status(404).json({ error: 'User not found in your organization' });
+
         const updated = await prisma.user.update({
-            where:  { id: req.params.id, orgId: req.user.orgId },
+            where:  { id: target.id },
             data:   { role, tier },
             select: { id: true, name: true, role: true, tier: true },
         });
@@ -73,19 +83,19 @@ router.delete('/users/:id', authorizeRole(['SUPERADMIN', 'FIRMADMIN']), async (r
         if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
 
         // Prevent self-deletion
-        if (req.params.id === req.user.userId) {
+        if (String(req.params.id) === req.user.userId) {
             return res.status(400).json({ error: 'Cannot deactivate your own account' });
         }
 
         const target = await prisma.user.findFirst({
-            where: { id: req.params.id, orgId: req.user.orgId },
+            where: { id: String(req.params.id), orgId: req.user.orgId },
         });
         if (!target) return res.status(404).json({ error: 'User not found' });
         if (target.role === 'SUPERADMIN') return res.status(403).json({ error: 'Cannot deactivate superadmin' });
 
         // Soft-delete: mark as OFFICE_SUPPORT with a special flag via password lock
         await prisma.user.update({
-            where: { id: req.params.id },
+            where: { id: String(req.params.id) },
             data:  { tier: 'CORE' }, // revoke elevated tier; frontend should show as inactive
         });
 

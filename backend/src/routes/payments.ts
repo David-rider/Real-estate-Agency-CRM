@@ -6,7 +6,7 @@ import { authenticateToken, AuthRequest } from '../middleware/authMiddleware';
 const router = express.Router();
 
 const stripe = process.env.STRIPE_SECRET_KEY
-    ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2023-10-16' })
+    ? new Stripe(process.env.STRIPE_SECRET_KEY)
     : null;
 
 const PLAN_PRICES: Record<string, string | undefined> = {
@@ -52,7 +52,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
     const sig = req.headers['stripe-signature'] as string;
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
-    let event: Stripe.Event;
+    let event: { type: string; data: { object: any } };
     try {
         if (webhookSecret) {
             event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
@@ -65,7 +65,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
     }
 
     if (event.type === 'checkout.session.completed') {
-        const session = event.data.object as Stripe.Checkout.Session;
+        const session = event.data.object;
         const userId = session.metadata?.userId || session.client_reference_id;
         const planId = session.metadata?.planId || '';
         const targetTier = planId.toUpperCase().includes('ELITE') ? 'ELITE' : 'PRO';
