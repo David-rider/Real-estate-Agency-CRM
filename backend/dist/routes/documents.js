@@ -4,9 +4,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
-const client_1 = require("@prisma/client");
+const server_1 = require("../server");
 const router = express_1.default.Router();
-const prisma = new client_1.PrismaClient();
 // GET /api/documents
 router.get('/', async (req, res) => {
     try {
@@ -14,7 +13,7 @@ router.get('/', async (req, res) => {
         const userId = req.user?.userId;
         if (!orgId || !userId)
             return res.status(401).json({ error: 'Unauthorized' });
-        const documents = await prisma.document.findMany({
+        const documents = await server_1.prisma.document.findMany({
             where: {
                 orgId,
                 transaction: {
@@ -37,7 +36,7 @@ router.post('/', async (req, res) => {
         if (!orgId)
             return res.status(401).json({ error: 'Unauthorized' });
         const { name, url, type, transactionId } = req.body;
-        const newDoc = await prisma.document.create({
+        const newDoc = await server_1.prisma.document.create({
             data: {
                 name,
                 url,

@@ -4,80 +4,101 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
+const stripe_1 = __importDefault(require("stripe"));
+const server_1 = require("../server");
 const authMiddleware_1 = require("../middleware/authMiddleware");
-const client_1 = require("@prisma/client");
 const router = express_1.default.Router();
-const prisma = new client_1.PrismaClient();
-// POST /api/payments/checkout
-// Simulate creating a payment intent and getting a client secret
+const stripe = process.env.STRIPE_SECRET_KEY
+    ? new stripe_1.default(process.env.STRIPE_SECRET_KEY)
+    : null;
+const PLAN_PRICES = {
+    PRO_MONTHLY: process.env.STRIPE_PRICE_PRO_MONTHLY,
+    PRO_ANNUAL: process.env.STRIPE_PRICE_PRO_ANNUAL,
+    ELITE_MONTHLY: process.env.STRIPE_PRICE_ELITE_MONTHLY,
+    ELITE_ANNUAL: process.env.STRIPE_PRICE_ELITE_ANNUAL,
+};
+// POST /api/payments/checkout — create Stripe Checkout Session
 router.post('/checkout', authMiddleware_1.authenticateToken, async (req, res) => {
     try {
-        const { planId, paymentMethod } = req.body;
-        if (!planId || !paymentMethod) {
-            return res.status(400).json({ error: 'Plan ID and payment method are required' });
-        }
-        // Simulate network delay for third party API
-        await new Promise(r => setTimeout(r, 1500));
-        let amountForPlan = 0;
-        switch (planId) {
-            case 'PRO_MONTHLY':
-                amountForPlan = 3900;
-                break;
-            case 'PRO_ANNUAL':
-                amountForPlan = 39000;
-                break;
-            case 'ELITE_MONTHLY':
-                amountForPlan = 7900;
-                break;
-            case 'ELITE_ANNUAL':
-                amountForPlan = 79000;
-                break;
-            default:
-                return res.status(400).json({ error: 'Invalid plan ID' });
-        }
-        // Simulate returning a payment intent or order ID
-        const fakePaymentIntentId = `pi_${paymentMethod}_${Date.now()}_${Math.random().toString(36).substring(7)}`;
-        res.json({
-            clientSecret: `${fakePaymentIntentId}_secret`,
-            paymentIntentId: fakePaymentIntentId,
-            amount: amountForPlan,
-            currency: 'usd'
+        if (!stripe)
+            return res.status(503).json({ error: 'Payment service not configured. Set STRIPE_SECRET_KEY.' });
+        if (!req.user)
+            return res.status(401).json({ error: 'Unauthorized' });
+        const { planId } = req.body;
+        const priceId = PLAN_PRICES[planId];
+        if (!priceId)
+            return res.status(400).json({ error: 'Invalid plan ID' });
+        const appUrl = process.env.APP_URL || 'http://localhost:3000';
+        const session = await stripe.checkout.sessions.create({
+            mode: 'subscription',
+            payment_method_types: ['card'],
+            line_items: [{ price: priceId, quantity: 1 }],
+            success_url: `${appUrl}/upgrade?success=true&session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `${appUrl}/upgrade?canceled=true`,
+            client_reference_id: req.user.userId,
+            metadata: { planId, userId: req.user.userId },
         });
+        res.json({ sessionId: session.id, url: session.url });
     }
     catch (error) {
-        console.error('Checkout error:', error);
-        res.status(500).json({ error: 'Internal server error processing checkout' });
+        console.error('Stripe checkout error:', error);
+        res.status(500).json({ error: error.message || 'Checkout failed' });
     }
 });
-// POST /api/payments/confirm
-// Simulate confirming payment success and upgrading the user's tier
-router.post('/confirm', authMiddleware_1.authenticateToken, async (req, res) => {
+// POST /api/payments/webhook — Stripe webhook handler
+router.post('/webhook', express_1.default.raw({ type: 'application/json' }), async (req, res) => {
+    if (!stripe)
+        return res.status(503).json({ error: 'Payment service not configured' });
+    const sig = req.headers['stripe-signature'];
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    let event;
     try {
-        const { paymentIntentId, planId } = req.body;
-        if (!paymentIntentId || !planId) {
-            return res.status(400).json({ error: 'Payment Intent ID and plan ID are required' });
+        if (webhookSecret) {
+            event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
         }
-        // Simulate processing delay
-        await new Promise(r => setTimeout(r, 2000));
-        // Determine target tier
+        else {
+            event = JSON.parse(req.body.toString());
+        }
+    }
+    catch (err) {
+        console.error('Webhook signature error:', err.message);
+        return res.status(400).json({ error: `Webhook Error: ${err.message}` });
+    }
+    if (event.type === 'checkout.session.completed') {
+        const session = event.data.object;
+        const userId = session.metadata?.userId || session.client_reference_id;
+        const planId = session.metadata?.planId || '';
         const targetTier = planId.toUpperCase().includes('ELITE') ? 'ELITE' : 'PRO';
-        // Update the user's tier in the DB
-        const updatedUser = await prisma.user.update({
-            where: { id: req.user.userId },
-            data: { tier: targetTier }
+        if (userId) {
+            await server_1.prisma.user.update({ where: { id: userId }, data: { tier: targetTier } });
+            console.log(`User ${userId} upgraded to ${targetTier}`);
+        }
+    }
+    res.json({ received: true });
+});
+// GET /api/payments/portal — Stripe Customer Portal
+router.get('/portal', authMiddleware_1.authenticateToken, async (req, res) => {
+    try {
+        if (!stripe)
+            return res.status(503).json({ error: 'Payment service not configured' });
+        if (!req.user)
+            return res.status(401).json({ error: 'Unauthorized' });
+        const appUrl = process.env.APP_URL || 'http://localhost:3000';
+        // Find or create Stripe customer
+        const user = await server_1.prisma.user.findUnique({ where: { id: req.user.userId } });
+        if (!user)
+            return res.status(404).json({ error: 'User not found' });
+        const customers = await stripe.customers.list({ email: user.email, limit: 1 });
+        const customer = customers.data[0] || await stripe.customers.create({ email: user.email, name: user.name });
+        const portalSession = await stripe.billingPortal.sessions.create({
+            customer: customer.id,
+            return_url: `${appUrl}/settings`,
         });
-        res.json({
-            message: 'Payment confirmed successfully',
-            status: 'succeeded',
-            subscriptionDetails: {
-                tier: updatedUser.tier,
-                validUntil: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString()
-            }
-        });
+        res.json({ url: portalSession.url });
     }
     catch (error) {
-        console.error('Payment confirmation error:', error);
-        res.status(500).json({ error: 'Internal server error confirming payment' });
+        console.error('Portal error:', error);
+        res.status(500).json({ error: error.message || 'Failed to create portal session' });
     }
 });
 exports.default = router;

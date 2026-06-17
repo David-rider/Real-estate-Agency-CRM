@@ -6,8 +6,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+const crypto_1 = __importDefault(require("crypto"));
 const client_1 = require("@prisma/client");
 const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
+const email_1 = require("../lib/email");
 const authLimiter = (0, express_rate_limit_1.default)({
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 10, // Limit each IP to 10 requests per 15 minutes
@@ -88,6 +90,7 @@ router.post('/register', authLimiter, async (req, res) => {
             return res.status(403).json({ error: 'Organization exists. Please request an invite to join.' });
         }
         const hashedPassword = await bcryptjs_1.default.hash(password, 10);
+        const verifyToken = crypto_1.default.randomBytes(32).toString('hex');
         const newUser = await prisma.user.create({
             data: {
                 name,
@@ -98,6 +101,16 @@ router.post('/register', authLimiter, async (req, res) => {
                 orgId: org.id
             }
         });
+        // Send verification email (non-blocking — fails gracefully if SMTP not configured)
+        try {
+            await prisma.$executeRaw `UPDATE "User" SET "emailVerifyToken" = ${verifyToken} WHERE id = ${newUser.id}`;
+            const appUrl = process.env.APP_URL || 'http://localhost:3000';
+            const verifyUrl = `${appUrl}/verify-email?token=${verifyToken}`;
+            (0, email_1.sendEmail)({ to: newUser.email, subject: 'Verify your email', html: (0, email_1.welcomeEmail)(verifyUrl, newUser.name) }).catch(console.error);
+        }
+        catch (emailErr) {
+            console.error('Verification email / token setup failed (non-blocking):', emailErr);
+        }
         // Generate JWT
         const token = jsonwebtoken_1.default.sign({ userId: newUser.id, role: newUser.role, tier: newUser.tier, orgId: newUser.orgId }, JWT_SECRET, { expiresIn: '24h' });
         res.status(201).json({
@@ -115,6 +128,142 @@ router.post('/register', authLimiter, async (req, res) => {
     }
     catch (error) {
         console.error('Registration error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+// POST /api/auth/forgot-password
+router.post('/forgot-password', authLimiter, async (req, res) => {
+    try {
+        const { email } = req.body;
+        if (!email)
+            return res.status(400).json({ error: 'Email is required' });
+        const user = await prisma.user.findUnique({ where: { email } });
+        // Always respond 200 to prevent email enumeration
+        if (!user)
+            return res.status(200).json({ message: 'If that email exists, a reset link has been sent.' });
+        const token = crypto_1.default.randomBytes(32).toString('hex');
+        const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+        await prisma.user.update({
+            where: { email },
+            data: { passwordResetToken: token, passwordResetExpiry: expiresAt }
+        });
+        const appUrl = process.env.APP_URL || 'http://localhost:3000';
+        const resetUrl = `${appUrl}/reset-password?token=${token}`;
+        await (0, email_1.sendEmail)({
+            to: email,
+            subject: 'Reset your password',
+            html: (0, email_1.passwordResetEmail)(resetUrl, user.name),
+            text: `Reset your password: ${resetUrl}`
+        });
+        res.status(200).json({ message: 'If that email exists, a reset link has been sent.' });
+    }
+    catch (error) {
+        console.error('Forgot password error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+// POST /api/auth/reset-password
+router.post('/reset-password', authLimiter, async (req, res) => {
+    try {
+        const { token, password } = req.body;
+        if (!token || !password)
+            return res.status(400).json({ error: 'Token and password are required' });
+        if (password.length < 8)
+            return res.status(400).json({ error: 'Password must be at least 8 characters' });
+        const user = await prisma.user.findFirst({
+            where: {
+                passwordResetToken: token,
+                passwordResetExpiry: { gt: new Date() }
+            }
+        });
+        if (!user)
+            return res.status(400).json({ error: 'Invalid or expired reset token' });
+        const hashedPassword = await bcryptjs_1.default.hash(password, 10);
+        await prisma.user.update({
+            where: { id: user.id },
+            data: { password: hashedPassword, passwordResetToken: null, passwordResetExpiry: null }
+        });
+        res.json({ message: 'Password reset successfully. You can now log in.' });
+    }
+    catch (error) {
+        console.error('Reset password error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+// POST /api/auth/accept-invite
+// Allows an invited user to create their account and join an existing org
+router.post('/accept-invite', authLimiter, async (req, res) => {
+    try {
+        const { name, email, password, orgId, role } = req.body;
+        if (!name || !email || !password || !orgId) {
+            return res.status(400).json({ error: 'Name, email, password, and orgId are required' });
+        }
+        if (password.length < 8) {
+            return res.status(400).json({ error: 'Password must be at least 8 characters' });
+        }
+        // Verify org exists
+        const org = await prisma.organization.findUnique({ where: { id: orgId } });
+        if (!org) {
+            return res.status(404).json({ error: 'Organization not found. Your invite link may be invalid.' });
+        }
+        // Check email not already taken
+        const existingUser = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
+        if (existingUser) {
+            return res.status(400).json({ error: 'An account with this email already exists. Please log in.' });
+        }
+        // Whitelist allowed roles (prevent privilege escalation)
+        const safeRoles = ['AGENT', 'MANAGER', 'ATTORNEY', 'LENDER', 'TITLECO', 'MARKETING', 'OFFICE_SUPPORT'];
+        const assignedRole = safeRoles.includes(role) ? role : 'AGENT';
+        const hashedPassword = await bcryptjs_1.default.hash(password, 10);
+        const newUser = await prisma.user.create({
+            data: {
+                name,
+                email: email.toLowerCase(),
+                password: hashedPassword,
+                role: assignedRole,
+                tier: 'CORE',
+                orgId: org.id,
+            },
+        });
+        // Generate JWT
+        const token = jsonwebtoken_1.default.sign({ userId: newUser.id, role: newUser.role, tier: newUser.tier, orgId: newUser.orgId }, JWT_SECRET, { expiresIn: '24h' });
+        res.status(201).json({
+            message: 'Account created successfully. Welcome to the team!',
+            token,
+            user: {
+                id: newUser.id,
+                name: newUser.name,
+                email: newUser.email,
+                role: newUser.role,
+                tier: newUser.tier,
+                orgId: newUser.orgId,
+            },
+        });
+    }
+    catch (error) {
+        console.error('Accept invite error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+// POST /api/auth/verify-email
+router.post('/verify-email', async (req, res) => {
+    try {
+        const { token } = req.body;
+        if (!token)
+            return res.status(400).json({ error: 'Token is required' });
+        const user = await prisma.user.findFirst({
+            where: { emailVerifyToken: token }
+        });
+        if (!user)
+            return res.status(400).json({ error: 'Invalid verification token' });
+        await prisma.user.update({
+            where: { id: user.id },
+            data: { emailVerified: true, emailVerifyToken: null }
+        });
+        res.json({ message: 'Email verified successfully. You can now log in.' });
+    }
+    catch (error) {
+        console.error('Verify email error:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });

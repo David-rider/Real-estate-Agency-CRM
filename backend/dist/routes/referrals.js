@@ -4,14 +4,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
-const client_1 = require("@prisma/client");
+const server_1 = require("../server");
 const router = express_1.default.Router();
-const prisma = new client_1.PrismaClient();
 // Get all referrals for an org
 router.get('/', async (req, res) => {
     try {
         const orgId = req.user?.orgId;
-        const referrals = await prisma.referral.findMany({
+        const referrals = await server_1.prisma.referral.findMany({
             where: { orgId },
             include: { referrer: true, referee: true }
         });
@@ -25,9 +24,9 @@ router.get('/', async (req, res) => {
 router.post('/', async (req, res) => {
     try {
         const orgId = req.user?.orgId;
-        const referrerId = req.user?.id;
+        const referrerId = req.user?.userId;
         const { refereeId, status } = req.body;
-        const referral = await prisma.referral.create({
+        const referral = await server_1.prisma.referral.create({
             data: { referrerId, refereeId, status: status || 'PENDING', orgId }
         });
         res.status(201).json(referral);

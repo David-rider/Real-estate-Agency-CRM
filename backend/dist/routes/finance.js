@@ -4,10 +4,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
-const client_1 = require("@prisma/client");
+const server_1 = require("../server");
 const authMiddleware_1 = require("../middleware/authMiddleware");
 const router = express_1.default.Router();
-const prisma = new client_1.PrismaClient();
 // GET /api/finance/metrics
 // Gets the high-level YTD metrics and firm leaderboard for the current user
 router.get('/metrics', async (req, res) => {
@@ -20,7 +19,7 @@ router.get('/metrics', async (req, res) => {
         // 1. Calculate YTD Gross Written and Net Payout for the current user
         const currentYear = new Date().getFullYear();
         const startOfYear = new Date(currentYear, 0, 1);
-        const userCommissions = await prisma.commission.findMany({
+        const userCommissions = await server_1.prisma.commission.findMany({
             where: {
                 agentId: userId,
                 orgId: orgId,
@@ -34,7 +33,7 @@ router.get('/metrics', async (req, res) => {
         const ytdNet = userCommissions.reduce((sum, comm) => sum + comm.netPayout, 0);
         // 2. Fetch Firm Leaderboard (Mocking ranks based on DB gross amounts)
         // Group commissions by agentId
-        const allCommissions = await prisma.commission.findMany({
+        const allCommissions = await server_1.prisma.commission.findMany({
             where: {
                 orgId: orgId,
                 status: 'PAID',
@@ -90,7 +89,7 @@ router.get('/commissions', (0, authMiddleware_1.requireTier)('PRO'), async (req,
             return res.status(401).json({ error: 'Unauthorized' });
         }
         const [commissions, total] = await Promise.all([
-            prisma.commission.findMany({
+            server_1.prisma.commission.findMany({
                 where: { agentId: userId, orgId: orgId },
                 include: {
                     transaction: {
@@ -103,7 +102,7 @@ router.get('/commissions', (0, authMiddleware_1.requireTier)('PRO'), async (req,
                 skip,
                 take: limit,
             }),
-            prisma.commission.count({ where: { agentId: userId, orgId: orgId } })
+            server_1.prisma.commission.count({ where: { agentId: userId, orgId: orgId } })
         ]);
         res.json({
             data: commissions,
@@ -128,7 +127,7 @@ router.post('/commissions/:id/payout', async (req, res) => {
         if (!userId || !orgId) {
             return res.status(401).json({ error: 'Unauthorized' });
         }
-        const commission = await prisma.commission.findUnique({
+        const commission = await server_1.prisma.commission.findUnique({
             where: { id: commId }
         });
         if (!commission || commission.agentId !== userId || commission.orgId !== orgId) {
@@ -137,7 +136,7 @@ router.post('/commissions/:id/payout', async (req, res) => {
         if (commission.status === 'PAID') {
             return res.status(400).json({ error: 'Commission is already paid' });
         }
-        const updated = await prisma.commission.update({
+        const updated = await server_1.prisma.commission.update({
             where: { id: commId },
             data: {
                 status: 'PAID',
@@ -162,14 +161,14 @@ router.get('/projections', (0, authMiddleware_1.requireTier)('ELITE'), async (re
         }
         // Fetch pending offers and active listings
         const [pendingOffers, activeListings] = await Promise.all([
-            prisma.offer.findMany({
+            server_1.prisma.offer.findMany({
                 where: {
                     agentId: userId,
                     orgId: orgId,
                     status: { in: ['PENDING', 'COUNTER'] }
                 }
             }),
-            prisma.property.findMany({
+            server_1.prisma.property.findMany({
                 where: {
                     agentId: userId,
                     orgId: orgId,

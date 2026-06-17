@@ -4,9 +4,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
-const client_1 = require("@prisma/client");
+const server_1 = require("../server");
 const router = express_1.default.Router();
-const prisma = new client_1.PrismaClient();
 // Get all media assets for an org (optionally filtered by propertyId)
 router.get('/', async (req, res) => {
     try {
@@ -16,7 +15,7 @@ router.get('/', async (req, res) => {
         if (propertyId) {
             whereClause.propertyId = propertyId;
         }
-        const media = await prisma.mediaAsset.findMany({
+        const media = await server_1.prisma.mediaAsset.findMany({
             where: whereClause
         });
         res.json(media);
@@ -30,7 +29,7 @@ router.post('/', async (req, res) => {
     try {
         const orgId = req.user?.orgId;
         const { url, type, propertyId } = req.body;
-        const media = await prisma.mediaAsset.create({
+        const media = await server_1.prisma.mediaAsset.create({
             data: { url, type, propertyId, orgId }
         });
         res.status(201).json(media);

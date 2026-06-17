@@ -1,44 +1,43 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
-const client_1 = require("@prisma/client");
+const server_1 = require("../server");
 const router = (0, express_1.Router)();
-const prisma = new client_1.PrismaClient();
 router.get('/', async (req, res) => {
     try {
         const orgId = req.user?.orgId;
         if (!orgId)
             return res.status(401).json({ error: 'Unauthorized' });
         // 1. Active Listings Count
-        const activeListings = await prisma.property.count({
+        const activeListings = await server_1.prisma.property.count({
             where: { status: 'ACTIVE', orgId }
         });
         // 2. New Leads Count
-        const newLeads = await prisma.client.count({
+        const newLeads = await server_1.prisma.client.count({
             where: { status: 'LEAD', orgId }
         });
         // 3. Pending Offers
-        const pendingOffers = await prisma.transaction.count({
+        const pendingOffers = await server_1.prisma.transaction.count({
             where: { status: 'OFFER_REVIEW', orgId }
         });
         // 4. Monthly Deals Pipeline Data
-        const allTransactions = await prisma.transaction.findMany({
+        const allTransactions = await server_1.prisma.transaction.findMany({
             where: { orgId },
             select: { createdAt: true }
         });
         const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
         const currentMonthIndex = new Date().getMonth();
         // Pipeline Conversion Funnel Data
-        const allClients = await prisma.client.count({ where: { orgId } });
+        const allClients = await server_1.prisma.client.count({ where: { orgId } });
         const funnelData = [
             { name: 'Total Leads', value: allClients },
             { name: 'Active', value: activeListings },
             { name: 'In Contract', value: pendingOffers },
-            { name: 'Closed', value: await prisma.transaction.count({ where: { status: 'CLOSED', orgId } }) }
+            { name: 'Closed', value: await server_1.prisma.transaction.count({ where: { status: 'CLOSED', orgId } }) }
         ];
         // 6-Month Timeline Data (Deals & Commissions)
         const currentYear = new Date().getFullYear();
-        const allCommissions = await prisma.commission.findMany({
+        const allCommissions = await server_1.prisma.commission.findMany({
             where: { orgId, status: 'PAID', paidAt: { gte: new Date(`${currentYear}-01-01`) } }
         });
         const chartData = [];
@@ -59,7 +58,7 @@ router.get('/', async (req, res) => {
         }
         const ytdCommission = allCommissions.reduce((sum, c) => sum + (c.netPayout || 0), 0);
         // 5. Action Items (Priority Tasks)
-        const pendingOffersList = await prisma.offer.findMany({
+        const pendingOffersList = await server_1.prisma.offer.findMany({
             where: { status: 'PENDING', orgId },
             include: { client: true, property: true },
             take: 3,
@@ -74,7 +73,7 @@ router.get('/', async (req, res) => {
         }));
         // Add gift orders as action items if space
         if (actionItems.length < 3) {
-            const pendingGifts = await prisma.giftOrder.findMany({
+            const pendingGifts = await server_1.prisma.giftOrder.findMany({
                 where: { status: 'ORDERED', orgId },
                 include: { client: true },
                 take: 3 - actionItems.length,

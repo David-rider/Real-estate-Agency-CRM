@@ -7,6 +7,8 @@ const express_1 = __importDefault(require("express"));
 const multer_1 = __importDefault(require("multer"));
 const sync_1 = require("csv-parse/sync");
 const client_1 = require("@prisma/client");
+const bcryptjs_1 = __importDefault(require("bcryptjs"));
+const crypto_1 = __importDefault(require("crypto"));
 const router = express_1.default.Router();
 const prisma = new client_1.PrismaClient();
 const upload = (0, multer_1.default)({ storage: multer_1.default.memoryStorage() });
@@ -62,11 +64,13 @@ router.post('/import', upload.single('file'), async (req, res) => {
                 continue;
             const existingUser = await prisma.user.findUnique({ where: { email } });
             if (!existingUser) {
-                // Determine random or default password for CSV imported users
+                // Hash a random secret so the account is locked until the user sets a
+                // real password via a password-reset flow.
+                const lockedPasswordHash = await bcryptjs_1.default.hash(crypto_1.default.randomBytes(32).toString('hex'), 10);
                 await prisma.user.create({
                     data: {
                         email,
-                        password: '', // satisfy any cached TS constraints
+                        password: lockedPasswordHash,
                         name: name || email.split('@')[0],
                         role: ['AGENT', 'MANAGER', 'FIRMADMIN', 'SUPERADMIN'].includes(role.toUpperCase()) ? role.toUpperCase() : 'AGENT',
                         tier: ['CORE', 'PRO', 'ELITE'].includes(tier.toUpperCase()) ? tier.toUpperCase() : 'CORE',

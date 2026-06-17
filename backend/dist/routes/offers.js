@@ -4,9 +4,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
-const client_1 = require("@prisma/client");
+const server_1 = require("../server");
+const notifications_1 = require("./notifications");
 const router = express_1.default.Router();
-const prisma = new client_1.PrismaClient();
 // GET /api/offers
 router.get('/', async (req, res) => {
     try {
@@ -14,7 +14,7 @@ router.get('/', async (req, res) => {
         const userId = req.user?.userId;
         if (!orgId || !userId)
             return res.status(401).json({ error: 'Unauthorized' });
-        const offers = await prisma.offer.findMany({
+        const offers = await server_1.prisma.offer.findMany({
             where: { orgId, agentId: userId },
             include: { property: true, client: true }
         });
@@ -33,7 +33,7 @@ router.post('/', async (req, res) => {
         if (!orgId || !agentId)
             return res.status(401).json({ error: 'Unauthorized' });
         const { amount, propertyId, clientId } = req.body;
-        const newOffer = await prisma.offer.create({
+        const newOffer = await server_1.prisma.offer.create({
             data: {
                 amount: parseFloat(amount),
                 propertyId,
@@ -43,6 +43,9 @@ router.post('/', async (req, res) => {
                 status: 'PENDING'
             }
         });
+        // Notify the agent about the new offer
+        const property = await server_1.prisma.property.findUnique({ where: { id: propertyId }, select: { address: true } });
+        await (0, notifications_1.createNotification)(agentId, orgId, 'OFFER', 'New Offer Submitted', `A new offer of $${parseFloat(amount).toLocaleString()} has been submitted for ${property?.address || 'a property'}.`, '/transactions');
         res.status(201).json(newOffer);
     }
     catch (error) {

@@ -4,9 +4,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
-const client_1 = require("@prisma/client");
+const server_1 = require("../server");
+const notifications_1 = require("./notifications");
 const router = express_1.default.Router();
-const prisma = new client_1.PrismaClient();
 // GET /api/appointments
 router.get('/', async (req, res) => {
     try {
@@ -14,7 +14,7 @@ router.get('/', async (req, res) => {
         const userId = req.user?.userId;
         if (!orgId || !userId)
             return res.status(401).json({ error: 'Unauthorized' });
-        const appointments = await prisma.appointment.findMany({
+        const appointments = await server_1.prisma.appointment.findMany({
             where: { orgId, agentId: userId },
             include: { client: true, property: true },
             orderBy: { date: 'asc' }
@@ -34,7 +34,7 @@ router.post('/', async (req, res) => {
         if (!orgId || !agentId)
             return res.status(401).json({ error: 'Unauthorized' });
         const { title, date, notes, status, clientId, propertyId } = req.body;
-        const newAppointment = await prisma.appointment.create({
+        const newAppointment = await server_1.prisma.appointment.create({
             data: {
                 title,
                 date: new Date(date),
@@ -46,6 +46,9 @@ router.post('/', async (req, res) => {
                 orgId
             }
         });
+        // Notify the agent about the new appointment
+        const apptDate = new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        await (0, notifications_1.createNotification)(agentId, orgId, 'APPOINTMENT', 'Appointment Scheduled', `"${title}" has been scheduled for ${apptDate}.`, '/appointments');
         res.status(201).json(newAppointment);
     }
     catch (error) {

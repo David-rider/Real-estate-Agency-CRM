@@ -9,6 +9,13 @@ const cors_1 = __importDefault(require("cors"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const client_1 = require("@prisma/client");
 dotenv_1.default.config();
+// Validate required environment variables
+const requiredEnvVars = ['DATABASE_URL', 'JWT_SECRET'];
+const missingEnvVars = requiredEnvVars.filter(v => !process.env[v]);
+if (missingEnvVars.length > 0) {
+    console.error(`FATAL: Missing required environment variables: ${missingEnvVars.join(', ')}`);
+    process.exit(1);
+}
 const app = (0, express_1.default)();
 exports.app = app;
 const prisma = new client_1.PrismaClient();
@@ -31,7 +38,11 @@ const referrals_1 = __importDefault(require("./routes/referrals"));
 const gifts_1 = __importDefault(require("./routes/gifts"));
 const oauth_1 = __importDefault(require("./routes/oauth"));
 const importExport_1 = __importDefault(require("./routes/importExport"));
+const payments_1 = __importDefault(require("./routes/payments"));
 const integrations_1 = __importDefault(require("./routes/integrations"));
+const tasks_1 = __importDefault(require("./routes/tasks"));
+const notifications_1 = __importDefault(require("./routes/notifications"));
+const search_1 = __importDefault(require("./routes/search"));
 const authMiddleware_1 = require("./middleware/authMiddleware");
 // Middleware
 const allowedOrigins = process.env.FRONTEND_URL ? process.env.FRONTEND_URL.split(',') : '*';
@@ -39,13 +50,15 @@ app.use((0, cors_1.default)({
     origin: allowedOrigins,
     credentials: true,
 }));
+// Stripe webhook needs raw body — must be before express.json()
+app.use('/api/payments/webhook', express_1.default.raw({ type: 'application/json' }));
 app.use(express_1.default.json());
 // Routes
 app.use('/api/auth', auth_1.default);
 app.use('/api/oauth', oauth_1.default);
 // Protected Routes
 app.use('/api/clients', authMiddleware_1.authenticateToken, clients_1.default);
-app.use('/api/properties', authMiddleware_1.authenticateToken, properties_1.default);
+app.use('/api/properties', properties_1.default); // Public /public route + self-managed auth via router.use(authenticateToken)
 app.use('/api/transactions', authMiddleware_1.authenticateToken, transactions_1.default);
 app.use('/api/dashboard', authMiddleware_1.authenticateToken, dashboard_1.default);
 app.use('/api/marketing', authMiddleware_1.authenticateToken, marketing_1.default);
@@ -60,11 +73,31 @@ app.use('/api/marketing-tasks', authMiddleware_1.authenticateToken, marketing_ta
 app.use('/api/referrals', authMiddleware_1.authenticateToken, referrals_1.default);
 app.use('/api/gifts', authMiddleware_1.authenticateToken, gifts_1.default);
 app.use('/api/integrations', authMiddleware_1.authenticateToken, integrations_1.default);
+app.use('/api/tasks', tasks_1.default);
+app.use('/api/notifications', notifications_1.default);
+app.use('/api/search', search_1.default);
+app.use('/api/payments', payments_1.default);
 // Basic Health Check Route
-app.get('/api/health', (req, res) => {
-    res.status(200).json({ status: 'ok', message: 'Real Estate Brokerage Management Platform Agent CRM API is running.', timestamp: new Date().toISOString() });
+app.get('/api/health', async (req, res) => {
+    try {
+        await prisma.$queryRaw `SELECT 1`;
+        res.status(200).json({ status: 'ok', db: 'connected', timestamp: new Date().toISOString() });
+    }
+    catch {
+        res.status(503).json({ status: 'error', db: 'disconnected', timestamp: new Date().toISOString() });
+    }
 });
 // Start Server
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+const server = app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT} [${process.env.NODE_ENV || 'development'}]`);
 });
+const shutdown = async (signal) => {
+    console.log(`${signal} received — shutting down gracefully`);
+    server.close(async () => {
+        await prisma.$disconnect();
+        console.log('Database disconnected. Bye.');
+        process.exit(0);
+    });
+};
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
