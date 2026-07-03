@@ -13,10 +13,11 @@ function SignupForm() {
   const searchParams = useSearchParams();
 
   // Invite params from email link: ?invite=TOKEN&email=...&org=ORGID&role=AGENT
+  const inviteToken  = searchParams.get("invite") ?? "";
   const inviteOrgId  = searchParams.get("org")    ?? "";
   const inviteEmail  = searchParams.get("email")  ?? "";
   const inviteRole   = searchParams.get("role")   ?? "AGENT";
-  const isInviteMode = !!inviteOrgId;
+  const isInviteMode = !!inviteToken;
 
   const [formData, setFormData] = useState({
     name:     "",
@@ -49,11 +50,10 @@ function SignupForm() {
           method:  "POST",
           headers: { "Content-Type": "application/json" },
           body:    JSON.stringify({
-            name:     formData.name,
-            email:    formData.email || inviteEmail,
-            password: formData.password,
-            orgId:    inviteOrgId,
-            role:     inviteRole,
+            name:        formData.name,
+            email:       formData.email || inviteEmail,
+            password:    formData.password,
+            inviteToken, // org membership & role are resolved server-side from this token
           }),
         });
       } else {

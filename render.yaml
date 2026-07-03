@@ -16,9 +16,9 @@ services:
       - key: JWT_SECRET
         generateValue: true  # Render auto-generates a secure value
       - key: APP_URL
-        sync: false          # Your Render service URL e.g. https://recrm-api.onrender.com
+        sync: false          # FRONTEND base URL (used in email links & Stripe redirects) e.g. https://real-estate-agency-crm.vercel.app
       - key: FRONTEND_URL
-        sync: false          # Your Vercel URL e.g. https://your-app.vercel.app
+        sync: false          # Your Vercel URL (CORS allowlist) e.g. https://real-estate-agency-crm.vercel.app
       # --- Email (optional — uses console.log fallback if not set) ---
       - key: EMAIL_PROVIDER
         value: resend        # resend | sendgrid | smtp

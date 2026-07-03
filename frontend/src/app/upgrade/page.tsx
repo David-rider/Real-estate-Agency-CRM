@@ -1,30 +1,68 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef, Suspense } from "react";
 import { useI18n } from "@/lib/i18n/I18nContext";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { useToast } from "@/components/ui/Toast";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
-export default function UpgradePage() {
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+
+function UpgradePageInner() {
   const { t } = useI18n();
-  const { user, updateUser } = useAuth();
+  const { user, login } = useAuth();
   const router = useRouter();
   const toast = useToast();
+  const searchParams = useSearchParams();
 
   const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">("annual");
   const [selectedPlan, setSelectedPlan] = useState<"CORE" | "PRO" | "ELITE">((user?.tier as "CORE" | "PRO" | "ELITE") || "CORE");
-  
+
   // Checkout Modal State
   const [showCheckout, setShowCheckout] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<"cc" | "paypal">("cc");
   const [isProcessing, setIsProcessing] = useState(false);
   const [checkoutSuccess, setCheckoutSuccess] = useState(false);
+  const handledReturn = useRef(false);
+
+  // Handle return from Stripe Checkout (?success=true / ?canceled=true)
+  useEffect(() => {
+    if (handledReturn.current) return;
+    if (searchParams.get("canceled") === "true") {
+      handledReturn.current = true;
+      toast.error(t.upgrade.checkout.sessionExpired || "Checkout was canceled.");
+      router.replace("/upgrade");
+      return;
+    }
+    if (searchParams.get("success") === "true") {
+      handledReturn.current = true;
+      // Payment completed — webhook has upgraded the DB tier, but our JWT still
+      // carries the old tier. Refresh the token so gated features unlock now.
+      const oldToken = localStorage.getItem("token");
+      if (!oldToken) return;
+      fetch(`${API}/api/auth/refresh`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${oldToken}` },
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.token && data.user) {
+            login(data.token, data.user);
+            setSelectedPlan(data.user.tier);
+          }
+          setCheckoutSuccess(true);
+          setShowCheckout(true);
+          router.replace("/upgrade");
+        })
+        .catch(console.error);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const handleSelectPlan = (plan: "CORE" | "PRO" | "ELITE") => {
     if (plan === user?.tier) return;
     if (plan === "CORE") return; // cannot downgrade to core from here
     setSelectedPlan(plan);
+    setCheckoutSuccess(false);
     setShowCheckout(true);
   };
 
@@ -32,6 +70,7 @@ export default function UpgradePage() {
   const currentPrice = billingCycle === "annual" ? (currentPlanObj as any).priceA : (currentPlanObj as any).priceM;
   const planIdToPurchase = `${selectedPlan}_${billingCycle.toUpperCase()}`;
 
+  // Create a Stripe Checkout Session and redirect to Stripe's hosted payment page
   const processPayment = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsProcessing(true);
@@ -40,37 +79,21 @@ export default function UpgradePage() {
       const token = localStorage.getItem("token");
       if (!token) throw new Error("No token");
 
-      // 1. Checkout (Get Intent)
-      const checkoutRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/payments/checkout`, {
+      const checkoutRes = await fetch(`${API}/api/payments/checkout`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ planId: planIdToPurchase, paymentMethod })
+        body: JSON.stringify({ planId: planIdToPurchase }),
       });
       const checkoutData = await checkoutRes.json();
 
       if (!checkoutRes.ok) throw new Error(checkoutData.error);
+      if (!checkoutData.url) throw new Error("Payment service did not return a checkout link.");
 
-      // 2. Confirm Payment & Upgrade
-      const confirmRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/payments/confirm`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ paymentIntentId: checkoutData.paymentIntentId, planId: planIdToPurchase })
-      });
-      const confirmData = await confirmRes.json();
-
-      if (!confirmRes.ok) throw new Error(confirmData.error);
-
-      // 3. Success - Update context
-      if (user) {
-        const updatedUser = { ...user, tier: confirmData.subscriptionDetails.tier };
-        updateUser(updatedUser);
-      }
-      setCheckoutSuccess(true);
-      
+      // Hand off to Stripe's secure hosted checkout
+      window.location.href = checkoutData.url;
     } catch (err: any) {
       console.error(err);
       toast.error(err?.message || t.upgrade.checkout.sessionExpired || "Checkout failed. Please try again.");
-    } finally {
       setIsProcessing(false);
     }
   };
@@ -201,7 +224,7 @@ export default function UpgradePage() {
         </div>
       </div>
 
-      {/* Checkout Modal Overlay */}
+      {/* Checkout Modal Overlay — success pane doubles as the post-Stripe return screen */}
       {showCheckout && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/90 backdrop-blur-md animate-in fade-in duration-300 p-4">
           <div className="bg-background rounded-3xl border border-border/40 w-full max-w-3xl shadow-2xl flex flex-col md:flex-row overflow-hidden ring-1 ring-black/5">
@@ -224,62 +247,33 @@ export default function UpgradePage() {
             {/* Right Payment Pane */}
             <div className="w-full md:w-3/5 p-8 md:p-10 relative bg-background">
                {!checkoutSuccess ? (
-                 <>
-                   {/* Method Toggle */}
-                   <div className="flex gap-6 border-b border-border/40 mb-8 pb-5">
-                     <label className={`cursor-pointer flex items-center gap-2 text-base font-semibold transition-colors ${paymentMethod === 'cc' ? 'text-primary' : 'text-foreground/40 hover:text-foreground/80'}`}>
-                       <input type="radio" name="method" value="cc" checked={paymentMethod === 'cc'} onChange={() => setPaymentMethod('cc')} className="hidden" />
-                       Credit Card
-                     </label>
-                     <label className={`cursor-pointer flex items-center gap-2 text-base font-semibold transition-colors ${paymentMethod === 'paypal' ? 'text-primary' : 'text-foreground/40 hover:text-foreground/80'}`}>
-                       <input type="radio" name="method" value="paypal" checked={paymentMethod === 'paypal'} onChange={() => setPaymentMethod('paypal')} className="hidden" />
-                       PayPal
-                     </label>
+                 <form onSubmit={processPayment} className="h-full flex flex-col justify-center">
+                   <div className="flex flex-col items-center text-center py-8 animate-in fade-in">
+                     <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
+                       <svg className="w-8 h-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                       </svg>
+                     </div>
+                     <h4 className="font-sans font-bold text-xl mb-3">Secure Checkout</h4>
+                     <p className="text-foreground/60 text-base font-medium leading-relaxed max-w-xs mx-auto mb-2">
+                       You will be redirected to <span className="font-semibold text-foreground">Stripe</span> to complete your payment securely.
+                     </p>
+                     <p className="text-foreground/40 text-sm">
+                       We never see or store your card details.
+                     </p>
                    </div>
 
-                   <form onSubmit={processPayment} className="space-y-6">
-                     {paymentMethod === 'cc' ? (
-                       <div className="space-y-6 animate-in fade-in">
-                          <div className="space-y-2">
-                            <label className="block text-sm font-semibold text-foreground/60">{t.upgrade.checkout.ccNum}</label>
-                            <input type="text" placeholder="0000 0000 0000 0000" required className="w-full px-4 py-3 rounded-xl bg-surface/30 border border-border/60 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-mono text-base placeholder:text-foreground/20" />
-                          </div>
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                              <label className="block text-sm font-semibold text-foreground/60">{t.upgrade.checkout.expiry}</label>
-                              <input type="text" placeholder="MM/YY" required className="w-full px-4 py-3 rounded-xl bg-surface/30 border border-border/60 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-mono text-base placeholder:text-foreground/20" />
-                            </div>
-                            <div className="space-y-2">
-                              <label className="block text-sm font-semibold text-foreground/60">{t.upgrade.checkout.cvv}</label>
-                              <input type="text" placeholder="123" required className="w-full px-4 py-3 rounded-xl bg-surface/30 border border-border/60 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-mono text-base placeholder:text-foreground/20" />
-                            </div>
-                          </div>
-                          <div className="space-y-2">
-                            <label className="block text-sm font-semibold text-foreground/60">{t.upgrade.checkout.nameOnCard}</label>
-                            <input type="text" placeholder="John Doe" required className="w-full px-4 py-3 rounded-xl bg-surface/30 border border-border/60 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-sans text-base placeholder:text-foreground/20" />
-                          </div>
-                       </div>
-                     ) : (
-                       <div className="pt-8 pb-12 flex flex-col items-center justify-center text-center animate-in fade-in">
-                         <svg className="w-16 h-16 text-[#00457C] mb-4 drop-shadow-sm" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944.901C5.026.382 5.474 0 5.998 0h7.46c2.57 0 4.578.543 5.69 1.81 1.01 1.15 1.304 2.42 1.012 4.287-.023.143-.047.288-.077.437-.983 5.05-4.349 6.797-8.647 6.797h-2.19c-.524 0-.968.382-1.05.9l-1.12 7.106z"/>
-                         </svg>
-                         <p className="text-foreground/60 text-base font-medium leading-relaxed max-w-xs mx-auto">You will be redirected to PayPal to complete your secure payment. (Simulated)</p>
-                       </div>
-                     )}
-
-                     <div className="pt-6 flex gap-3 mt-8">
-                        <button type="button" disabled={isProcessing} onClick={() => setShowCheckout(false)} className="flex-1 py-3.5 rounded-xl border border-border/80 text-foreground/70 font-semibold hover:bg-surface transition-colors">
-                          {t.upgrade.checkout.cancel}
-                        </button>
-                        <button type="submit" disabled={isProcessing} className="flex-[2] py-3.5 rounded-xl bg-primary text-background font-semibold hover:opacity-90 transition-opacity shadow-md disabled:opacity-50 flex items-center justify-center">
-                          {isProcessing ? (
-                             <div className="w-5 h-5 border-2 border-background/30 border-t-background rounded-full animate-spin" />
-                          ) : (paymentMethod === 'cc' ? t.upgrade.checkout.payWith : t.upgrade.checkout.paypal)}
-                        </button>
-                     </div>
-                   </form>
-                 </>
+                   <div className="pt-6 flex gap-3 mt-4">
+                      <button type="button" disabled={isProcessing} onClick={() => setShowCheckout(false)} className="flex-1 py-3.5 rounded-xl border border-border/80 text-foreground/70 font-semibold hover:bg-surface transition-colors">
+                        {t.upgrade.checkout.cancel}
+                      </button>
+                      <button type="submit" disabled={isProcessing} className="flex-[2] py-3.5 rounded-xl bg-primary text-background font-semibold hover:opacity-90 transition-opacity shadow-md disabled:opacity-50 flex items-center justify-center">
+                        {isProcessing ? (
+                           <div className="w-5 h-5 border-2 border-background/30 border-t-background rounded-full animate-spin" />
+                        ) : (t.upgrade.checkout.payWith || "Continue to Payment")}
+                      </button>
+                   </div>
+                 </form>
                ) : (
                  <div className="h-full flex flex-col items-center justify-center text-center animate-in zoom-in-95 duration-500 py-12">
                    <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-6">
@@ -300,5 +294,18 @@ export default function UpgradePage() {
         </div>
       )}
     </div>
+  );
+}
+
+// useSearchParams requires a Suspense boundary in the App Router
+export default function UpgradePage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="w-6 h-6 border-2 border-border border-t-primary rounded-full animate-spin" />
+      </div>
+    }>
+      <UpgradePageInner />
+    </Suspense>
   );
 }

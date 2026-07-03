@@ -10,6 +10,7 @@ const crypto_1 = __importDefault(require("crypto"));
 const client_1 = require("@prisma/client");
 const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
 const email_1 = require("../lib/email");
+const authMiddleware_1 = require("../middleware/authMiddleware");
 const authLimiter = (0, express_rate_limit_1.default)({
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 10, // Limit each IP to 10 requests per 15 minutes
@@ -191,39 +192,53 @@ router.post('/reset-password', authLimiter, async (req, res) => {
     }
 });
 // POST /api/auth/accept-invite
-// Allows an invited user to create their account and join an existing org
+// Allows an invited user to create their account and join an existing org.
+// SECURITY: org membership and role come from the server-side Invitation record,
+// looked up by the single-use token — never from the request body.
 router.post('/accept-invite', authLimiter, async (req, res) => {
     try {
-        const { name, email, password, orgId, role } = req.body;
-        if (!name || !email || !password || !orgId) {
-            return res.status(400).json({ error: 'Name, email, password, and orgId are required' });
+        const { name, email, password, inviteToken } = req.body;
+        if (!name || !email || !password || !inviteToken) {
+            return res.status(400).json({ error: 'Name, email, password, and invite token are required' });
         }
         if (password.length < 8) {
             return res.status(400).json({ error: 'Password must be at least 8 characters' });
         }
-        // Verify org exists
-        const org = await prisma.organization.findUnique({ where: { id: orgId } });
-        if (!org) {
-            return res.status(404).json({ error: 'Organization not found. Your invite link may be invalid.' });
+        // Look up the invitation by its token
+        const invitation = await prisma.invitation.findUnique({ where: { token: inviteToken } });
+        if (!invitation) {
+            return res.status(403).json({ error: 'Invalid invite link. Please ask your admin to send a new invitation.' });
+        }
+        if (invitation.acceptedAt) {
+            return res.status(403).json({ error: 'This invitation has already been used.' });
+        }
+        if (invitation.expiresAt < new Date()) {
+            return res.status(403).json({ error: 'This invitation has expired. Please ask your admin to send a new one.' });
+        }
+        if (invitation.email !== email.trim().toLowerCase()) {
+            return res.status(403).json({ error: 'This invitation was sent to a different email address.' });
         }
         // Check email not already taken
-        const existingUser = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
+        const existingUser = await prisma.user.findUnique({ where: { email: invitation.email } });
         if (existingUser) {
             return res.status(400).json({ error: 'An account with this email already exists. Please log in.' });
         }
-        // Whitelist allowed roles (prevent privilege escalation)
-        const safeRoles = ['AGENT', 'MANAGER', 'ATTORNEY', 'LENDER', 'TITLECO', 'MARKETING', 'OFFICE_SUPPORT'];
-        const assignedRole = safeRoles.includes(role) ? role : 'AGENT';
         const hashedPassword = await bcryptjs_1.default.hash(password, 10);
         const newUser = await prisma.user.create({
             data: {
                 name,
-                email: email.toLowerCase(),
+                email: invitation.email,
                 password: hashedPassword,
-                role: assignedRole,
+                role: invitation.role,
                 tier: 'CORE',
-                orgId: org.id,
+                orgId: invitation.orgId,
+                emailVerified: true, // arriving via emailed link proves mailbox ownership
             },
+        });
+        // Mark invitation as consumed (single-use)
+        await prisma.invitation.update({
+            where: { id: invitation.id },
+            data: { acceptedAt: new Date() },
         });
         // Generate JWT
         const token = jsonwebtoken_1.default.sign({ userId: newUser.id, role: newUser.role, tier: newUser.tier, orgId: newUser.orgId }, JWT_SECRET, { expiresIn: '24h' });
@@ -242,6 +257,34 @@ router.post('/accept-invite', authLimiter, async (req, res) => {
     }
     catch (error) {
         console.error('Accept invite error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+// POST /api/auth/refresh
+// Re-issues a JWT with the user's CURRENT role/tier from the database.
+// Needed after a subscription upgrade — the old token still carries the stale tier.
+router.post('/refresh', authMiddleware_1.authenticateToken, async (req, res) => {
+    try {
+        if (!req.user)
+            return res.status(401).json({ error: 'Unauthorized' });
+        const user = await prisma.user.findUnique({ where: { id: req.user.userId } });
+        if (!user)
+            return res.status(404).json({ error: 'User not found' });
+        const token = jsonwebtoken_1.default.sign({ userId: user.id, role: user.role, tier: user.tier, orgId: user.orgId }, JWT_SECRET, { expiresIn: '24h' });
+        res.json({
+            token,
+            user: {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                tier: user.tier,
+                orgId: user.orgId,
+            },
+        });
+    }
+    catch (error) {
+        console.error('Token refresh error:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });

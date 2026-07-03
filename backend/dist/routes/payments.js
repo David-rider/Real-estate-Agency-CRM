@@ -51,12 +51,19 @@ router.post('/webhook', express_1.default.raw({ type: 'application/json' }), asy
         return res.status(503).json({ error: 'Payment service not configured' });
     const sig = req.headers['stripe-signature'];
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    // SECURITY: in production a webhook secret is mandatory — an unverified payload
+    // would let anyone forge a checkout.session.completed and upgrade themselves free.
+    if (!webhookSecret && process.env.NODE_ENV === 'production') {
+        console.error('STRIPE_WEBHOOK_SECRET is not set — rejecting webhook in production');
+        return res.status(503).json({ error: 'Webhook signature verification not configured' });
+    }
     let event;
     try {
         if (webhookSecret) {
             event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
         }
         else {
+            // Development only — unsigned payload accepted for local testing
             event = JSON.parse(req.body.toString());
         }
     }
@@ -72,6 +79,24 @@ router.post('/webhook', express_1.default.raw({ type: 'application/json' }), asy
         if (userId) {
             await server_1.prisma.user.update({ where: { id: userId }, data: { tier: targetTier } });
             console.log(`User ${userId} upgraded to ${targetTier}`);
+        }
+    }
+    // Subscription cancelled or lapsed — downgrade the user back to CORE
+    if (event.type === 'customer.subscription.deleted') {
+        const subscription = event.data.object;
+        try {
+            const customer = await stripe.customers.retrieve(subscription.customer);
+            const customerEmail = customer?.email;
+            if (customerEmail) {
+                const user = await server_1.prisma.user.findUnique({ where: { email: customerEmail } });
+                if (user) {
+                    await server_1.prisma.user.update({ where: { id: user.id }, data: { tier: 'CORE' } });
+                    console.log(`User ${user.id} downgraded to CORE (subscription cancelled)`);
+                }
+            }
+        }
+        catch (err) {
+            console.error('Failed to process subscription cancellation:', err);
         }
     }
     res.json({ received: true });

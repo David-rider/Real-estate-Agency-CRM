@@ -128,8 +128,27 @@ router.post('/invite', authorizeRole(['SUPERADMIN', 'FIRMADMIN', 'MANAGER']), as
             return res.status(409).json({ error: 'This email is already registered' });
         }
 
-        // Generate invite token (stored as emailVerifyToken on a placeholder user)
+        // Generate invite token and persist it — accept-invite validates against this record
         const inviteToken = crypto.randomBytes(32).toString('hex');
+        const normalizedEmail = email.trim().toLowerCase();
+        const safeRoles = ['AGENT', 'MANAGER', 'ATTORNEY', 'LENDER', 'TITLECO', 'MARKETING', 'OFFICE_SUPPORT'];
+        const inviteRole = safeRoles.includes(role) ? role : 'AGENT';
+
+        // Invalidate any previous pending invites for this email in this org, then create fresh one
+        await prisma.invitation.deleteMany({
+            where: { email: normalizedEmail, orgId: req.user.orgId, acceptedAt: null },
+        });
+        await prisma.invitation.create({
+            data: {
+                email:       normalizedEmail,
+                role:        inviteRole,
+                token:       inviteToken,
+                expiresAt:   new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+                invitedById: req.user.userId,
+                orgId:       req.user.orgId,
+            },
+        });
+
         const inviter = await prisma.user.findUnique({ where: { id: req.user.userId }, select: { name: true, email: true } });
         const inviterName = inviter?.name || inviter?.email || 'A team member';
         const org = await prisma.organization.findUnique({ where: { id: req.user.orgId } });
@@ -143,9 +162,9 @@ router.post('/invite', authorizeRole(['SUPERADMIN', 'FIRMADMIN', 'MANAGER']), as
                 html: `
                     <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
                         <h2>You're invited!</h2>
-                        <p><strong>${inviterName}</strong> has invited you to join <strong>${org?.name || 'their team'}</strong> as a <strong>${role || 'Agent'}</strong>.</p>
+                        <p><strong>${inviterName}</strong> has invited you to join <strong>${org?.name || 'their team'}</strong> as a <strong>${inviteRole}</strong>.</p>
                         <p>Click below to accept the invitation and set up your account:</p>
-                        <a href="${appUrl}/signup?invite=${inviteToken}&email=${encodeURIComponent(email)}&org=${req.user.orgId}&role=${role || 'AGENT'}"
+                        <a href="${appUrl}/signup?invite=${inviteToken}&email=${encodeURIComponent(normalizedEmail)}&org=${req.user.orgId}&role=${inviteRole}"
                            style="display: inline-block; padding: 12px 24px; background: #B8977E; color: white; text-decoration: none; border-radius: 6px; margin: 16px 0;">
                             Accept Invitation
                         </a>

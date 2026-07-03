@@ -42,6 +42,7 @@ model Organization {
   notes          Note[]
   notifications  Notification[]
   auditLogs      AuditLog[]
+  invitations    Invitation[]
 }
 
 enum SubTier {
@@ -566,6 +567,22 @@ enum NotifType {
   TASK_DUE
   DOCUMENT_SIGNED
   SYSTEM
+}
+
+// ─── Invitation ──────────────────────────────────────────────────────────────
+
+model Invitation {
+  id          String    @id @default(uuid())
+  email       String
+  role        String    @default("AGENT")
+  token       String    @unique
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  invitedById String?
+
+  orgId        String
+  organization Organization @relation(fields: [orgId], references: [id])
+  createdAt    DateTime     @default(now())
 }
 
 // ─── AuditLog ────────────────────────────────────────────────────────────────
