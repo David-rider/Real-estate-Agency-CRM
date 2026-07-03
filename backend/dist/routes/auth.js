@@ -11,6 +11,13 @@ const client_1 = require("@prisma/client");
 const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
 const email_1 = require("../lib/email");
 const authMiddleware_1 = require("../middleware/authMiddleware");
+const seats_1 = require("../lib/seats");
+// Org subscription level → member tier (subscription is org-wide)
+const ORG_SUB_TO_TIER = {
+    BASIC: 'CORE',
+    PRO: 'PRO',
+    ENTERPRISE: 'ELITE',
+};
 const authLimiter = (0, express_rate_limit_1.default)({
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 10, // Limit each IP to 10 requests per 15 minutes
@@ -223,6 +230,12 @@ router.post('/accept-invite', authLimiter, async (req, res) => {
         if (existingUser) {
             return res.status(400).json({ error: 'An account with this email already exists. Please log in.' });
         }
+        // Seat re-check at accept time (invite reserved the seat, so count active users only —
+        // guards against the plan having been downgraded since the invite was sent)
+        const seats = await (0, seats_1.getSeatUsage)(invitation.orgId);
+        if (seats.limit !== null && seats.users >= seats.limit) {
+            return res.status(403).json({ error: 'This team has reached its plan seat limit. Ask your admin to upgrade the plan.' });
+        }
         const hashedPassword = await bcryptjs_1.default.hash(password, 10);
         const newUser = await prisma.user.create({
             data: {
@@ -230,7 +243,7 @@ router.post('/accept-invite', authLimiter, async (req, res) => {
                 email: invitation.email,
                 password: hashedPassword,
                 role: invitation.role,
-                tier: 'CORE',
+                tier: ORG_SUB_TO_TIER[seats.subscription] || 'CORE', // members inherit the org-wide plan
                 orgId: invitation.orgId,
                 emailVerified: true, // arriving via emailed link proves mailbox ownership
             },

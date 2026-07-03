@@ -118,12 +118,12 @@ router.get('/commissions', (0, authMiddleware_1.requireTier)('PRO'), async (req,
     }
 });
 // POST /api/finance/commissions/:id/payout
-// Simulates submitting a payout request by immediately marking the commission as PAID
+// Agent submits a payout REQUEST — an org admin must approve it before it becomes PAID
 router.post('/commissions/:id/payout', async (req, res) => {
     try {
         const userId = req.user?.userId;
         const orgId = req.user?.orgId;
-        const commId = req.params.id;
+        const commId = String(req.params.id);
         if (!userId || !orgId) {
             return res.status(401).json({ error: 'Unauthorized' });
         }
@@ -136,18 +136,88 @@ router.post('/commissions/:id/payout', async (req, res) => {
         if (commission.status === 'PAID') {
             return res.status(400).json({ error: 'Commission is already paid' });
         }
+        if (commission.status === 'REQUESTED') {
+            return res.status(400).json({ error: 'Payout already requested — awaiting admin approval' });
+        }
         const updated = await server_1.prisma.commission.update({
             where: { id: commId },
-            data: {
-                status: 'PAID',
-                paidAt: new Date()
-            }
+            data: { status: 'REQUESTED' }
         });
         res.json(updated);
     }
     catch (error) {
         console.error('Error requesting payout:', error);
         res.status(500).json({ error: 'Failed to request payout' });
+    }
+});
+// GET /api/finance/payout-requests — pending approvals queue for admins
+router.get('/payout-requests', (0, authMiddleware_1.authorizeRole)(['SUPERADMIN', 'FIRMADMIN', 'MANAGER']), async (req, res) => {
+    try {
+        if (!req.user)
+            return res.status(401).json({ error: 'Unauthorized' });
+        const requests = await server_1.prisma.commission.findMany({
+            where: { orgId: req.user.orgId, status: 'REQUESTED' },
+            include: {
+                agent: { select: { id: true, name: true, email: true } },
+                transaction: { include: { property: { select: { address: true } } } },
+            },
+            orderBy: { updatedAt: 'desc' },
+        });
+        res.json(requests);
+    }
+    catch (error) {
+        console.error('Error fetching payout requests:', error);
+        res.status(500).json({ error: 'Failed to fetch payout requests' });
+    }
+});
+// POST /api/finance/commissions/:id/approve — admin approves a payout request → PAID
+router.post('/commissions/:id/approve', (0, authMiddleware_1.authorizeRole)(['SUPERADMIN', 'FIRMADMIN', 'MANAGER']), async (req, res) => {
+    try {
+        if (!req.user)
+            return res.status(401).json({ error: 'Unauthorized' });
+        const commId = String(req.params.id);
+        const commission = await server_1.prisma.commission.findFirst({
+            where: { id: commId, orgId: req.user.orgId },
+        });
+        if (!commission)
+            return res.status(404).json({ error: 'Commission not found' });
+        if (commission.status !== 'REQUESTED') {
+            return res.status(400).json({ error: `Cannot approve a commission in ${commission.status} status` });
+        }
+        const updated = await server_1.prisma.commission.update({
+            where: { id: commId },
+            data: { status: 'PAID', paidAt: new Date() },
+        });
+        res.json(updated);
+    }
+    catch (error) {
+        console.error('Error approving payout:', error);
+        res.status(500).json({ error: 'Failed to approve payout' });
+    }
+});
+// POST /api/finance/commissions/:id/reject — admin rejects a payout request → back to PENDING
+router.post('/commissions/:id/reject', (0, authMiddleware_1.authorizeRole)(['SUPERADMIN', 'FIRMADMIN', 'MANAGER']), async (req, res) => {
+    try {
+        if (!req.user)
+            return res.status(401).json({ error: 'Unauthorized' });
+        const commId = String(req.params.id);
+        const commission = await server_1.prisma.commission.findFirst({
+            where: { id: commId, orgId: req.user.orgId },
+        });
+        if (!commission)
+            return res.status(404).json({ error: 'Commission not found' });
+        if (commission.status !== 'REQUESTED') {
+            return res.status(400).json({ error: `Cannot reject a commission in ${commission.status} status` });
+        }
+        const updated = await server_1.prisma.commission.update({
+            where: { id: commId },
+            data: { status: 'PENDING' },
+        });
+        res.json(updated);
+    }
+    catch (error) {
+        console.error('Error rejecting payout:', error);
+        res.status(500).json({ error: 'Failed to reject payout' });
     }
 });
 // GET /api/finance/projections

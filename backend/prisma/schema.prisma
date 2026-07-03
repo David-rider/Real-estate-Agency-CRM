@@ -300,6 +300,7 @@ model Commission {
 
 enum CommStatus {
   PENDING
+  REQUESTED
   PAID
   DISPUTED
 }

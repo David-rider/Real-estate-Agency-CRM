@@ -3,25 +3,42 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const server_1 = require("../server");
 const router = (0, express_1.Router)();
+// Role-based CRM access (see USER_GUIDE §17 feature matrix)
+// - Management sees the whole org; AGENT sees only their own clients
+// - OFFICE_SUPPORT / MARKETING get read-only org view
+// - ATTORNEY / LENDER / TITLECO have no CRM access
+const MANAGEMENT_ROLES = ['SUPERADMIN', 'FIRMADMIN', 'MANAGER'];
+const CRM_WRITE_ROLES = [...MANAGEMENT_ROLES, 'AGENT'];
+const CRM_READ_ROLES = [...CRM_WRITE_ROLES, 'OFFICE_SUPPORT', 'MARKETING'];
+// Builds the Prisma where-clause scoping clients to what this user may see
+function clientScope(user) {
+    if (user.role === 'AGENT') {
+        return { orgId: user.orgId, OR: [{ agentId: user.userId }, { coAgentId: user.userId }] };
+    }
+    return { orgId: user.orgId };
+}
 // GET all clients (Paginated)
 router.get('/', async (req, res) => {
     try {
         const authReq = req;
-        const orgId = authReq.user?.orgId;
-        if (!orgId)
+        if (!authReq.user)
             return res.status(401).json({ error: 'Unauthorized' });
+        if (!CRM_READ_ROLES.includes(authReq.user.role)) {
+            return res.status(403).json({ error: 'Your role does not have CRM access' });
+        }
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
         const skip = (page - 1) * limit;
+        const where = clientScope(authReq.user);
         const [clients, total] = await Promise.all([
             server_1.prisma.client.findMany({
-                where: { orgId },
+                where,
                 skip,
                 take: limit,
                 orderBy: { createdAt: 'desc' },
                 include: { agent: { select: { name: true } } }
             }),
-            server_1.prisma.client.count({ where: { orgId } })
+            server_1.prisma.client.count({ where })
         ]);
         res.json({
             data: clients,
@@ -43,6 +60,9 @@ router.post('/', async (req, res) => {
         const authReq = req;
         if (!authReq.user) {
             return res.status(401).json({ error: 'Unauthorized' });
+        }
+        if (!CRM_WRITE_ROLES.includes(authReq.user.role)) {
+            return res.status(403).json({ error: 'Your role cannot create clients' });
         }
         const userId = authReq.user.userId;
         const orgId = authReq.user.orgId;
@@ -71,13 +91,16 @@ router.post('/', async (req, res) => {
 // GET a client's timeline/history
 router.get('/:id/timeline', async (req, res) => {
     try {
-        const { id } = req.params;
+        const id = String(req.params.id);
         const authReq = req;
-        const orgId = authReq.user?.orgId;
-        if (!orgId)
+        if (!authReq.user)
             return res.status(401).json({ error: 'Unauthorized' });
+        if (!CRM_READ_ROLES.includes(authReq.user.role)) {
+            return res.status(403).json({ error: 'Your role does not have CRM access' });
+        }
+        const orgId = authReq.user.orgId;
         const [client, offers, appointments, giftOrders, transactions] = await Promise.all([
-            server_1.prisma.client.findFirst({ where: { id, orgId } }),
+            server_1.prisma.client.findFirst({ where: { id, ...clientScope(authReq.user) } }),
             server_1.prisma.offer.findMany({ where: { clientId: id, orgId }, include: { property: true } }),
             server_1.prisma.appointment.findMany({ where: { clientId: id, orgId }, include: { property: true } }),
             server_1.prisma.giftOrder.findMany({ where: { clientId: id, orgId } }),
@@ -139,14 +162,17 @@ router.get('/:id/timeline', async (req, res) => {
 // PATCH update client details
 router.patch('/:id', async (req, res) => {
     try {
-        const { id } = req.params;
+        const id = String(req.params.id);
         const { firstName, lastName, email, phone, budget, funnelStage, type, status } = req.body;
         const authReq = req;
-        const orgId = authReq.user?.orgId;
-        if (!orgId)
+        if (!authReq.user)
             return res.status(401).json({ error: 'Unauthorized' });
+        if (!CRM_WRITE_ROLES.includes(authReq.user.role)) {
+            return res.status(403).json({ error: 'Your role cannot edit clients' });
+        }
+        const orgId = authReq.user.orgId;
         const updatedClient = await server_1.prisma.client.updateMany({
-            where: { id, orgId },
+            where: { id, ...clientScope(authReq.user) },
             data: {
                 firstName,
                 lastName,
@@ -172,14 +198,17 @@ router.patch('/:id', async (req, res) => {
 // We reuse the Appointment model with status='COMPLETED' to represent history
 router.post('/:id/activities', async (req, res) => {
     try {
-        const { id } = req.params;
+        const id = String(req.params.id);
         const { type, content, subject } = req.body; // type: 'NOTE' | 'CALL' | 'MEETING'
         const authReq = req;
         if (!authReq.user)
             return res.status(401).json({ error: 'Unauthorized' });
-        // Security check: verify the client exists and belongs to the user's organization
+        if (!CRM_WRITE_ROLES.includes(authReq.user.role)) {
+            return res.status(403).json({ error: 'Your role cannot log activities' });
+        }
+        // Security check: verify the client exists and is within the user's scope
         const client = await server_1.prisma.client.findFirst({
-            where: { id, orgId: authReq.user.orgId }
+            where: { id, ...clientScope(authReq.user) }
         });
         if (!client) {
             return res.status(404).json({ error: 'Client not found or access denied' });

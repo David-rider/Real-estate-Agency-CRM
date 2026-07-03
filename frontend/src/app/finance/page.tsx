@@ -106,10 +106,12 @@ export default function FinancePage() {
         },
       );
       if (res.ok) {
+        // Server returns the updated commission — now REQUESTED, pending admin approval
+        const updated = await res.json();
         setCommissions((prev) =>
           prev.map((c) =>
             c.id === commissionId
-              ? { ...c, status: "PAID", paidAt: new Date().toISOString() }
+              ? { ...c, status: updated.status, paidAt: updated.paidAt }
               : c,
           ),
         );
@@ -279,9 +281,11 @@ export default function FinancePage() {
                       />
                       {commissions[selectedCommIndex].status === "PAID"
                         ? `${t.finance.paidOn} ${new Date(commissions[selectedCommIndex].paidAt).toLocaleDateString()}`
+                        : commissions[selectedCommIndex].status === "REQUESTED"
+                        ? ((t.finance as any).payoutRequested || "Payout requested — awaiting approval")
                         : t.finance.pendingSettlement}
                     </div>
-                    {commissions[selectedCommIndex].status !== "PAID" && (
+                    {commissions[selectedCommIndex].status !== "PAID" && commissions[selectedCommIndex].status !== "REQUESTED" && (
                       <button
                         onClick={() => handleRequestPayout(commissions[selectedCommIndex].id)}
                         disabled={requestingPayout}

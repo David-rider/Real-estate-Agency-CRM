@@ -3,6 +3,7 @@ import { prisma } from '../server';
 import { AuthRequest, authorizeRole, authenticateToken } from '../middleware/authMiddleware';
 import crypto from 'crypto';
 import { sendEmail } from '../lib/email';
+import { getSeatUsage } from '../lib/seats';
 
 const router = Router();
 router.use(authenticateToken);
@@ -126,6 +127,15 @@ router.post('/invite', authorizeRole(['SUPERADMIN', 'FIRMADMIN', 'MANAGER']), as
                 return res.status(409).json({ error: 'This email is already a member of your organization' });
             }
             return res.status(409).json({ error: 'This email is already registered' });
+        }
+
+        // Seat limit — pending invites reserve seats so admins can't over-invite
+        const seats = await getSeatUsage(req.user.orgId);
+        if (seats.limit !== null && seats.users + seats.pendingInvites >= seats.limit) {
+            return res.status(403).json({
+                error: `Your ${seats.subscription} plan allows up to ${seats.limit} team members (${seats.users} active, ${seats.pendingInvites} invited). Upgrade your plan to add more seats.`,
+                code: 'SEAT_LIMIT_REACHED',
+            });
         }
 
         // Generate invite token and persist it — accept-invite validates against this record

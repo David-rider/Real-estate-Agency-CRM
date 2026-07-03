@@ -8,6 +8,7 @@ const server_1 = require("../server");
 const authMiddleware_1 = require("../middleware/authMiddleware");
 const crypto_1 = __importDefault(require("crypto"));
 const email_1 = require("../lib/email");
+const seats_1 = require("../lib/seats");
 const router = (0, express_1.Router)();
 router.use(authMiddleware_1.authenticateToken);
 // GET /api/settings/users — list all org users
@@ -128,6 +129,14 @@ router.post('/invite', (0, authMiddleware_1.authorizeRole)(['SUPERADMIN', 'FIRMA
                 return res.status(409).json({ error: 'This email is already a member of your organization' });
             }
             return res.status(409).json({ error: 'This email is already registered' });
+        }
+        // Seat limit — pending invites reserve seats so admins can't over-invite
+        const seats = await (0, seats_1.getSeatUsage)(req.user.orgId);
+        if (seats.limit !== null && seats.users + seats.pendingInvites >= seats.limit) {
+            return res.status(403).json({
+                error: `Your ${seats.subscription} plan allows up to ${seats.limit} team members (${seats.users} active, ${seats.pendingInvites} invited). Upgrade your plan to add more seats.`,
+                code: 'SEAT_LIMIT_REACHED',
+            });
         }
         // Generate invite token and persist it — accept-invite validates against this record
         const inviteToken = crypto_1.default.randomBytes(32).toString('hex');

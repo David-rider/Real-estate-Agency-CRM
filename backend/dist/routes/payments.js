@@ -17,13 +17,37 @@ const PLAN_PRICES = {
     ELITE_MONTHLY: process.env.STRIPE_PRICE_ELITE_MONTHLY,
     ELITE_ANNUAL: process.env.STRIPE_PRICE_ELITE_ANNUAL,
 };
+// Subscription is ORG-LEVEL: purchasing upgrades the whole organization.
+// User.tier mirrors the org subscription so JWT-based requireTier keeps working.
+const TIER_TO_ORG_SUB = {
+    CORE: 'BASIC',
+    PRO: 'PRO',
+    ELITE: 'ENTERPRISE',
+};
+// Applies a tier change to the purchaser's entire organization
+async function applyOrgTier(orgId, tier) {
+    await server_1.prisma.$transaction([
+        server_1.prisma.organization.update({
+            where: { id: orgId },
+            data: { subscription: TIER_TO_ORG_SUB[tier] },
+        }),
+        server_1.prisma.user.updateMany({
+            where: { orgId },
+            data: { tier },
+        }),
+    ]);
+}
 // POST /api/payments/checkout — create Stripe Checkout Session
 router.post('/checkout', authMiddleware_1.authenticateToken, async (req, res) => {
     try {
-        if (!stripe)
-            return res.status(503).json({ error: 'Payment service not configured. Set STRIPE_SECRET_KEY.' });
         if (!req.user)
             return res.status(401).json({ error: 'Unauthorized' });
+        // Billing is org-wide — only org admins may purchase
+        if (!['SUPERADMIN', 'FIRMADMIN'].includes(req.user.role)) {
+            return res.status(403).json({ error: 'Only your Firm Admin can manage the subscription. Please contact them to upgrade.' });
+        }
+        if (!stripe)
+            return res.status(503).json({ error: 'Payment service not configured. Set STRIPE_SECRET_KEY.' });
         const { planId } = req.body;
         const priceId = PLAN_PRICES[planId];
         if (!priceId)
@@ -77,8 +101,11 @@ router.post('/webhook', express_1.default.raw({ type: 'application/json' }), asy
         const planId = session.metadata?.planId || '';
         const targetTier = planId.toUpperCase().includes('ELITE') ? 'ELITE' : 'PRO';
         if (userId) {
-            await server_1.prisma.user.update({ where: { id: userId }, data: { tier: targetTier } });
-            console.log(`User ${userId} upgraded to ${targetTier}`);
+            const purchaser = await server_1.prisma.user.findUnique({ where: { id: userId } });
+            if (purchaser) {
+                await applyOrgTier(purchaser.orgId, targetTier);
+                console.log(`Org ${purchaser.orgId} upgraded to ${targetTier} (purchased by ${userId})`);
+            }
         }
     }
     // Subscription cancelled or lapsed — downgrade the user back to CORE
@@ -90,8 +117,8 @@ router.post('/webhook', express_1.default.raw({ type: 'application/json' }), asy
             if (customerEmail) {
                 const user = await server_1.prisma.user.findUnique({ where: { email: customerEmail } });
                 if (user) {
-                    await server_1.prisma.user.update({ where: { id: user.id }, data: { tier: 'CORE' } });
-                    console.log(`User ${user.id} downgraded to CORE (subscription cancelled)`);
+                    await applyOrgTier(user.orgId, 'CORE');
+                    console.log(`Org ${user.orgId} downgraded to CORE (subscription cancelled)`);
                 }
             }
         }
