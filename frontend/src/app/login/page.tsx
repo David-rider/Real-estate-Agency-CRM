@@ -10,6 +10,8 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [needsVerification, setNeedsVerification] = useState(false);
+  const [resent, setResent] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { login } = useAuth();
@@ -32,6 +34,8 @@ export default function LoginPage() {
       if (res.ok && data.token) {
         login(data.token, data.user);
       } else {
+        setNeedsVerification(data.code === "EMAIL_NOT_VERIFIED");
+        setResent(false);
         setError(
           data.error === "Invalid credentials"
             ? t.login.invalidCredentials
@@ -83,8 +87,27 @@ export default function LoginPage() {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               {error && (
-                <div className="px-4 py-2.5 bg-red-500/10 border border-red-500/20 text-red-500 font-sans text-sm tracking-widest uppercase">
-                  {error}
+                <div className="px-4 py-2.5 bg-red-500/10 border border-red-500/20 text-red-500 font-sans text-sm">
+                  <span className="tracking-widest uppercase">{error}</span>
+                  {needsVerification && (
+                    <button
+                      type="button"
+                      disabled={resent}
+                      className="block mt-2 text-primary underline disabled:no-underline disabled:text-foreground/50"
+                      onClick={async () => {
+                        try {
+                          await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/auth/resend-verification`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ email }),
+                          });
+                        } catch { /* response is uniform (anti-enumeration) either way */ }
+                        setResent(true);
+                      }}
+                    >
+                      {resent ? "Verification email sent — check your inbox" : "Resend verification email"}
+                    </button>
+                  )}
                 </div>
               )}
 

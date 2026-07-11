@@ -259,6 +259,27 @@ export default function SettingsPage() {
     } catch { toast.error("Network error"); }
   };
 
+  const handleDeactivate = async (userId: string, userName: string) => {
+    if (!window.confirm(`Deactivate ${userName}? They will no longer be able to log in.`)) return;
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/api/settings/users/${userId}`, {
+        method: "DELETE", headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      });
+      if (res.ok) { setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, isActive: false } : u))); toast.success("User deactivated"); }
+      else { const d = await res.json(); toast.error(d.error || "Failed to deactivate user"); }
+    } catch { toast.error("Network error"); }
+  };
+
+  const handleReactivate = async (userId: string) => {
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/api/settings/users/${userId}/reactivate`, {
+        method: "PATCH", headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      });
+      if (res.ok) { setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, isActive: true } : u))); toast.success("User reactivated"); }
+      else { const d = await res.json(); toast.error(d.error || "Failed to reactivate user"); }
+    } catch { toast.error("Network error"); }
+  };
+
   const handleInvite = async () => {
     if (!inviteEmail.trim()) return;
     try {
@@ -521,9 +542,16 @@ export default function SettingsPage() {
                 {users.length === 0 ? (
                   <tr><td colSpan={4} className="px-4 py-8 text-center text-foreground/40 text-sm">{U.noMembers ?? "No team members found."}</td></tr>
                 ) : users.map((u) => (
-                  <tr key={u.id} className="border-b border-border/40 last:border-0 hover:bg-surface/50">
+                  <tr key={u.id} className={`border-b border-border/40 last:border-0 hover:bg-surface/50 ${u.isActive === false ? "opacity-50" : ""}`}>
                     <td className="px-4 py-3">
-                      <div className="font-medium text-foreground">{u.name}</div>
+                      <div className="font-medium text-foreground flex items-center gap-2">
+                        {u.name}
+                        {u.isActive === false && (
+                          <span className="px-1.5 py-0.5 bg-red-500/10 text-red-400 rounded text-[10px] font-semibold uppercase tracking-wider">
+                            {U.inactive ?? "Inactive"}
+                          </span>
+                        )}
+                      </div>
                       <div className="text-xs text-foreground/50">{u.email}</div>
                     </td>
                     <td className="px-4 py-3">
@@ -538,9 +566,15 @@ export default function SettingsPage() {
                     <td className="px-4 py-3"><span className="text-xs text-foreground/60">{u.tier || "CORE"}</span></td>
                     <td className="px-4 py-3">
                       {isManager && u.id !== user?.id && (
-                        <button className="text-xs text-red-400 hover:text-red-300 transition-colors" onClick={() => toast.info(Sc.deactivationSoon ?? "Deactivation requires confirmation — feature coming soon")}>
-                          {U.deactivate ?? "Deactivate"}
-                        </button>
+                        u.isActive === false ? (
+                          <button className="text-xs text-primary hover:text-primary/80 transition-colors" onClick={() => handleReactivate(u.id)}>
+                            {U.reactivate ?? "Reactivate"}
+                          </button>
+                        ) : (
+                          <button className="text-xs text-red-400 hover:text-red-300 transition-colors" onClick={() => handleDeactivate(u.id, u.name)}>
+                            {U.deactivate ?? "Deactivate"}
+                          </button>
+                        )
                       )}
                     </td>
                   </tr>
