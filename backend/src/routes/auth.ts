@@ -15,6 +15,10 @@ const ORG_SUB_TO_TIER: Record<string, 'CORE' | 'PRO' | 'ELITE'> = {
     ENTERPRISE: 'ELITE',
 };
 
+// Email verification is only enforceable when a real email service can deliver
+// the verification link — otherwise new users could never verify and would be locked out
+const emailServiceConfigured = () => !!(process.env.EMAIL_API_KEY && process.env.EMAIL_FROM);
+
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 10, // Limit each IP to 10 requests per 15 minutes
@@ -53,6 +57,17 @@ router.post('/login', authLimiter, async (req, res) => {
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
             return res.status(401).json({ error: 'Invalid credentials' });
+        }
+
+        if (!user.isActive) {
+            return res.status(403).json({ error: 'This account has been deactivated. Contact your administrator.' });
+        }
+
+        if (!user.emailVerified && emailServiceConfigured()) {
+            return res.status(403).json({
+                error: 'Please verify your email address before logging in. Check your inbox, or request a new link.',
+                code: 'EMAIL_NOT_VERIFIED',
+            });
         }
 
         // Generate JWT
@@ -122,7 +137,9 @@ router.post('/register', authLimiter, async (req, res) => {
                 password: hashedPassword,
                 role: newRole as any,
                 tier: 'CORE',
-                orgId: org.id
+                orgId: org.id,
+                // No email service → nothing to click, auto-verify so login isn't blocked
+                emailVerified: !emailServiceConfigured(),
             }
         });
 
@@ -315,6 +332,34 @@ router.post('/accept-invite', authLimiter, async (req, res) => {
     }
 });
 
+// POST /api/auth/resend-verification
+router.post('/resend-verification', authLimiter, async (req, res) => {
+    try {
+        const { email } = req.body;
+        if (!email) return res.status(400).json({ error: 'Email is required' });
+
+        // Always respond 200 to prevent email enumeration
+        const okMsg = { message: 'If that email exists and is unverified, a new link has been sent.' };
+        const user = await prisma.user.findUnique({ where: { email: email.trim().toLowerCase() } });
+        if (!user || user.emailVerified) return res.status(200).json(okMsg);
+
+        const verifyToken = crypto.randomBytes(32).toString('hex');
+        await prisma.user.update({ where: { id: user.id }, data: { emailVerifyToken: verifyToken } });
+
+        const appUrl = process.env.APP_URL || 'http://localhost:3000';
+        await sendEmail({
+            to: user.email,
+            subject: 'Verify your email',
+            html: welcomeEmail(`${appUrl}/verify-email?token=${verifyToken}`, user.name),
+        });
+
+        res.status(200).json(okMsg);
+    } catch (error) {
+        console.error('Resend verification error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 // POST /api/auth/refresh
 // Re-issues a JWT with the user's CURRENT role/tier from the database.
 // Needed after a subscription upgrade — the old token still carries the stale tier.
@@ -324,6 +369,7 @@ router.post('/refresh', authenticateToken, async (req: AuthRequest, res) => {
 
         const user = await prisma.user.findUnique({ where: { id: req.user.userId } });
         if (!user) return res.status(404).json({ error: 'User not found' });
+        if (!user.isActive) return res.status(403).json({ error: 'This account has been deactivated.' });
 
         const token = jwt.sign(
             { userId: user.id, role: user.role, tier: user.tier, orgId: user.orgId },

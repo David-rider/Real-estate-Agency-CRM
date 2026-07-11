@@ -80,6 +80,7 @@ model User {
   passwordResetExpiry DateTime?
   emailVerifyToken    String?
   emailVerified       Boolean  @default(false)
+  isActive            Boolean  @default(true)
   lastLoginAt         DateTime?
 
   createdAt DateTime @default(now())

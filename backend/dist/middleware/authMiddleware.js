@@ -50,6 +50,10 @@ const requireTier = (minTier) => {
         if (!req.user) {
             return res.status(401).json({ error: 'Authentication required' });
         }
+        // Platform admins bypass subscription gating
+        if (req.user.role === 'SUPERADMIN') {
+            return next();
+        }
         const userTierWeight = tierWeights[req.user.tier] || 0;
         const requiredTierWeight = tierWeights[minTier] || 0;
         if (userTierWeight < requiredTierWeight) {

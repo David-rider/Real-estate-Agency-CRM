@@ -17,7 +17,7 @@ router.get('/users', authorizeRole(['SUPERADMIN', 'FIRMADMIN', 'MANAGER']), asyn
             select: {
                 id: true, name: true, email: true, role: true, tier: true,
                 phone: true, title: true, licenseNumber: true, avatarUrl: true,
-                emailVerified: true, lastLoginAt: true, createdAt: true,
+                emailVerified: true, isActive: true, lastLoginAt: true, createdAt: true,
             },
             orderBy: { createdAt: 'desc' },
         });
@@ -94,16 +94,48 @@ router.delete('/users/:id', authorizeRole(['SUPERADMIN', 'FIRMADMIN']), async (r
         if (!target) return res.status(404).json({ error: 'User not found' });
         if (target.role === 'SUPERADMIN') return res.status(403).json({ error: 'Cannot deactivate superadmin' });
 
-        // Soft-delete: mark as OFFICE_SUPPORT with a special flag via password lock
+        // Real deactivation — login and token refresh are refused while inactive
         await prisma.user.update({
             where: { id: String(req.params.id) },
-            data:  { tier: 'CORE' }, // revoke elevated tier; frontend should show as inactive
+            data:  { isActive: false },
         });
 
         res.json({ message: 'User deactivated' });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Failed to deactivate user' });
+    }
+});
+
+// PATCH /api/settings/users/:id/reactivate — restore a deactivated account
+router.patch('/users/:id/reactivate', authorizeRole(['SUPERADMIN', 'FIRMADMIN']), async (req: AuthRequest, res) => {
+    try {
+        if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+
+        const target = await prisma.user.findFirst({
+            where: { id: String(req.params.id), orgId: req.user.orgId },
+        });
+        if (!target) return res.status(404).json({ error: 'User not found' });
+        if (target.isActive) return res.status(400).json({ error: 'User is already active' });
+
+        // Reactivation takes a seat back — respect the plan limit
+        const seats = await getSeatUsage(req.user.orgId);
+        if (seats.limit !== null && seats.users + seats.pendingInvites >= seats.limit) {
+            return res.status(403).json({
+                error: `Your ${seats.subscription} plan allows up to ${seats.limit} team members. Upgrade your plan to reactivate this account.`,
+                code: 'SEAT_LIMIT_REACHED',
+            });
+        }
+
+        const updated = await prisma.user.update({
+            where:  { id: target.id },
+            data:   { isActive: true },
+            select: { id: true, name: true, isActive: true },
+        });
+        res.json(updated);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Failed to reactivate user' });
     }
 });
 

@@ -21,7 +21,7 @@ export async function getSeatUsage(orgId: string): Promise<SeatUsage> {
     const limit = SEAT_LIMITS[subscription] ?? SEAT_LIMITS.BASIC;
 
     const [users, pendingInvites] = await Promise.all([
-        prisma.user.count({ where: { orgId } }),
+        prisma.user.count({ where: { orgId, isActive: true } }),
         prisma.invitation.count({
             where: { orgId, acceptedAt: null, expiresAt: { gt: new Date() } },
         }),

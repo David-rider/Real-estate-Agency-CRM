@@ -78,6 +78,9 @@ router.post('/google', async (req, res) => {
             // through authenticated account settings after password login.
             return res.status(409).json({ error: 'An account with this email already exists. Please log in with your password and link Google from account settings.' });
         }
+        if (!user.isActive) {
+            return res.status(403).json({ error: 'This account has been deactivated. Contact your administrator.' });
+        }
         const token = generateToken(user);
         res.json({ message: 'Google login successful', token, user: { id: user.id, name: user.name, email: user.email, role: user.role, orgId: user.orgId } });
     }
@@ -121,6 +124,9 @@ router.post('/apple', async (req, res) => {
             // Account exists but appleId doesn't match or isn't linked.
             // Reject to prevent account takeover.
             return res.status(409).json({ error: 'An account with this email already exists. Please log in with your password and link Apple from account settings.' });
+        }
+        if (!user.isActive) {
+            return res.status(403).json({ error: 'This account has been deactivated. Contact your administrator.' });
         }
         const token = generateToken(user);
         res.json({ message: 'Apple login successful', token, user: { id: user.id, name: user.name, email: user.email, role: user.role, orgId: user.orgId } });
