@@ -89,26 +89,23 @@ router.post('/register', authLimiter, async (req, res) => {
         if (!name || !email || !password) {
             return res.status(400).json({ error: 'Name, email, and password are required' });
         }
+        if (!orgName || !orgName.trim()) {
+            return res.status(400).json({ error: 'Organization / firm name is required' });
+        }
         const existingUser = await prisma.user.findUnique({ where: { email } });
         if (existingUser) {
             return res.status(400).json({ error: 'Email already in use' });
         }
-        let org = await prisma.organization.findFirst({
-            where: { name: orgName }
+        // /register always CREATES a new organization — the registrant becomes its FIRMADMIN.
+        // Joining an EXISTING org is done exclusively through the invite-token flow
+        // (/accept-invite), which verifies a server-issued token rather than a
+        // user-typed name. Organization names are not unique identifiers — two real
+        // brokerages can legitimately share a name (e.g. "Sunrise Realty" in different
+        // cities) — so name-matching was never a valid way to detect "does this org exist".
+        const org = await prisma.organization.create({
+            data: { name: orgName.trim() }
         });
-        let newRole = 'AGENT';
-        if (!org) {
-            org = await prisma.organization.create({
-                data: {
-                    name: orgName || 'Default Organization'
-                }
-            });
-            newRole = 'FIRMADMIN'; // Creator of org becomes admin
-        }
-        else {
-            // For now, restrict joining existing orgs by randomly typing the name
-            return res.status(403).json({ error: 'Organization exists. Please request an invite to join.' });
-        }
+        const newRole = 'FIRMADMIN'; // Creator of a new org becomes its admin
         const hashedPassword = await bcryptjs_1.default.hash(password, 10);
         const verifyToken = crypto_1.default.randomBytes(32).toString('hex');
         const newUser = await prisma.user.create({

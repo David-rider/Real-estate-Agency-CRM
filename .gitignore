@@ -24,3 +24,5 @@ read_xlsx_custom.py
 # OS
 .DS_Store
 Thumbs.db
+
+.vercel
