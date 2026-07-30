@@ -1,10 +1,23 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
+import rateLimit from 'express-rate-limit';
 import { PrismaClient } from '@prisma/client';
 import { OAuth2Client } from 'google-auth-library';
 
 const router = express.Router();
 const prisma = new PrismaClient();
+
+// OAuth endpoints are authentication endpoints and must be throttled like the
+// password routes in auth.ts — without this they are an unmetered path for
+// token-guessing and account-probing.
+const oauthLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 20,
+    message: { error: 'Too many sign-in attempts from this IP, please try again later' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+router.use(oauthLimiter);
 
 const JWT_SECRET = process.env.JWT_SECRET as string;
 if (!JWT_SECRET) {

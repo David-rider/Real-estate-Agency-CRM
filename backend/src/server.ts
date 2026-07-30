@@ -43,6 +43,12 @@ import searchRoutes from './routes/search';
 import { authenticateToken } from './middleware/authMiddleware';
 
 // Middleware
+// In production an explicit FRONTEND_URL allowlist is mandatory: falling back to
+// '*' alongside credentials:true would be an origin-unrestricted credentialed API.
+if (process.env.NODE_ENV === 'production' && !process.env.FRONTEND_URL) {
+    console.error('FATAL: FRONTEND_URL must be set in production (CORS allowlist)');
+    process.exit(1);
+}
 const allowedOrigins = process.env.FRONTEND_URL ? process.env.FRONTEND_URL.split(',') : '*';
 app.use(cors({
     origin: allowedOrigins,
@@ -86,6 +92,32 @@ app.get('/api/health', async (req, res) => {
     } catch {
         res.status(503).json({ status: 'error', db: 'disconnected', timestamp: new Date().toISOString() });
     }
+});
+
+// 404 — this is a JSON API, so unknown routes must not fall through to
+// Express's default HTML error page
+app.use((req, res) => {
+    res.status(404).json({ error: 'Not found', path: req.path });
+});
+
+// Global error handler. Express 5 forwards async route rejections here.
+// Internal error details are logged server-side but never returned to the client.
+app.use((err: any, req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    console.error('Unhandled error:', err);
+
+    // Malformed JSON bodies surface as a SyntaxError from express.json()
+    if (err instanceof SyntaxError && 'body' in err) {
+        return res.status(400).json({ error: 'Malformed JSON in request body' });
+    }
+    if (err?.type === 'entity.too.large') {
+        return res.status(413).json({ error: 'Request payload too large' });
+    }
+    // CORS rejections
+    if (typeof err?.message === 'string' && err.message.includes('Not allowed by CORS')) {
+        return res.status(403).json({ error: 'Origin not allowed' });
+    }
+
+    res.status(err?.status || 500).json({ error: 'Internal server error' });
 });
 
 // Start Server

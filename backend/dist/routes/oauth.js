@@ -5,10 +5,22 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
 const client_1 = require("@prisma/client");
 const google_auth_library_1 = require("google-auth-library");
 const router = express_1.default.Router();
 const prisma = new client_1.PrismaClient();
+// OAuth endpoints are authentication endpoints and must be throttled like the
+// password routes in auth.ts — without this they are an unmetered path for
+// token-guessing and account-probing.
+const oauthLimiter = (0, express_rate_limit_1.default)({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 20,
+    message: { error: 'Too many sign-in attempts from this IP, please try again later' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+router.use(oauthLimiter);
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
     console.error('FATAL ERROR: JWT_SECRET is not defined in environment variables.');
