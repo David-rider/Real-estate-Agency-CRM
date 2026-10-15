@@ -24,7 +24,10 @@ const authenticateToken = (req, res, next) => {
         next();
     }
     catch (error) {
-        return res.status(403).json({ error: 'Invalid or expired token' });
+        // 401, not 403: the caller is not authenticated. 403 is reserved for
+        // "authenticated but not permitted" (role / plan gating), so clients
+        // can tell "log in again" apart from "you lack access".
+        return res.status(401).json({ error: 'Invalid or expired token' });
     }
 };
 exports.authenticateToken = authenticateToken;

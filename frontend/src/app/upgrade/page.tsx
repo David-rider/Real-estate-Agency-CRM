@@ -58,9 +58,16 @@ function UpgradePageInner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
+  // Subscription is org-wide and only org admins may purchase (enforced server-side too)
+  const canPurchase = ["SUPERADMIN", "FIRMADMIN"].includes(user?.role || "");
+
   const handleSelectPlan = (plan: "CORE" | "PRO" | "ELITE") => {
     if (plan === user?.tier) return;
     if (plan === "CORE") return; // cannot downgrade to core from here
+    if (!canPurchase) {
+      toast.info((t.upgrade as any).adminOnly || "Plans cover your whole firm — ask your Firm Admin to upgrade.");
+      return;
+    }
     setSelectedPlan(plan);
     setCheckoutSuccess(false);
     setShowCheckout(true);
@@ -105,6 +112,11 @@ function UpgradePageInner() {
         <h1 className="text-3xl font-bold tracking-tight mb-4">
           {t.upgrade.title}
         </h1>
+        {!canPurchase && (
+          <div className="max-w-xl mx-auto mb-4 px-4 py-2.5 rounded-lg bg-primary/10 text-primary text-sm">
+            {(t.upgrade as any).adminOnly || "Plans cover your whole firm — ask your Firm Admin to upgrade."}
+          </div>
+        )}
         <p className="text-sm text-foreground/50 max-w-2xl mx-auto leading-relaxed">
           {t.upgrade.subtitle}
         </p>

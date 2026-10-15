@@ -13,6 +13,7 @@ export default function CRMPage() {
   const [totalClients, setTotalClients] = React.useState(0);
   const [currentPage, setCurrentPage] = React.useState(1);
   const [loading, setLoading] = React.useState(true);
+  const [accessDenied, setAccessDenied] = React.useState<string | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = React.useState(false);
   const [formData, setFormData] = React.useState({
     firstName: "",
@@ -35,12 +36,18 @@ export default function CRMPage() {
     fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/clients?page=${page}&limit=10`, {
       headers: { Authorization: `Bearer ${token}` },
     })
-      .then((res) => {
-        if (res.status === 401 || res.status === 403) {
+      .then(async (res) => {
+        if (res.status === 401) {
           localStorage.removeItem("token");
           localStorage.removeItem("user");
           window.location.href = "/login";
           throw new Error("Session Expired");
+        }
+        if (res.status === 403) {
+          // Role has no CRM access (e.g. attorney / lender / title co.) — stay logged in
+          const d = await res.json().catch(() => ({}));
+          setAccessDenied(d.error || "Your role does not have access to the CRM.");
+          throw new Error("Forbidden");
         }
         return res.json();
       })
@@ -112,6 +119,19 @@ export default function CRMPage() {
       setIsSubmitting(false);
     }
   };
+
+  if (accessDenied) {
+    return (
+      <div className="p-16 text-center text-foreground">
+        <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+          <svg className="w-6 h-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          </svg>
+        </div>
+        <p className="text-sm text-foreground/60">{accessDenied}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out text-foreground">

@@ -32,6 +32,62 @@ export default function FinancePage() {
   const isPro = user?.tier === "PRO";
   const isElite = user?.tier === "ELITE";
 
+  // Payout approval queue (management only)
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+  const isApprover = ["SUPERADMIN", "FIRMADMIN", "MANAGER"].includes(user?.role || "");
+  const [payoutRequests, setPayoutRequests] = useState<any[]>([]);
+  const [reviewingId, setReviewingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!token || !isApprover) return;
+    fetch(`${API_BASE}/api/finance/payout-requests`, { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => (r.ok ? r.json() : []))
+      .then((d) => setPayoutRequests(Array.isArray(d) ? d : []))
+      .catch(() => setPayoutRequests([]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, isApprover]);
+
+  const reviewPayout = async (id: string, decision: "approve" | "reject") => {
+    if (!token) return;
+    setReviewingId(id);
+    try {
+      const res = await fetch(`${API_BASE}/api/finance/commissions/${id}/${decision}`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const d = await res.json().catch(() => ({}));
+      if (res.ok || res.status === 409) {
+        // 409 = already processed by another reviewer; either way it leaves the queue
+        setPayoutRequests((prev) => prev.filter((r) => r.id !== id));
+        if (res.ok) toast.success(decision === "approve" ? "Payout approved" : "Payout returned to agent");
+        else toast.info(d.error || "Already processed");
+      } else {
+        toast.error(d.error || "Failed to update payout request");
+      }
+    } catch {
+      toast.error("Network error");
+    } finally {
+      setReviewingId(null);
+    }
+  };
+
+  // Client-side CSV of the commissions currently loaded
+  const exportCommissionsCsv = () => {
+    if (!commissions.length) { toast.info("No commission data to export"); return; }
+    const esc = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+    const header = ["Property", "Gross", "Firm Split %", "Override %", "Net Payout", "Status", "Paid At", "Created"];
+    const rows = commissions.map((c) => [
+      c.transaction?.property?.address, c.grossAmount, c.firmSplitPercent, c.overridePercent,
+      c.netPayout, c.status, c.paidAt ? new Date(c.paidAt).toISOString().slice(0, 10) : "",
+      new Date(c.createdAt).toISOString().slice(0, 10),
+    ].map(esc).join(","));
+    const blob = new Blob([[header.map(esc).join(","), ...rows].join("\n")], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `commissions-${new Date().toISOString().slice(0, 10)}.csv`; a.click();
+    URL.revokeObjectURL(url);
+  };
+
   useEffect(() => {
     if (!token) return;
 
@@ -50,13 +106,13 @@ export default function FinancePage() {
           }),
         ]);
 
+        // Only 401 (invalid/expired token) ends the session. /commissions and
+        // /projections return 403 for plan gating (requireTier) — that is an
+        // upgrade prompt, handled below, not a reason to log the user out.
         if (
           metricsRes.status === 401 ||
-          metricsRes.status === 403 ||
           commsRes.status === 401 ||
-          commsRes.status === 403 ||
-          projRes.status === 401 ||
-          projRes.status === 403
+          projRes.status === 401
         ) {
           localStorage.removeItem("token");
           localStorage.removeItem("user");
@@ -147,10 +203,65 @@ export default function FinancePage() {
             {t.finance.subtitle}
           </p>
         </div>
-        <button className="px-6 py-2.5 bg-surface text-foreground hover:bg-background ring-1 ring-border/50 transition-colors duration-300 rounded-xl text-base font-semibold shadow-sm w-full md:w-auto text-center">
+        <button onClick={exportCommissionsCsv} className="px-6 py-2.5 bg-surface text-foreground hover:bg-background ring-1 ring-border/50 transition-colors duration-300 rounded-xl text-base font-semibold shadow-sm w-full md:w-auto text-center">
           {t.finance.exportReport}
         </button>
       </div>
+
+      {/* Payout approval queue — visible to management only */}
+      {isApprover && (
+        <div className="bg-background ring-1 ring-border/50 rounded-2xl shadow-sm p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-sans text-lg font-semibold text-foreground">
+              {(t.finance as any).approvalQueue || "Payout Approvals"}
+            </h2>
+            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-primary/10 text-primary">
+              {payoutRequests.length} {(t.finance as any).pending || "pending"}
+            </span>
+          </div>
+          {payoutRequests.length === 0 ? (
+            <p className="text-sm text-foreground/50">{(t.finance as any).noPendingPayouts || "No payout requests awaiting review."}</p>
+          ) : (
+            <div className="divide-y divide-border/50">
+              {payoutRequests.map((r) => {
+                const isOwn = r.agent?.id === user?.id;
+                return (
+                  <div key={r.id} className="py-3 flex flex-col md:flex-row md:items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="text-sm font-semibold text-foreground truncate">
+                        {r.agent?.name || r.agent?.email} · ${Number(r.netPayout).toLocaleString()}
+                      </div>
+                      <div className="text-xs text-foreground/50 truncate">
+                        {r.transaction?.property?.address || "—"} · Gross ${Number(r.grossAmount).toLocaleString()} · Firm {r.firmSplitPercent}%
+                      </div>
+                    </div>
+                    {isOwn ? (
+                      <span className="text-xs text-foreground/40 italic">{(t.finance as any).ownRequest || "Your own request — another reviewer must approve"}</span>
+                    ) : (
+                      <div className="flex gap-2 shrink-0">
+                        <button
+                          disabled={reviewingId === r.id}
+                          onClick={() => reviewPayout(r.id, "reject")}
+                          className="px-3 py-1.5 rounded-lg text-xs font-semibold ring-1 ring-border text-foreground/70 hover:bg-surface disabled:opacity-50"
+                        >
+                          {(t.finance as any).reject || "Return"}
+                        </button>
+                        <button
+                          disabled={reviewingId === r.id}
+                          onClick={() => reviewPayout(r.id, "approve")}
+                          className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-primary text-background hover:opacity-90 disabled:opacity-50"
+                        >
+                          {reviewingId === r.id ? "…" : ((t.finance as any).approve || "Approve")}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
         {/* Commission Waterfall */}

@@ -1,6 +1,7 @@
 import express from 'express';
 import { prisma } from '../server';
 import { AuthRequest, requireTier, authorizeRole } from '../middleware/authMiddleware';
+import { audit } from '../lib/audit';
 
 const router = express.Router();
 
@@ -197,15 +198,23 @@ router.post('/commissions/:id/approve', authorizeRole(['SUPERADMIN', 'FIRMADMIN'
             where: { id: commId, orgId: req.user.orgId },
         });
         if (!commission) return res.status(404).json({ error: 'Commission not found' });
+        // Separation of duties: a manager who also sells must not approve their own payout
+        if (commission.agentId === req.user.userId) {
+            return res.status(403).json({ error: 'You cannot approve your own payout request' });
+        }
         if (commission.status !== 'REQUESTED') {
             return res.status(400).json({ error: `Cannot approve a commission in ${commission.status} status` });
         }
 
-        const updated = await prisma.commission.update({
-            where: { id: commId },
+        // Conditional update so two concurrent approvals cannot both succeed
+        const result = await prisma.commission.updateMany({
+            where: { id: commId, status: 'REQUESTED' },
             data:  { status: 'PAID', paidAt: new Date() },
         });
+        if (result.count === 0) return res.status(409).json({ error: 'This request was already processed' });
 
+        const updated = await prisma.commission.findUnique({ where: { id: commId } });
+        await audit(req, 'APPROVE_PAYOUT', 'Commission', commId, { status: 'REQUESTED' }, { status: 'PAID', netPayout: commission.netPayout, agentId: commission.agentId });
         res.json(updated);
     } catch (error) {
         console.error('Error approving payout:', error);
@@ -223,15 +232,21 @@ router.post('/commissions/:id/reject', authorizeRole(['SUPERADMIN', 'FIRMADMIN',
             where: { id: commId, orgId: req.user.orgId },
         });
         if (!commission) return res.status(404).json({ error: 'Commission not found' });
+        if (commission.agentId === req.user.userId) {
+            return res.status(403).json({ error: 'You cannot review your own payout request' });
+        }
         if (commission.status !== 'REQUESTED') {
             return res.status(400).json({ error: `Cannot reject a commission in ${commission.status} status` });
         }
 
-        const updated = await prisma.commission.update({
-            where: { id: commId },
+        const result = await prisma.commission.updateMany({
+            where: { id: commId, status: 'REQUESTED' },
             data:  { status: 'PENDING' },
         });
+        if (result.count === 0) return res.status(409).json({ error: 'This request was already processed' });
 
+        const updated = await prisma.commission.findUnique({ where: { id: commId } });
+        await audit(req, 'REJECT_PAYOUT', 'Commission', commId, { status: 'REQUESTED' }, { status: 'PENDING', agentId: commission.agentId });
         res.json(updated);
     } catch (error) {
         console.error('Error rejecting payout:', error);

@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const server_1 = require("../server");
 const authMiddleware_1 = require("../middleware/authMiddleware");
+const audit_1 = require("../lib/audit");
 const router = express_1.default.Router();
 // GET /api/finance/metrics
 // Gets the high-level YTD metrics and firm leaderboard for the current user
@@ -181,13 +182,22 @@ router.post('/commissions/:id/approve', (0, authMiddleware_1.authorizeRole)(['SU
         });
         if (!commission)
             return res.status(404).json({ error: 'Commission not found' });
+        // Separation of duties: a manager who also sells must not approve their own payout
+        if (commission.agentId === req.user.userId) {
+            return res.status(403).json({ error: 'You cannot approve your own payout request' });
+        }
         if (commission.status !== 'REQUESTED') {
             return res.status(400).json({ error: `Cannot approve a commission in ${commission.status} status` });
         }
-        const updated = await server_1.prisma.commission.update({
-            where: { id: commId },
+        // Conditional update so two concurrent approvals cannot both succeed
+        const result = await server_1.prisma.commission.updateMany({
+            where: { id: commId, status: 'REQUESTED' },
             data: { status: 'PAID', paidAt: new Date() },
         });
+        if (result.count === 0)
+            return res.status(409).json({ error: 'This request was already processed' });
+        const updated = await server_1.prisma.commission.findUnique({ where: { id: commId } });
+        await (0, audit_1.audit)(req, 'APPROVE_PAYOUT', 'Commission', commId, { status: 'REQUESTED' }, { status: 'PAID', netPayout: commission.netPayout, agentId: commission.agentId });
         res.json(updated);
     }
     catch (error) {
@@ -206,13 +216,20 @@ router.post('/commissions/:id/reject', (0, authMiddleware_1.authorizeRole)(['SUP
         });
         if (!commission)
             return res.status(404).json({ error: 'Commission not found' });
+        if (commission.agentId === req.user.userId) {
+            return res.status(403).json({ error: 'You cannot review your own payout request' });
+        }
         if (commission.status !== 'REQUESTED') {
             return res.status(400).json({ error: `Cannot reject a commission in ${commission.status} status` });
         }
-        const updated = await server_1.prisma.commission.update({
-            where: { id: commId },
+        const result = await server_1.prisma.commission.updateMany({
+            where: { id: commId, status: 'REQUESTED' },
             data: { status: 'PENDING' },
         });
+        if (result.count === 0)
+            return res.status(409).json({ error: 'This request was already processed' });
+        const updated = await server_1.prisma.commission.findUnique({ where: { id: commId } });
+        await (0, audit_1.audit)(req, 'REJECT_PAYOUT', 'Commission', commId, { status: 'REQUESTED' }, { status: 'PENDING', agentId: commission.agentId });
         res.json(updated);
     }
     catch (error) {

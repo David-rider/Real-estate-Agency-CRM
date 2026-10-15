@@ -125,7 +125,7 @@ const DEFAULT_MKT_PREF   = { emailSignature: "", defaultListingTemplate: "", pre
 // ─── Main component ──────────────────────────────────────────────────────────────
 export default function SettingsPage() {
   const { t } = useI18n();
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const { theme, setTheme } = useTheme();
   const toast = useToast();
 
@@ -219,8 +219,11 @@ export default function SettingsPage() {
 
   // ── Feature state ────────────────────────────────────────────────────────────
   const ls = <T,>(key: string, def: T): T => { try { return { ...def, ...JSON.parse(localStorage.getItem(key) || "{}") }; } catch { return def; } };
-  const [profile,     setProfile]     = React.useState(() => ls("settings_profile",       DEFAULT_PROFILE));
-  const [orgSettings, setOrgSettings] = React.useState({ companyName: "XYZ Realty Group", website: "https://xyzrealty.com", address: "350 Fifth Ave, New York, NY 10118", licenseNumber: "10401234567", phone: "+1 (212) 555-0100", logoUrl: "" });
+  // Profile and org details are server-backed (loaded below), not localStorage
+  const [profile,     setProfile]     = React.useState(DEFAULT_PROFILE);
+  const [orgSettings, setOrgSettings] = React.useState({ companyName: "", website: "", address: "", licenseNumber: "", phone: "", logoUrl: "" });
+  const [orgPlan,     setOrgPlan]     = React.useState<{ subscription: string; seats: { limit: number | null; used: number; pendingInvites: number } } | null>(null);
+  const [saving,      setSaving]      = React.useState(false);
   const [notif,       setNotif]       = React.useState(() => ls("settings_notif",         DEFAULT_NOTIF));
   const [crmOrg,      setCrmOrg]      = React.useState(() => ls("settings_crm_org",       DEFAULT_CRM_ORG));
   const [crmPersonal, setCrmPersonal] = React.useState(() => ls("settings_crm_personal",  DEFAULT_CRM_PREF));
@@ -245,7 +248,77 @@ export default function SettingsPage() {
       .then((r) => r.json()).then((d) => setUsers(Array.isArray(d) ? d : [])).catch(() => setUsers([])).finally(() => setUsersLoading(false));
   }, [activeSection]);
 
-  // ── Save helper ──────────────────────────────────────────────────────────────
+  // ── Load server-backed profile & organization ────────────────────────────────
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+  const authHeaders = () => ({ "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("token")}` });
+
+  React.useEffect(() => {
+    fetch(`${API_BASE}/api/settings/profile`, { headers: authHeaders() })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((p) => {
+        if (!p) return;
+        setProfile({
+          name: p.name ?? "", title: p.title ?? "", phone: p.phone ?? "", licenseNumber: p.licenseNumber ?? "",
+          linkedIn: p.linkedIn ?? "", bio: p.bio ?? "", timezone: p.timezone ?? "America/New_York",
+        });
+      })
+      .catch(() => {});
+    fetch(`${API_BASE}/api/settings/organization`, { headers: authHeaders() })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((o) => {
+        if (!o) return;
+        setOrgSettings({
+          companyName: o.name ?? "", website: o.website ?? "", address: o.address ?? "",
+          licenseNumber: o.licenseNumber ?? "", phone: o.phone ?? "", logoUrl: o.logoUrl ?? "",
+        });
+        setOrgPlan({ subscription: o.subscription, seats: o.seats });
+      })
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const saveProfile = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/settings/profile`, { method: "PATCH", headers: authHeaders(), body: JSON.stringify(profile) });
+      const d = await res.json();
+      if (res.ok) {
+        toast.success(Sc.saveChanges ?? "Profile saved");
+        // Keep the header/sidebar name in sync with the saved value
+        if (user && d.name && d.name !== user.name) updateUser({ ...user, name: d.name });
+      } else toast.error(d.error || "Failed to save profile");
+    } catch { toast.error("Network error"); } finally { setSaving(false); }
+  };
+
+  const saveOrg = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/settings/organization`, {
+        method: "PATCH", headers: authHeaders(),
+        body: JSON.stringify({ name: orgSettings.companyName, website: orgSettings.website, address: orgSettings.address,
+          phone: orgSettings.phone, licenseNumber: orgSettings.licenseNumber, logoUrl: orgSettings.logoUrl }),
+      });
+      const d = await res.json();
+      if (res.ok) toast.success(Sc.saveChanges ?? "Organization saved");
+      else toast.error(d.error || "Failed to save organization");
+    } catch { toast.error("Network error"); } finally { setSaving(false); }
+  };
+
+  // Downloads a JSON export from an authenticated endpoint
+  const downloadJson = async (path: string, fallbackName: string) => {
+    try {
+      const res = await fetch(`${API_BASE}${path}`, { headers: authHeaders() });
+      if (!res.ok) { const d = await res.json().catch(() => ({})); toast.error(d.error || "Export failed"); return; }
+      const blob = await res.blob();
+      const name = res.headers.get("Content-Disposition")?.match(/filename="([^"]+)"/)?.[1] || fallbackName;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = name; a.click();
+      URL.revokeObjectURL(url);
+    } catch { toast.error("Network error"); }
+  };
+
+  // ── Save helper (device-local personal preferences) ──────────────────────────
   const save = (key: string, data: any) => { localStorage.setItem(key, JSON.stringify(data)); toast.success(Sc.saveChanges ?? "Settings saved"); };
 
   const handleRoleChange = async (userId: string, newRole: string) => {
@@ -255,7 +328,7 @@ export default function SettingsPage() {
         body: JSON.stringify({ role: newRole }),
       });
       if (res.ok) { setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u))); toast.success("Role updated"); }
-      else toast.error("Failed to update role");
+      else { const d = await res.json().catch(() => ({})); toast.error(d.error || "Failed to update role"); }
     } catch { toast.error("Network error"); }
   };
 
@@ -347,7 +420,7 @@ export default function SettingsPage() {
         <SettingRow label={P.bio ?? "Bio"} description={P.bioDesc}>
           <textarea className={TEXTAREA_CLS} style={{ width: 280 }} rows={3} value={profile.bio} onChange={(e) => setProfile({ ...profile, bio: e.target.value })} placeholder="NYC specialist with 10+ years..." />
         </SettingRow>
-        <SaveBtn label={P.save ?? "Save Profile"} onClick={() => save("settings_profile", profile)} />
+        <SaveBtn label={saving ? "…" : (P.save ?? "Save Profile")} onClick={saveProfile} />
       </div>
     );
   };
@@ -418,19 +491,27 @@ export default function SettingsPage() {
           <div className="flex items-center justify-between p-4 bg-surface rounded-lg border border-border">
             <div>
               <div className="text-sm font-semibold text-foreground">{user?.tier || "CORE"} Plan</div>
-              <div className="text-xs text-foreground/50 mt-0.5">{O.billedMonthly ?? "Billed monthly · Next renewal Jun 1, 2026"}</div>
+              {orgPlan && (
+                <div className="text-xs text-foreground/50 mt-0.5">
+                  {orgPlan.seats.limit === null
+                    ? `${orgPlan.seats.used} members · unlimited seats`
+                    : `${orgPlan.seats.used} / ${orgPlan.seats.limit} seats used${orgPlan.seats.pendingInvites ? ` · ${orgPlan.seats.pendingInvites} pending invite(s)` : ""}`}
+                </div>
+              )}
             </div>
             <a href="/upgrade" className="px-3 py-1.5 bg-primary text-background rounded-lg text-xs font-medium hover:bg-primary/90">{O.upgrade ?? "Upgrade"}</a>
           </div>
         </div>
-        <div className="mt-6">
-          <div className="text-xs font-semibold uppercase tracking-widest text-foreground/40 mb-4">{O.dataCompliance ?? "Data & Compliance"}</div>
-          <div className="flex flex-wrap gap-3">
-            <button className="px-4 py-2 bg-surface border border-border rounded-lg text-sm text-foreground hover:bg-background transition-colors" onClick={() => toast.info("GDPR data export will be emailed within 24 hours.")}>{O.exportGdpr ?? "Export All Data (GDPR)"}</button>
-            <button className="px-4 py-2 bg-surface border border-border rounded-lg text-sm text-foreground hover:bg-background transition-colors" onClick={() => toast.info("Audit log download started.")}>{O.downloadAudit ?? "Download Audit Log"}</button>
+        {isFirmAdmin && (
+          <div className="mt-6">
+            <div className="text-xs font-semibold uppercase tracking-widest text-foreground/40 mb-4">{O.dataCompliance ?? "Data & Compliance"}</div>
+            <div className="flex flex-wrap gap-3">
+              <button className="px-4 py-2 bg-surface border border-border rounded-lg text-sm text-foreground hover:bg-background transition-colors" onClick={() => downloadJson("/api/settings/organization/export", "org-export.json")}>{O.exportGdpr ?? "Export All Data (GDPR)"}</button>
+              <button className="px-4 py-2 bg-surface border border-border rounded-lg text-sm text-foreground hover:bg-background transition-colors" onClick={() => downloadJson("/api/settings/organization/audit-log", "audit-log.json")}>{O.downloadAudit ?? "Download Audit Log"}</button>
+            </div>
           </div>
-        </div>
-        {isFirmAdmin && <SaveBtn label={O.save ?? "Save Org Settings"} onClick={() => toast.success("Org settings saved")} />}
+        )}
+        {isFirmAdmin && <SaveBtn label={saving ? "…" : (O.save ?? "Save Org Settings")} onClick={saveOrg} />}
       </div>
     );
   };

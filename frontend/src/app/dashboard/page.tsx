@@ -39,7 +39,7 @@ export default function DashboardPage() {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => {
-        if (res.status === 401 || res.status === 403) {
+        if (res.status === 401) {
           localStorage.removeItem("token");
           localStorage.removeItem("user");
           window.location.href = "/login";
