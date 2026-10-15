@@ -12,7 +12,7 @@
   "dependencies": {
     "@types/react-big-calendar": "^1.16.3",
     "date-fns": "^4.1.0",
-    "next": "^16.2.12",
+    "next": "^16.4.1",
     "react": "19.2.3",
     "react-big-calendar": "^1.19.4",
     "react-dom": "19.2.3",
@@ -24,12 +24,12 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.2.12",
+    "eslint-config-next": "16.4.1",
     "tailwindcss": "^4",
     "typescript": "^5"
   },
   "overrides": {
-    "sharp": "^0.35.3",
+    "sharp": "^0.35.5",
     "lodash": "^4.18.1",
     "lodash-es": "^4.18.1",
     "postcss": "^8.5.25"
