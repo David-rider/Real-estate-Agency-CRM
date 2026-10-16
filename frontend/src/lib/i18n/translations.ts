@@ -584,6 +584,9 @@ export const translations = {
         connected: "Connected",
         connect: "Connect",
         disconnect: "Disconnect",
+        comingSoon: "Coming soon",
+        comingSoonShort: "Soon",
+        comingSoonDesc: "This section is a preview. These options aren't active yet and changes won't be saved or applied.",
         firmAdminOnly: "Firm Admin+",
         saveChanges: "Save Changes",
         resetToDefaults: "Reset to Defaults",
@@ -1620,6 +1623,9 @@ export const translations = {
         connected: "已连接",
         connect: "连接",
         disconnect: "断开连接",
+        comingSoon: "即将推出",
+        comingSoonShort: "即将推出",
+        comingSoonDesc: "本栏目为功能预览，相关选项暂未启用，修改不会被保存或生效。",
         firmAdminOnly: "公司管理员及以上",
         saveChanges: "保存更改",
         resetToDefaults: "重置为默认",
@@ -2656,6 +2662,9 @@ export const translations = {
         connected: "已連線",
         connect: "連線",
         disconnect: "中斷連線",
+        comingSoon: "即將推出",
+        comingSoonShort: "即將推出",
+        comingSoonDesc: "本欄目為功能預覽，相關選項暫未啟用，修改不會被儲存或生效。",
         firmAdminOnly: "公司管理員及以上",
         saveChanges: "儲存變更",
         resetToDefaults: "重設為預設",
@@ -3668,6 +3677,11 @@ export const translations = {
     settings: {
       title: "Ajustes y Administración",
       subtitle: "Administre usuarios, equipos, auditorías e integraciones.",
+      common: {
+        comingSoon: "Próximamente",
+        comingSoonShort: "Pronto",
+        comingSoonDesc: "Esta sección es una vista previa. Estas opciones aún no están activas y los cambios no se guardarán ni se aplicarán.",
+      },
       sessionExpired:
         "Su sesión ha expirado. Por favor, cierre la sesión y vuelva a iniciarla.",
       tabs: {

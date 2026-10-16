@@ -133,6 +133,27 @@ export default function SettingsPage() {
   const R    = (t as any).roles      ?? {};
   const Sc   = S.common              ?? {};
 
+  // Sections that are previews only: nothing in the app reads these values yet, so
+  // they render read-only and labelled "Coming soon" rather than pretending to save.
+  // Remove a key from this set when its backend enforcement ships.
+  // (Profile, Org Settings, Team & Roles and the theme picker are real and server-backed.)
+  const COMING_SOON = new Set([
+    "notifications", "access-control", "security", "integrations",
+    "crm", "properties", "finance", "appointments", "documents", "marketing",
+  ]);
+  const soonLabel = Sc.comingSoon ?? "Coming soon";
+  const soonShort = Sc.comingSoonShort ?? "Soon"; // compact form for the narrow sidebar
+  const soonBanner = () => (
+    <div className="mb-6 flex items-start gap-3 px-4 py-3 rounded-lg bg-primary/10 border border-primary/20 text-sm text-primary">
+      <span className="px-2 py-0.5 rounded-full bg-primary text-background text-xs font-semibold shrink-0">{soonLabel}</span>
+      <span className="text-primary/90">{Sc.comingSoonDesc ?? "This section is a preview. These options aren't active yet and changes won't be saved or applied."}</span>
+    </div>
+  );
+  // `inert` removes the subtree from pointer, keyboard and assistive-tech interaction
+  const previewOnly = (content: React.ReactNode) => (
+    <div inert aria-disabled="true" className="opacity-50 select-none pointer-events-none">{content}</div>
+  );
+
   // Role helpers
   const userWeight = ROLE_WEIGHT[user?.role || ""] || 0;
   const canEdit    = (minRole: string) => userWeight >= (ROLE_WEIGHT[minRole] || 0);
@@ -726,32 +747,40 @@ export default function SettingsPage() {
             ))}
           </div>
         </SettingRow>
-        <SettingRow label={AP.sidebarPosition ?? "Sidebar Position"} description={AP.sidebarPositionDesc}>
-          <select className={SELECT_CLS}>
-            <option>{AP.sidebarLeft ?? "Left (default)"}</option>
-            <option>{AP.sidebarCollapsed ?? "Collapsed"}</option>
-          </select>
-        </SettingRow>
-        <SettingRow label={AP.density ?? "Density"} description={AP.densityDesc}>
-          <select className={SELECT_CLS}>
-            <option value="comfortable">{AP.densityComfortable ?? "Comfortable"}</option>
-            <option value="compact">{AP.densityCompact ?? "Compact"}</option>
-            <option value="spacious">{AP.densitySpacious ?? "Spacious"}</option>
-          </select>
-        </SettingRow>
-        <SettingRow label={AP.dateFormat ?? "Date Format"}>
-          <select className={SELECT_CLS}>
-            <option value="MM/DD/YYYY">MM/DD/YYYY (US)</option>
-            <option value="DD/MM/YYYY">DD/MM/YYYY (EU)</option>
-            <option value="YYYY-MM-DD">YYYY-MM-DD (ISO)</option>
-          </select>
-        </SettingRow>
-        <SettingRow label={AP.numberFormat ?? "Number Format"}>
-          <select className={SELECT_CLS}>
-            <option value="1,234,567">1,234,567 (US)</option>
-            <option value="1.234.567">1.234.567 (EU)</option>
-          </select>
-        </SettingRow>
+        {/* Only the theme picker above is wired up; the rest are not connected to anything yet */}
+        <div className="mt-6">
+          {soonBanner()}
+          {previewOnly(
+            <>
+              <SettingRow label={AP.sidebarPosition ?? "Sidebar Position"} description={AP.sidebarPositionDesc}>
+                <select className={SELECT_CLS}>
+                  <option>{AP.sidebarLeft ?? "Left (default)"}</option>
+                  <option>{AP.sidebarCollapsed ?? "Collapsed"}</option>
+                </select>
+              </SettingRow>
+              <SettingRow label={AP.density ?? "Density"} description={AP.densityDesc}>
+                <select className={SELECT_CLS}>
+                  <option value="comfortable">{AP.densityComfortable ?? "Comfortable"}</option>
+                  <option value="compact">{AP.densityCompact ?? "Compact"}</option>
+                  <option value="spacious">{AP.densitySpacious ?? "Spacious"}</option>
+                </select>
+              </SettingRow>
+              <SettingRow label={AP.dateFormat ?? "Date Format"}>
+                <select className={SELECT_CLS}>
+                  <option value="MM/DD/YYYY">MM/DD/YYYY (US)</option>
+                  <option value="DD/MM/YYYY">DD/MM/YYYY (EU)</option>
+                  <option value="YYYY-MM-DD">YYYY-MM-DD (ISO)</option>
+                </select>
+              </SettingRow>
+              <SettingRow label={AP.numberFormat ?? "Number Format"}>
+                <select className={SELECT_CLS}>
+                  <option value="1,234,567">1,234,567 (US)</option>
+                  <option value="1.234.567">1.234.567 (EU)</option>
+                </select>
+              </SettingRow>
+            </>
+          )}
+        </div>
       </div>
     );
   };
@@ -1171,7 +1200,7 @@ export default function SettingsPage() {
   };
 
   // ── Section router ────────────────────────────────────────────────────────────
-  const renderSection = () => {
+  const renderSectionContent = () => {
     switch (activeSection) {
       case "profile":        return renderProfile();
       case "notifications":  return renderNotifications();
@@ -1191,6 +1220,17 @@ export default function SettingsPage() {
     }
   };
 
+  const renderSection = () => {
+    const content = renderSectionContent();
+    if (!COMING_SOON.has(activeSection)) return content;
+    return (
+      <div>
+        {soonBanner()}
+        {previewOnly(content)}
+      </div>
+    );
+  };
+
   // ── Layout ────────────────────────────────────────────────────────────────────
   return (
     <div className="flex h-full min-h-0">
@@ -1208,8 +1248,11 @@ export default function SettingsPage() {
                     activeSection === item.key ? "bg-primary/10 text-primary font-medium" : "text-foreground/60 hover:text-foreground hover:bg-background"
                   }`}>
                   <span className="text-base">{item.icon}</span>
-                  <span className="flex-1">{item.label}</span>
-                  {(item as any).adminOnly && !isFirmAdmin && <span className="text-xs text-foreground/30">🔒</span>}
+                  <span className="flex-1 truncate">{item.label}</span>
+                  {COMING_SOON.has(item.key) && (
+                    <span className="shrink-0 px-1.5 py-0.5 rounded bg-foreground/10 text-[10px] leading-none font-medium text-foreground/50" title={soonLabel}>{soonShort}</span>
+                  )}
+                  {(item as any).adminOnly && !isFirmAdmin && !COMING_SOON.has(item.key) && <span className="text-xs text-foreground/30">🔒</span>}
                 </button>
               ))}
             </div>
