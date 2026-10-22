@@ -14,7 +14,8 @@
     "test:smoke": "ts-node --transpile-only tests/smoke.ts",
     "db:migrate": "prisma migrate deploy",
     "db:seed": "ts-node prisma/seed.ts",
-    "typecheck": "tsc --skipLibCheck --noEmit"
+    "typecheck": "tsc --skipLibCheck --noEmit",
+    "release": "ts-node --transpile-only src/release.ts"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"

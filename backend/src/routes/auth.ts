@@ -7,6 +7,7 @@ import rateLimit from 'express-rate-limit';
 import { sendEmail, passwordResetEmail, welcomeEmail } from '../lib/email';
 import { authenticateToken, AuthRequest } from '../middleware/authMiddleware';
 import { getSeatUsage } from '../lib/seats';
+import { orgSlug } from '../lib/slug';
 
 // Org subscription level → member tier (subscription is org-wide)
 const ORG_SUB_TO_TIER: Record<string, 'CORE' | 'PRO' | 'ELITE'> = {
@@ -121,7 +122,7 @@ router.post('/register', authLimiter, async (req, res) => {
         // brokerages can legitimately share a name (e.g. "Sunrise Realty" in different
         // cities) — so name-matching was never a valid way to detect "does this org exist".
         const org = await prisma.organization.create({
-            data: { name: orgName.trim() }
+            data: { name: orgName.trim(), slug: orgSlug(orgName.trim()) }
         });
         const newRole = 'FIRMADMIN'; // Creator of a new org becomes its admin
 

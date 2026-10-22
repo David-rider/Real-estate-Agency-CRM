@@ -45,6 +45,7 @@ import searchRoutes from './routes/search';
 
 import { authenticateToken } from './middleware/authMiddleware';
 import { startReminderLoop } from './lib/reminders';
+import { runRelease } from './release';
 
 // Middleware
 // In production an explicit FRONTEND_URL allowlist is mandatory: falling back to
@@ -125,14 +126,30 @@ app.use((err: any, req: express.Request, res: express.Response, _next: express.N
 });
 
 // Start Server
-const server = app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT} [${process.env.NODE_ENV || 'development'}]`);
+let server: ReturnType<typeof app.listen> | undefined;
+let reminderTimer: ReturnType<typeof startReminderLoop> | null = null;
+
+async function start() {
+    // Production applies database migrations (and the one-time baseline) before
+    // accepting traffic. If this fails the process exits and the host keeps the
+    // previous version running.
+    if (process.env.NODE_ENV === 'production' && process.env.RUN_MIGRATIONS_ON_START !== 'false') {
+        await runRelease();
+    }
+    server = app.listen(PORT, () => {
+        console.log(`Server running on port ${PORT} [${process.env.NODE_ENV || 'development'}]`);
+    });
+    reminderTimer = process.env.DISABLE_JOBS === 'true' ? null : startReminderLoop();
+}
+start().catch(err => {
+    console.error('FATAL: startup failed:', err);
+    process.exit(1);
 });
-const reminderTimer = process.env.DISABLE_JOBS === 'true' ? null : startReminderLoop();
 
 const shutdown = async (signal: string) => {
     console.log(`${signal} received — shutting down gracefully`);
     if (reminderTimer) clearInterval(reminderTimer);
+    if (!server) { await prisma.$disconnect(); process.exit(0); }
     server.close(async () => {
         await prisma.$disconnect();
         console.log('Database disconnected. Bye.');
