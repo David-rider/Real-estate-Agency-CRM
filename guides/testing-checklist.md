@@ -19,6 +19,7 @@ happen; note anything that doesn't.
 ## 3. Listings & website leads
 - [ ] **Listings → Add property**, add a photo link.
 - [ ] Click **Public page** — the listing opens without logging in.
+- [ ] **Settings → Org Settings** shows your brokerage's public listings link; it lists only your brokerage's homes.
 - [ ] Submit the inquiry form from a private/incognito window →
       the agent gets a notification, a new **Hot** client with source *Website*, and an urgent call-back task.
 - [ ] Click **QR** on the listing card and open the copied link — the form becomes an open-house sign-in.
@@ -35,10 +36,8 @@ happen; note anything that doesn't.
 - [ ] Confirm / complete / cancel it from the list.
 - [ ] **Dashboard** shows today's appointments, overdue tasks and leads needing follow-up.
 
-## 6. AI assistant (if enabled)
-- [ ] **Marketing → AI Assistant** → *Listing description* with a listing selected → copy is generated.
-- [ ] From a client page, **Draft follow-up with AI** opens the follow-up skill for that client.
-- [ ] *Objection handler* with "Your commission is too high" → a calm, compliant answer.
+## 6. AI assistant
+- [ ] **Marketing** shows the AI assistant marked **In development** with its buttons disabled (not part of this pilot).
 
 ## 7. Permissions
 - [ ] An agent only sees their own clients and deals; a manager sees the whole brokerage.
