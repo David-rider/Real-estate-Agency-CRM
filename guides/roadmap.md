@@ -1,0 +1,184 @@
+# 后续执行计划（Roadmap）
+
+本文件列出上线试用之后要做的事情，按优先级分阶段。每一项都写明：目标、要做什么（数据 / 接口 / 页面）、
+需要你准备的账号或资料、验收标准、预估工作量和风险。工作量按“1 人天 = 一个开发者一天”估算，包含测试。
+
+现有代码约定（后续开发沿用）：
+- 后端路由在 `backend/src/routes/`，跨公司校验用 `backend/src/lib/access.ts` 的 `checkRefs`、`clientScope`、`isManager`。
+- 数据库改动：修改 `backend/prisma/schema.prisma`，再在 `backend/prisma/migrations/` 新增**幂等**的迁移（`IF NOT EXISTS`）。部署时会自动执行（`backend/src/release.ts`）。
+- 前端请求统一用 `frontend/src/lib/api.ts` 的 `api()`；新增文案放在 `frontend/src/lib/i18n/extra.ts`，四种语言都要填。
+- 功能开关：前端 `frontend/src/lib/features.ts`，后端读取环境变量。
+- 每完成一项，在 `backend/tests/smoke.ts` 增加对应检查，并在 `CHANGELOG.md` 记录。
+
+---
+
+## 阶段 0：试用期间（上线后 1–2 周）
+
+| # | 事项 | 工作量 |
+|---|---|---|
+| 0.1 | 收集试用反馈，按 `guides/testing-checklist.md` 逐项跟进修复 | 持续 |
+| 0.2 | 处理 `manager@xyz.com` / `agent@xyz.com`（改密码或删除，等你确认） | 0.1 |
+| 0.3 | 自动化测试接入 CI：GitHub Actions 中启动 Postgres，运行迁移和冒烟测试，并执行前端 `tsc` 和 `next build`，每个 PR 自动跑 | 1 |
+| 0.4 | 错误监控：接入 Sentry（`.env.example` 里已预留 `SENTRY_DSN`），前后端都上报 | 0.5 |
+| 0.5 | 修复遗留的 lint 错误（`marketing/page.tsx`、`reports/page.tsx`）和 i18n 扫描出的约 280 处硬编码文案 | 2 |
+
+**验收**：PR 上能看到 CI 测试结果；线上报错能在 Sentry 里看到。
+
+---
+
+## 阶段 1：核心体验补全（约 2–3 周）
+
+### 1.1 文件真正上传（照片、合同文档）
+- **现状**：照片和文档只能填链接。
+- **目标**：直接从电脑或手机上传，文件存到 Cloudflare R2（`.env.example` 里已有 R2 变量）。
+- **数据**：`MediaAsset` 和 `Document` 已有 `url`、`sizeBytes`、`mimeType` 字段，无需改表；新增 `storageKey` 字段，用于删除文件。
+- **接口**：`POST /api/uploads/presign`（返回预签名上传地址，限制类型和大小：图片 ≤ 15MB，PDF ≤ 25MB），上传完成后再调用现有的 `POST /api/media` 和 `POST /api/documents`。删除记录时同时删除 R2 里的文件。
+- **安全**：合同等文档放在私有存储桶，查看时由后端生成 10 分钟有效的临时链接；房源照片可以放公开存储桶。
+- **页面**：房源照片支持拖拽上传和排序；文档页支持上传，并可预览 PDF。
+- **需要你准备**：Cloudflare 账号，创建两个存储桶（公开、私有）和 API Token。
+- **验收**：上传照片后公开页能显示；文档只有本公司有权限的人能打开；删除后文件同时被清理。
+- **工作量**：4 人天。
+
+### 1.2 线索自动分配
+- **现状**：只能由经理手动指派。
+- **目标**：网站和开放日来的线索按规则自动分给经纪人（参考 splash-lead-router）。
+- **数据**：新表 `LeadRoutingRule`（orgId、优先级、条件：来源 / 区域 / 预算区间 / 房源类型、分配方式：指定人 / 轮询 / 负载最少、是否启用）；`User` 新增 `acceptingLeads Boolean` 和 `maxActiveLeads Int?`。
+- **逻辑**：放在 `backend/src/lib/routing.ts`。网站咨询默认仍然分给挂牌经纪人；规则按优先级依次匹配，命中后分配并通知；全部没命中时分给公司管理员。
+- **页面**：设置中新增“线索分配”页，可增删、排序规则，并能用一条示例线索测试会分给谁。
+- **验收**：配置轮询后，连续 3 条线索依次分给 3 个人；停止接单的经纪人不会被分到。
+- **工作量**：4 人天。
+
+### 1.3 线索 / 预约的邮件提醒
+- **现状**：只有站内通知。`backend/src/lib/email.ts` 已支持 Resend 和 SendGrid。
+- **目标**：新线索、预约前 24 小时、任务逾期时，同时给经纪人发邮件；每个人可以在设置里关闭。
+- **数据**：`User` 新增 `notificationPrefs Json`。
+- **需要你准备**：Resend 账号，以及已验证的发件域名（配置 `EMAIL_API_KEY`、`EMAIL_FROM`）。
+- **工作量**：2 人天。
+
+### 1.4 公开页地址自定义
+- 允许公司管理员修改 `slug`（例如改成 `cpre`），需要校验格式和唯一性。改名后旧地址跳转到新地址：新表 `OrgSlugHistory` 记录旧地址。
+- 同一个页面允许上传 Logo、设置主题色。
+- **工作量**：1.5 人天。
+
+### 1.5 Google 登录（真正可用）
+- **现状**：按钮显示“即将推出”；后端接口在生产环境需要配置 `GOOGLE_CLIENT_ID` 才能使用。
+- **做法**：前端接入 Google Identity Services，拿到 `idToken` 后调用 `/api/oauth/google`。已有账号需要先用密码登录，再在“设置 → 账号”里绑定 Google（新增 `POST /api/oauth/google/link` 接口，需登录后调用）。
+- **需要你准备**：Google Cloud 的 OAuth Client ID，以及授权的域名。
+- **工作量**：2 人天。Apple 登录见 3.4。
+
+---
+
+## 阶段 2：获客与沟通（约 3–4 周）
+
+### 2.1 邮件群发与培育序列
+- **目标**：按客户筛选条件（类型、优先级、来源、标签）批量发邮件；支持自动序列，例如新线索第 0 / 2 / 7 / 14 天各发一封。
+- **数据**：新表 `Campaign`（名称、渠道、模板、受众条件、状态、计划时间）、`CampaignRecipient`（发送状态、打开、点击、退订）、`Sequence` 和 `SequenceStep`、`SequenceEnrollment`；`Client` 新增 `emailOptOut`。
+- **合规**：每封邮件必须带退订链接（CAN-SPAM 要求）；退订的客户自动排除；发送频率要限制。
+- **后端**：发送任务需要一个后台队列。Render 免费版会休眠，所以这时需要升级到付费实例，或使用 Render Cron Job，或改用 Upstash QStash 这类托管队列。
+- **页面**：营销页新增“群发”和“序列”标签页、模板编辑器（支持 `{{firstName}}` 等变量）和发送报表。
+- **需要你准备**：Resend 或 SendGrid 账号，并完成发件域名的 SPF / DKIM 配置。
+- **工作量**：8 人天。
+
+### 2.2 短信（以及可选的 WhatsApp）
+- **目标**：在客户页直接给客户发短信，并接收回复；与时间线打通。
+- **服务商**：Twilio。美国的短信必须先完成 A2P 10DLC 注册，审核约 1–3 周，**要尽早提交**。
+- **数据**：新表 `Message`（clientId、方向、渠道、内容、状态、服务商消息 ID）；`Client` 新增 `smsOptOut`。客户回复 STOP 时自动退订。
+- **接口**：`POST /api/messages/sms`（发送）；`POST /api/webhooks/twilio`（接收回复，需要校验 Twilio 签名）。
+- **页面**：客户详情新增“消息”标签页；顶部显示未读消息数。
+- **工作量**：5 人天，不含审核等待时间。
+- **风险**：短信合规（TCPA）——必须有客户同意的记录。网站表单需要加同意勾选框，并保存同意时间。
+
+### 2.3 统一收件箱
+- 把邮件回复、短信、网站咨询汇总到一个页面，可以按经纪人分配。依赖 2.1 和 2.2。
+- 邮件回复的接收需要使用服务商的入站解析（Resend 或 SendGrid Inbound）。
+- **工作量**：5 人天。
+
+### 2.4 开放日模式增强
+- 签到页增加：是否已有经纪人、预算、购房时间、同意接收联系等问题；生成可直接打印的二维码 PDF。
+- 开放日结束后，自动给当天签到的人生成跟进任务；启用 2.1 后可以自动发感谢邮件。
+- **工作量**：2 人天。
+
+---
+
+## 阶段 3：交易与外部集成（约 3–4 周）
+
+### 3.1 DocuSign 电子签
+- **现状**：`backend/src/routes/integrations.ts` 里是模拟接口。
+- **做法**：使用 DocuSign eSignature REST API 和 JWT 授权（`.env.example` 里已预留变量）。从交易的文档中选择文件，设置签署人后发送；通过 Webhook（DocuSign Connect）回写签署状态，更新 `Document.signedAt`，并通知经纪人。
+- **需要你准备**：DocuSign 开发者账号，正式上线时需要 Go-Live 审核。
+- **工作量**：5 人天。依赖 1.1 文件上传。
+
+### 3.2 Google 日历同步
+- **做法**：OAuth 授权后，预约单向同步到 Google 日历（新增、修改、取消）。之后可以做双向同步，用 watch channel 接收变更。
+- **数据**：新表 `CalendarConnection`（userId、refreshToken 加密存储、calendarId）；`Appointment` 新增 `externalEventId`。
+- **工作量**：4 人天（单向），双向另加 3 人天。
+
+### 3.3 房源数据导入（MLS / StreetEasy / Zillow）
+- **现状**：“Zillow 自动填充”是模拟数据。
+- **现实情况**：Zillow 已经停止公开 API；纽约地区主要是 REBNY RLS 和 StreetEasy 的数据源，都需要经纪公司向数据方申请授权。
+- **做法**：先实现 **CSV 或 Excel 批量导入房源和客户**（不依赖第三方，马上就能用）；拿到 RLS 或 RESO Web API 授权后，再做定时同步。
+- **工作量**：CSV 导入 3 人天；RESO 同步 6 人天，需等授权。
+
+### 3.4 Apple 登录（带校验）
+- 使用 Apple 公钥校验 `identityToken`（例如 `apple-signin-auth` 库），从校验后的 token 里读取邮箱，不再信任请求体里的数据；之后重新开放 `/api/oauth/apple`。
+- **需要你准备**：Apple Developer 账号，配置 Services ID 和 Key。
+- **工作量**：1.5 人天。
+
+### 3.5 交易流程增强
+- 过户清单模板可以按公司自定义：新表 `ChecklistTemplate`，按交易类型区分（买方、卖方、租赁、Co-op 等）。
+- 交易详情页：用时间轴展示各个关键日期，并在到期前提醒。
+- 双方经纪人分佣：一笔交易可以有多个佣金记录，按比例拆分（数据结构已支持多条记录）。
+- **工作量**：5 人天。
+
+---
+
+## 阶段 4：AI 助手正式上线（约 1–2 周，可与阶段 2、3 并行）
+
+- **现状**：代码已完成（`backend/src/lib/ai.ts`，共 8 个技能），目前通过开关关闭。
+- **上线前要做**：
+  1. 内部评测：每个技能准备 10–20 条真实场景，检查内容是否准确、是否有编造信息、是否违反公平住房规定；必要时调整提示词。
+  2. 用量和费用控制：新表 `AiUsage`（每次调用的 token 数和费用），按公司设置每月额度，超出后提示升级套餐。
+  3. 生成结果只作为草稿：一键填入房源描述或邮件草稿，用户确认后才保存。
+  4. 隐私：在隐私政策中说明会把哪些客户数据发给 AI 服务商。
+- **开启方式**：后端设置 `AI_ASSISTANT_ENABLED=true` 和 `ANTHROPIC_API_KEY`，前端设置 `NEXT_PUBLIC_AI_ASSISTANT_ENABLED=true`。
+- **工作量**：4 人天（不含评测时间）。
+
+---
+
+## 阶段 5：团队管理与移动端（按需）
+
+| # | 事项 | 说明 | 工作量 |
+|---|---|---|---|
+| 5.1 | 业绩目标与排行榜 | 月度目标（带看数、报价数、成交额），仪表盘进度条，排行榜 | 3 |
+| 5.2 | 报表增强 | 线索来源转化率、平均成交周期、经纪人对比；支持导出 Excel | 4 |
+| 5.3 | 移动端体验 | 先完善 PWA（`manifest.json` 已有）：离线缓存、添加到主屏幕、推送通知；再评估是否开发原生 App | 4（PWA） |
+| 5.4 | 一键拨号与通话记录 | 用 Twilio Voice 网页拨号，自动记录通话时长，可选录音（需事先告知对方） | 5 |
+| 5.5 | 账号安全 | 管理员强制两步验证（TOTP），登录设备管理 | 3 |
+
+---
+
+## 建议排期
+
+| 周次 | 内容 |
+|---|---|
+| 第 1–2 周 | 阶段 0；同时提交 Twilio A2P 10DLC 注册、DocuSign 开发者账号申请 |
+| 第 3–5 周 | 阶段 1（文件上传 → 线索分配 → 邮件提醒 → 公开页地址自定义 → Google 登录） |
+| 第 6–9 周 | 阶段 2（群发与序列 → 短信 → 收件箱 → 开放日增强） |
+| 第 10–13 周 | 阶段 3（DocuSign → 日历同步 → CSV 导入 → Apple 登录 → 交易增强） |
+| 穿插进行 | 阶段 4：AI 评测与上线 |
+| 之后 | 阶段 5，按客户反馈排序 |
+
+## 需要你提前准备的账号
+
+| 用途 | 服务 | 对应阶段 |
+|---|---|---|
+| 错误监控 | Sentry | 0 |
+| 文件存储 | Cloudflare R2 | 1.1 |
+| 邮件 | Resend 或 SendGrid，并配置发件域名 DNS | 1.3、2.1 |
+| Google 登录和日历 | Google Cloud OAuth | 1.5、3.2 |
+| 短信和电话 | Twilio，并完成 A2P 10DLC 注册 | 2.2、5.4 |
+| 电子签 | DocuSign 开发者账号，正式使用需 Go-Live | 3.1 |
+| 房源数据 | REBNY RLS 或 MLS 数据授权 | 3.3 |
+| Apple 登录 | Apple Developer 账号 | 3.4 |
+| AI | Anthropic API Key | 4 |
+| 后台任务 | Render 付费实例或 Cron Job | 2.1 起 |

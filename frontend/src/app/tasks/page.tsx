@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useToast } from "@/components/ui/Toast";
 import { useI18n } from "@/lib/i18n/I18nContext";
+import { dateInputToISO, isoToDateInput } from "@/lib/api";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 const token = () => (typeof window !== "undefined" ? localStorage.getItem("token") || "" : "");
@@ -76,7 +77,7 @@ export default function TasksPage() {
             title:       task.title,
             description: task.description || "",
             priority:    task.priority,
-            dueDate:     task.dueDate ? task.dueDate.substring(0, 10) : "",
+            dueDate:     isoToDateInput(task.dueDate),
         });
         setShowForm(true);
     };
@@ -90,7 +91,7 @@ export default function TasksPage() {
             const res = await fetch(url, {
                 method,
                 headers: { "Content-Type": "application/json", Authorization: `Bearer ${token()}` },
-                body: JSON.stringify({ ...form, dueDate: form.dueDate || null }),
+                body: JSON.stringify({ ...form, dueDate: dateInputToISO(form.dueDate, true) }),
             });
             if (res.ok) {
                 toast.success(editTask ? T.toastUpdated : T.toastCreated);

@@ -1,35 +1,58 @@
 import express from 'express';
 import { prisma } from '../server';
+import { AuthRequest } from '../middleware/authMiddleware';
+import { checkRefs, isManager, optNumber } from '../lib/access';
+import { createNotification } from './notifications';
 
 const router = express.Router();
+const STATUSES = ['PENDING', 'ACCEPTED', 'PAID', 'DECLINED'];
 
-// Get all referrals for an org
-router.get('/', async (req, res) => {
-    try {
-        const orgId = (req as any).user?.orgId;
-        const referrals = await prisma.referral.findMany({
-            where: { orgId },
-            include: { referrer: true, referee: true }
-        });
-        res.json(referrals);
-    } catch (error) {
-        res.status(500).json({ error: 'Internal server error' });
-    }
+// GET /api/referrals — referrals I sent or received (managers: whole org)
+router.get('/', async (req: AuthRequest, res) => {
+    const user = req.user!;
+    const where: any = { orgId: user.orgId };
+    if (!isManager(user)) where.OR = [{ referrerId: user.userId }, { refereeId: user.userId }];
+    const referrals = await prisma.referral.findMany({
+        where,
+        include: {
+            referrer: { select: { id: true, name: true } },
+            referee:  { select: { id: true, name: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+    });
+    res.json(referrals);
 });
 
-// Create a new referral
-router.post('/', async (req, res) => {
-    try {
-        const orgId = (req as any).user?.orgId;
-        const referrerId = (req as any).user?.userId;
-        const { refereeId, status } = req.body;
-        const referral = await prisma.referral.create({
-            data: { referrerId, refereeId, status: status || 'PENDING', orgId }
-        });
-        res.status(201).json(referral);
-    } catch (error) {
-        res.status(500).json({ error: 'Internal server error' });
-    }
+// POST /api/referrals — refer business to a colleague in the brokerage
+router.post('/', async (req: AuthRequest, res) => {
+    const user = req.user!;
+    const refereeId = req.body.refereeId;
+    if (!refereeId) return res.status(400).json({ error: 'Choose an agent to refer to' });
+    if (refereeId === user.userId) return res.status(400).json({ error: 'You cannot refer to yourself' });
+    const refErr = await checkRefs(user.orgId, { userId: refereeId });
+    if (refErr) return res.status(400).json({ error: 'Agent not found' });
+    const referral = await prisma.referral.create({
+        data: {
+            referrerId: user.userId, refereeId,
+            feeAmount: optNumber(req.body.feeAmount) ?? null,
+            notes: typeof req.body.notes === 'string' ? req.body.notes : null,
+            status: 'PENDING', orgId: user.orgId,
+        },
+    });
+    await createNotification(refereeId, user.orgId, 'SYSTEM', 'New referral', 'A colleague sent you a referral.', '/services');
+    res.status(201).json(referral);
+});
+
+// PATCH /api/referrals/:id — referee accepts/declines; management marks paid
+router.patch('/:id', async (req: AuthRequest, res) => {
+    const user = req.user!;
+    const ref = await prisma.referral.findFirst({ where: { id: String(req.params.id), orgId: user.orgId } });
+    if (!ref) return res.status(404).json({ error: 'Referral not found' });
+    const status = STATUSES.includes(req.body.status) ? req.body.status : undefined;
+    if (!status) return res.status(400).json({ error: 'Invalid status' });
+    if (status === 'PAID' && !isManager(user)) return res.status(403).json({ error: 'Only management can mark referrals paid' });
+    if (status !== 'PAID' && ref.refereeId !== user.userId && !isManager(user)) return res.status(403).json({ error: 'Forbidden' });
+    res.json(await prisma.referral.update({ where: { id: ref.id }, data: { status } }));
 });
 
 export default router;

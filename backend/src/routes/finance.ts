@@ -2,6 +2,16 @@ import express from 'express';
 import { prisma } from '../server';
 import { AuthRequest, requireTier, authorizeRole } from '../middleware/authMiddleware';
 import { audit } from '../lib/audit';
+import { createNotification } from './notifications';
+
+// Separation of duties: nobody approves their own payout — unless they are the
+// only manager in the brokerage (solo broker), otherwise it could never be paid.
+async function isSoleApprover(orgId: string, userId: string) {
+    const others = await prisma.user.count({
+        where: { orgId, isActive: true, id: { not: userId }, role: { in: ['SUPERADMIN', 'FIRMADMIN', 'MANAGER'] } },
+    });
+    return others === 0;
+}
 
 const router = express.Router();
 
@@ -85,7 +95,8 @@ router.get('/metrics', async (req: AuthRequest, res) => {
 
 // GET /api/finance/commissions
 // Gets the paginated waterfall details for the current user
-router.get('/commissions', requireTier('PRO'), async (req: AuthRequest, res) => {
+// Every agent can see their own commissions (needed to request a payout); projections stay ELITE
+router.get('/commissions', async (req: AuthRequest, res) => {
     try {
         const userId = req.user?.userId;
         const orgId = req.user?.orgId;
@@ -198,8 +209,7 @@ router.post('/commissions/:id/approve', authorizeRole(['SUPERADMIN', 'FIRMADMIN'
             where: { id: commId, orgId: req.user.orgId },
         });
         if (!commission) return res.status(404).json({ error: 'Commission not found' });
-        // Separation of duties: a manager who also sells must not approve their own payout
-        if (commission.agentId === req.user.userId) {
+        if (commission.agentId === req.user.userId && !(await isSoleApprover(req.user.orgId, req.user.userId))) {
             return res.status(403).json({ error: 'You cannot approve your own payout request' });
         }
         if (commission.status !== 'REQUESTED') {
@@ -215,6 +225,8 @@ router.post('/commissions/:id/approve', authorizeRole(['SUPERADMIN', 'FIRMADMIN'
 
         const updated = await prisma.commission.findUnique({ where: { id: commId } });
         await audit(req, 'APPROVE_PAYOUT', 'Commission', commId, { status: 'REQUESTED' }, { status: 'PAID', netPayout: commission.netPayout, agentId: commission.agentId });
+        await createNotification(commission.agentId, commission.orgId, 'COMMISSION_PAID', 'Payout approved',
+            `Your commission payout of $${commission.netPayout.toLocaleString()} was approved.`, '/finance');
         res.json(updated);
     } catch (error) {
         console.error('Error approving payout:', error);
@@ -232,7 +244,7 @@ router.post('/commissions/:id/reject', authorizeRole(['SUPERADMIN', 'FIRMADMIN',
             where: { id: commId, orgId: req.user.orgId },
         });
         if (!commission) return res.status(404).json({ error: 'Commission not found' });
-        if (commission.agentId === req.user.userId) {
+        if (commission.agentId === req.user.userId && !(await isSoleApprover(req.user.orgId, req.user.userId))) {
             return res.status(403).json({ error: 'You cannot review your own payout request' });
         }
         if (commission.status !== 'REQUESTED') {
@@ -247,6 +259,8 @@ router.post('/commissions/:id/reject', authorizeRole(['SUPERADMIN', 'FIRMADMIN',
 
         const updated = await prisma.commission.findUnique({ where: { id: commId } });
         await audit(req, 'REJECT_PAYOUT', 'Commission', commId, { status: 'REQUESTED' }, { status: 'PENDING', agentId: commission.agentId });
+        await createNotification(commission.agentId, commission.orgId, 'SYSTEM', 'Payout request returned',
+            'Your payout request was not approved. Check with your manager.', '/finance');
         res.json(updated);
     } catch (error) {
         console.error('Error rejecting payout:', error);

@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import { prisma } from '../server';
 
 const JWT_SECRET = process.env.JWT_SECRET as string;
 
@@ -21,7 +22,21 @@ export interface AuthRequest extends Request {
     }
 }
 
-export const authenticateToken = (req: AuthRequest, res: Response, next: NextFunction) => {
+// Short cache so every request doesn't hit the database
+const ACCOUNT_CACHE_MS = 30 * 1000;
+const accountCache = new Map<string, { at: number; user: { role: string; tier: string; orgId: string } | null }>();
+
+async function currentAccount(userId: string) {
+    const hit = accountCache.get(userId);
+    if (hit && Date.now() - hit.at < ACCOUNT_CACHE_MS) return hit.user;
+    const u = await prisma.user.findUnique({ where: { id: userId }, select: { role: true, tier: true, orgId: true, isActive: true } });
+    const user = u && u.isActive ? { role: u.role, tier: u.tier, orgId: u.orgId } : null;
+    accountCache.set(userId, { at: Date.now(), user });
+    if (accountCache.size > 5000) accountCache.clear();
+    return user;
+}
+
+export const authenticateToken = async (req: AuthRequest, res: Response, next: NextFunction) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
 
@@ -29,15 +44,26 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
         return res.status(401).json({ error: 'Authentication required' });
     }
 
+    let decoded: AuthRequest['user'];
     try {
-        const decoded = jwt.verify(token, JWT_SECRET) as AuthRequest['user'];
-        req.user = decoded;
-        next();
+        decoded = jwt.verify(token, JWT_SECRET) as AuthRequest['user'];
     } catch (error) {
         // 401, not 403: the caller is not authenticated. 403 is reserved for
         // "authenticated but not permitted" (role / plan gating), so clients
         // can tell "log in again" apart from "you lack access".
         return res.status(401).json({ error: 'Invalid or expired token' });
+    }
+    if (!decoded?.userId) return res.status(401).json({ error: 'Invalid or expired token' });
+
+    // A valid signature isn't enough: deleted or deactivated accounts lose access
+    // immediately, and role/plan changes apply without waiting for a new token.
+    try {
+        const account = await currentAccount(decoded.userId);
+        if (!account) return res.status(401).json({ error: 'This account is no longer active' });
+        req.user = { userId: decoded.userId, ...account };
+        next();
+    } catch (err) {
+        next(err);
     }
 };
 

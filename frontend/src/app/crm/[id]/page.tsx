@@ -4,10 +4,15 @@ import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useI18n } from "@/lib/i18n/I18nContext";
 import { useAuth } from "@/lib/auth/AuthContext";
+import { useExtra, fmt } from "@/lib/i18n/extra";
+import { useToast } from "@/components/ui/Toast";
+import { api, dateInputToISO } from "@/lib/api";
+import { AI_ASSISTANT_ENABLED } from "@/lib/features";
 
 interface TimelineEvent {
   id: string;
-  type: "OFFER" | "APPOINTMENT" | "GIFT" | "TRANSACTION" | "MODIFICATION";
+  type: "OFFER" | "APPOINTMENT" | "GIFT" | "TRANSACTION" | "MODIFICATION" | "NOTE" | "TASK";
+  subtype?: string;
   title: string;
   description: string;
   date: string;
@@ -19,6 +24,9 @@ export default function ClientProfilePage() {
   const router = useRouter();
   const { t } = useI18n();
   const { token } = useAuth();
+  const X = useExtra();
+  const toast = useToast();
+  const [now] = useState(() => Date.now());
 
   const [client, setClient] = useState<any>(null);
   const [timeline, setTimeline] = useState<TimelineEvent[]>([]);
@@ -30,7 +38,7 @@ export default function ClientProfilePage() {
   // Form states for Edit Profile
   const [editForm, setEditForm] = useState<any>({});
   // Form states for Log Activity
-  const [logForm, setLogForm] = useState({ type: "CALL", subject: "", content: "" });
+  const [logForm, setLogForm] = useState({ type: "CALL", subject: "", content: "", followUpDate: "" });
 
   useEffect(() => {
     if (!token || !id) return;
@@ -76,21 +84,15 @@ export default function ClientProfilePage() {
     e.preventDefault();
     setSaving(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/clients/${id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(editForm),
-      });
-      if (res.ok) {
-        const updated = await res.json();
-        setClient(updated);
-        setShowEditModal(false);
-      }
+      const fields = ["firstName", "lastName", "email", "phone", "type", "funnelStage", "budget", "source", "tags", "temperature", "preferredContact", "notes"];
+      const body: Record<string, unknown> = {};
+      for (const f of fields) if (editForm[f] !== undefined) body[f] = editForm[f];
+      const updated = await api(`/api/clients/${id}`, { method: "PATCH", body });
+      setClient((prev: any) => ({ ...prev, ...updated }));
+      setShowEditModal(false);
+      toast.success(X.common.saved);
     } catch (error) {
-      console.error("Update failed", error);
+      toast.error(error instanceof Error ? error.message : X.common.error);
     } finally {
       setSaving(false);
     }
@@ -100,25 +102,36 @@ export default function ClientProfilePage() {
     e.preventDefault();
     setSaving(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/clients/${id}/activities`, {
+      await api(`/api/clients/${id}/activities`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(logForm),
+        body: { ...logForm, followUpDate: dateInputToISO(logForm.followUpDate) || undefined },
       });
-      if (res.ok) {
-        setShowLogModal(false);
-        setLogForm({ type: "CALL", subject: "", content: "" });
-        fetchTimeline();
-      }
+      setShowLogModal(false);
+      setLogForm({ type: "CALL", subject: "", content: "", followUpDate: "" });
+      setClient((prev: any) => ({ ...prev, lastContactedAt: new Date().toISOString() }));
+      toast.success(X.detail.logged);
+      fetchTimeline();
     } catch (error) {
-      console.error("Log failed", error);
+      toast.error(error instanceof Error ? error.message : X.common.error);
     } finally {
       setSaving(false);
     }
   };
+
+  const handleArchive = async () => {
+    if (!window.confirm(X.crm.archiveConfirm)) return;
+    try {
+      await api(`/api/clients/${id}`, { method: "DELETE" });
+      toast.success(X.crm.archived);
+      router.push("/crm");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : X.common.error);
+    }
+  };
+
+  const lastContactDays = client?.lastContactedAt
+    ? Math.floor((now - new Date(client.lastContactedAt).getTime()) / 86400000)
+    : null;
 
   if (loading) {
     return (
@@ -158,6 +171,11 @@ export default function ClientProfilePage() {
               <span className="text-sm font-semibold px-3 py-1 bg-surface ring-1 ring-border/50 text-foreground/60 rounded-full uppercase tracking-widest">
                 {client.status}
               </span>
+              {client.temperature && (
+                <span className={`text-sm font-semibold px-3 py-1 rounded-full uppercase tracking-widest ${client.temperature === "HOT" ? "bg-red-500/10 text-red-500" : client.temperature === "COLD" ? "bg-sky-500/10 text-sky-600" : "bg-amber-500/10 text-amber-600"}`}>
+                  {(X.crm as any)[client.temperature]}
+                </span>
+              )}
             </div>
           </div>
           <div className="flex gap-4 w-full md:w-auto">
@@ -173,6 +191,12 @@ export default function ClientProfilePage() {
             >
               {t.crm.timeline.logActivity}
             </button>
+            {AI_ASSISTANT_ENABLED && <button
+              onClick={() => router.push(`/marketing?skill=follow_up&clientId=${id}`)}
+              className="flex-1 md:flex-none px-6 py-2.5 bg-surface text-primary ring-1 ring-primary/40 rounded-xl text-base font-semibold hover:bg-primary/5 transition-colors shadow-sm"
+            >
+              ✨ {X.detail.aiFollowUp}
+            </button>}
           </div>
         </div>
       </div>
@@ -206,11 +230,42 @@ export default function ClientProfilePage() {
                   {t.crm.timeline.budget}
                 </label>
                 <p className="font-sans text-base text-foreground/80">
-                  {client.budget ? `$${parseInt(client.budget).toLocaleString()}` : "N/A"}
+                  {client.budget || "N/A"}
                 </p>
               </div>
+              <div>
+                <label className="block text-xs uppercase tracking-widest text-foreground/30 font-bold mb-1">{X.crm.lastContact}</label>
+                <p className={`font-sans text-base ${lastContactDays === null || lastContactDays >= 14 ? "text-red-500" : "text-foreground/80"}`}>
+                  {lastContactDays === null ? X.crm.never : lastContactDays === 0 ? X.crm.today : fmt(X.crm.daysAgo, { n: lastContactDays })}
+                </p>
+              </div>
+              {client.source && (
+                <div>
+                  <label className="block text-xs uppercase tracking-widest text-foreground/30 font-bold mb-1">{X.crm.source}</label>
+                  <p className="font-sans text-base text-foreground/80">{client.source}</p>
+                </div>
+              )}
+              {client.tags && (
+                <div>
+                  <label className="block text-xs uppercase tracking-widest text-foreground/30 font-bold mb-1">{X.crm.tags}</label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {String(client.tags).split(",").map((tag: string) => tag.trim()).filter(Boolean).map((tag: string) => (
+                      <span key={tag} className="text-xs px-2 py-0.5 rounded bg-surface ring-1 ring-border/50 text-foreground/70">{tag}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {client.agent?.name && (
+                <div>
+                  <label className="block text-xs uppercase tracking-widest text-foreground/30 font-bold mb-1">{X.publicListing.agent}</label>
+                  <p className="font-sans text-base text-foreground/80">{client.agent.name}</p>
+                </div>
+              )}
             </div>
           </div>
+          <button onClick={handleArchive} className="text-sm text-foreground/40 hover:text-red-500 transition-colors">
+            {X.crm.archive}
+          </button>
         </div>
 
         {/* Timeline Area */}
@@ -247,7 +302,7 @@ export default function ClientProfilePage() {
                       })}
                     </span>
                   </div>
-                  <p className="font-sans text-base text-foreground/60 mt-1">
+                  <p className="font-sans text-base text-foreground/60 mt-1 whitespace-pre-line">
                     {event.description}
                   </p>
                   
@@ -328,9 +383,11 @@ export default function ClientProfilePage() {
                     onChange={e => setEditForm({...editForm, type: e.target.value})}
                     className="w-full bg-background ring-1 ring-border/50 px-4 py-2.5 rounded-xl text-base outline-none appearance-none"
                   >
-                    <option value="BUYER">BUYER</option>
-                    <option value="SELLER">SELLER</option>
-                    <option value="REFERRAL">REFERRAL</option>
+                    <option value="BUYER">{t.crm.modal.typeBuyer}</option>
+                    <option value="SELLER">{t.crm.modal.typeSeller}</option>
+                    <option value="REFERRAL">{t.crm.modal.typeReferral}</option>
+                    <option value="RENTER">{X.crm.typeRenter}</option>
+                    <option value="INVESTOR">{X.crm.typeInvestor}</option>
                   </select>
                 </div>
                 <div>
@@ -347,6 +404,51 @@ export default function ClientProfilePage() {
                     <option value="IN_CONTRACT">IN CONTRACT</option>
                     <option value="CLOSED">CLOSED</option>
                   </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs uppercase tracking-widest text-foreground/40 font-bold mb-2">{X.crm.priority}</label>
+                  <select
+                    value={editForm.temperature || "WARM"}
+                    onChange={e => setEditForm({...editForm, temperature: e.target.value})}
+                    className="w-full bg-background ring-1 ring-border/50 px-4 py-2.5 rounded-xl text-base outline-none appearance-none"
+                  >
+                    <option value="HOT">{X.crm.HOT}</option>
+                    <option value="WARM">{X.crm.WARM}</option>
+                    <option value="COLD">{X.crm.COLD}</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs uppercase tracking-widest text-foreground/40 font-bold mb-2">{t.crm.timeline.budget}</label>
+                  <input
+                    type="text"
+                    value={editForm.budget || ""}
+                    onChange={e => setEditForm({...editForm, budget: e.target.value})}
+                    className="w-full bg-background ring-1 ring-border/50 px-4 py-2.5 rounded-xl text-base outline-none focus:ring-primary/50 transition-all"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs uppercase tracking-widest text-foreground/40 font-bold mb-2">{X.crm.source}</label>
+                  <input
+                    type="text"
+                    value={editForm.source || ""}
+                    placeholder={X.crm.sourcePlaceholder}
+                    onChange={e => setEditForm({...editForm, source: e.target.value})}
+                    className="w-full bg-background ring-1 ring-border/50 px-4 py-2.5 rounded-xl text-base outline-none focus:ring-primary/50 transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs uppercase tracking-widest text-foreground/40 font-bold mb-2">{X.crm.tags}</label>
+                  <input
+                    type="text"
+                    value={editForm.tags || ""}
+                    placeholder={X.crm.tagsPlaceholder}
+                    onChange={e => setEditForm({...editForm, tags: e.target.value})}
+                    className="w-full bg-background ring-1 ring-border/50 px-4 py-2.5 rounded-xl text-base outline-none focus:ring-primary/50 transition-all"
+                  />
                 </div>
               </div>
             </form>
@@ -386,14 +488,14 @@ export default function ClientProfilePage() {
               <div>
                 <label className="block text-xs uppercase tracking-widest text-foreground/40 font-bold mb-2">{(t.crm.timeline as any).modals?.activityType ?? "Activity Type"}</label>
                 <div className="grid grid-cols-3 gap-2">
-                  {["CALL", "MEETING", "NOTE"].map(type => (
+                  {["CALL", "EMAIL", "TEXT", "MEETING", "SHOWING", "NOTE"].map(type => (
                     <button
                       key={type}
                       type="button"
                       onClick={() => setLogForm({...logForm, type})}
                       className={`py-2 px-3 border rounded-xl text-xs font-bold tracking-widest transition-all ${logForm.type === type ? 'bg-primary border-primary text-background shadow-md' : 'border-border/40 text-foreground/50 hover:border-foreground/40'}`}
                     >
-                      {type}
+                      {(X.detail as any)[type] || type}
                     </button>
                   ))}
                 </div>
@@ -416,6 +518,15 @@ export default function ClientProfilePage() {
                   rows={4}
                   placeholder="Record key takeaways or next steps..."
                   className="w-full bg-background ring-1 ring-border/50 px-4 py-3 rounded-xl text-base outline-none focus:ring-primary/50 transition-all resize-none placeholder:text-foreground/20"
+                />
+              </div>
+              <div>
+                <label className="block text-xs uppercase tracking-widest text-foreground/40 font-bold mb-2">{X.detail.followUpDate} ({X.common.optional})</label>
+                <input
+                  type="date"
+                  value={logForm.followUpDate}
+                  onChange={e => setLogForm({...logForm, followUpDate: e.target.value})}
+                  className="w-full bg-background ring-1 ring-border/50 px-4 py-2.5 rounded-xl text-base outline-none focus:ring-primary/50 transition-all"
                 />
               </div>
               <div className="flex gap-4 pt-4">

@@ -7,6 +7,7 @@ import rateLimit from 'express-rate-limit';
 import { sendEmail, passwordResetEmail, welcomeEmail } from '../lib/email';
 import { authenticateToken, AuthRequest } from '../middleware/authMiddleware';
 import { getSeatUsage } from '../lib/seats';
+import { orgSlug } from '../lib/slug';
 
 // Org subscription level → member tier (subscription is org-wide)
 const ORG_SUB_TO_TIER: Record<string, 'CORE' | 'PRO' | 'ELITE'> = {
@@ -21,7 +22,8 @@ const emailServiceConfigured = () => !!(process.env.EMAIL_API_KEY && process.env
 
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 10, // Limit each IP to 10 requests per 15 minutes
+    max: 10, // Limit each IP to 10 failed requests per 15 minutes
+    skipSuccessfulRequests: true, // a whole office on one IP shouldn't lock itself out by logging in
     message: { error: 'Too many authentication attempts from this IP, please try again after 15 minutes' },
     standardHeaders: true,
     legacyHeaders: false,
@@ -120,7 +122,7 @@ router.post('/register', authLimiter, async (req, res) => {
         // brokerages can legitimately share a name (e.g. "Sunrise Realty" in different
         // cities) — so name-matching was never a valid way to detect "does this org exist".
         const org = await prisma.organization.create({
-            data: { name: orgName.trim() }
+            data: { name: orgName.trim(), slug: orgSlug(orgName.trim()) }
         });
         const newRole = 'FIRMADMIN'; // Creator of a new org becomes its admin
 

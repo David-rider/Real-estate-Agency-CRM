@@ -10,7 +10,12 @@
     "start:compiled": "node dist/server.js",
     "compile": "tsc --skipLibCheck",
     "postinstall": "npx prisma generate",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "npm run test:smoke",
+    "test:smoke": "ts-node --transpile-only tests/smoke.ts",
+    "db:migrate": "prisma migrate deploy",
+    "db:seed": "ts-node prisma/seed.ts",
+    "typecheck": "tsc --skipLibCheck --noEmit",
+    "release": "ts-node --transpile-only src/release.ts"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
@@ -20,6 +25,7 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.1.0",
     "@prisma/client": "^4.16.2",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",

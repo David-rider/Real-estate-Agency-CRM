@@ -2,6 +2,10 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://real-estate-agency-crm.vercel.app';
+// Listings are published per brokerage. Set NEXT_PUBLIC_FEATURED_BROKERAGE_SLUG to
+// link the homepage to one brokerage's listings page; otherwise the links are hidden.
+const FEATURED_SLUG = process.env.NEXT_PUBLIC_FEATURED_BROKERAGE_SLUG || '';
+const LISTINGS_HREF = `/public-listings?b=${FEATURED_SLUG}`;
 
 export const metadata: Metadata = {
   title: 'Real Estate Brokerage CRM — Manage Clients, Listings & Commissions',
@@ -157,9 +161,11 @@ export default function LandingPage() {
               <span className="text-foreground/30 text-sm hidden sm:block">Real Estate CRM</span>
             </div>
             <nav className="flex items-center gap-6">
-              <Link href="/public-listings" className="text-sm text-foreground/60 hover:text-primary transition-colors hidden sm:block">
-                Browse Listings
-              </Link>
+              {FEATURED_SLUG && (
+                <Link href={LISTINGS_HREF} className="text-sm text-foreground/60 hover:text-primary transition-colors hidden sm:block">
+                  Browse Listings
+                </Link>
+              )}
               <Link href="/login" className="text-sm text-foreground/60 hover:text-primary transition-colors">
                 Sign In
               </Link>
@@ -194,12 +200,14 @@ export default function LandingPage() {
             >
               Start Free → No credit card
             </Link>
-            <Link
-              href="/public-listings"
-              className="px-8 py-3.5 bg-surface border border-border text-foreground font-semibold rounded-xl hover:bg-background transition text-base"
-            >
-              Browse Listings
-            </Link>
+            {FEATURED_SLUG && (
+              <Link
+                href={LISTINGS_HREF}
+                className="px-8 py-3.5 bg-surface border border-border text-foreground font-semibold rounded-xl hover:bg-background transition text-base"
+              >
+                Browse Listings
+              </Link>
+            )}
           </div>
           <p className="text-xs text-foreground/30 mt-4">Free plan available · No credit card required</p>
         </section>
@@ -330,7 +338,7 @@ export default function LandingPage() {
               <span>Real Estate CRM · New York</span>
             </div>
             <div className="flex gap-6">
-              <Link href="/public-listings" className="hover:text-foreground transition-colors">Browse Listings</Link>
+              {FEATURED_SLUG && <Link href={LISTINGS_HREF} className="hover:text-foreground transition-colors">Browse Listings</Link>}
               <Link href="/login" className="hover:text-foreground transition-colors">Sign In</Link>
               <Link href="/signup" className="hover:text-foreground transition-colors">Sign Up</Link>
             </div>

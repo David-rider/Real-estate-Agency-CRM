@@ -14,10 +14,14 @@ import {
   Legend,
 } from "recharts";
 import React from "react";
+import Link from "next/link";
+import { useExtra, fmt } from "@/lib/i18n/extra";
 
 export default function DashboardPage() {
   const { t } = useI18n();
   const D = t.dashboard as any;
+  const X = useExtra();
+  const [now] = React.useState(() => Date.now());
 
   const [dashboardData, setDashboardData] = React.useState({
     activeListings: 0,
@@ -30,6 +34,10 @@ export default function DashboardPage() {
     funnelData: [] as { name: string; value: number }[],
     ytdCommission: 0,
     actionItems: [] as any[],
+    todaysAppointments: [] as any[],
+    overdueTasks: [] as any[],
+    staleLeads: [] as any[],
+    hotLeads: 0,
   });
   const [loading, setLoading] = React.useState(true);
 
@@ -113,6 +121,68 @@ export default function DashboardPage() {
           <button className="px-4 py-2 bg-primary text-background hover:opacity-90 transition-opacity rounded-lg text-sm font-semibold w-full sm:w-auto text-center shadow-sm">
             {t.dashboard.newLead}
           </button>
+        </div>
+      </div>
+
+      {/* Today */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-surface border border-border rounded-xl p-5">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-foreground">📅 {X.dashboard.todaysAppointments}</h3>
+            <Link href="/appointments" className="text-xs text-primary hover:underline">{X.dashboard.viewAll}</Link>
+          </div>
+          {dashboardData.todaysAppointments?.length ? (
+            <ul className="space-y-2">
+              {dashboardData.todaysAppointments.map((a: any) => (
+                <li key={a.id} className="text-sm">
+                  <span className="font-medium">{new Date(a.date).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span>{" "}
+                  <span className="text-foreground/80">{a.title}</span>
+                  {a.client && <span className="text-foreground/50"> · {a.client.firstName} {a.client.lastName}</span>}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-foreground/40">{X.dashboard.noAppointments}</p>
+          )}
+        </div>
+        <div className="bg-surface border border-border rounded-xl p-5">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-foreground">⏰ {X.dashboard.overdueTasks}</h3>
+            <Link href="/tasks" className="text-xs text-primary hover:underline">{X.dashboard.viewAll}</Link>
+          </div>
+          {dashboardData.overdueTasks?.length ? (
+            <ul className="space-y-2">
+              {dashboardData.overdueTasks.map((task: any) => (
+                <li key={task.id} className="text-sm flex justify-between gap-2">
+                  <span className="text-foreground/80 truncate">{task.title}</span>
+                  <span className="text-red-500 text-xs whitespace-nowrap">{task.dueDate ? new Date(task.dueDate).toLocaleDateString() : ""}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-foreground/40">{X.dashboard.noOverdue}</p>
+          )}
+        </div>
+        <div className="bg-surface border border-border rounded-xl p-5">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-foreground">📞 {X.dashboard.needsFollowUp}</h3>
+            <span className="text-xs text-red-500 font-semibold">{dashboardData.hotLeads ? `${dashboardData.hotLeads} ${X.dashboard.hotLeads}` : ""}</span>
+          </div>
+          {dashboardData.staleLeads?.length ? (
+            <ul className="space-y-2">
+              {dashboardData.staleLeads.map((c: any) => {
+                const d = c.lastContactedAt ? Math.floor((now - new Date(c.lastContactedAt).getTime()) / 86400000) : null;
+                return (
+                  <li key={c.id} className="text-sm flex justify-between gap-2">
+                    <Link href={`/crm/${c.id}`} className="text-foreground/80 hover:text-primary truncate">{c.firstName} {c.lastName}</Link>
+                    <span className="text-foreground/50 text-xs whitespace-nowrap">{d === null ? X.crm.never : fmt(X.crm.daysAgo, { n: d })}</span>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            <p className="text-sm text-foreground/40">{X.dashboard.allCaughtUp}</p>
+          )}
         </div>
       </div>
 
@@ -268,8 +338,7 @@ export default function DashboardPage() {
                 </p>
                 <button 
                   onClick={() => {
-                    if (item.type === 'OFFER') window.location.href = '/transactions';
-                    if (item.type === 'GIFT') window.location.href = '/services';
+                    window.location.href = item.link || (item.type === 'GIFT' ? '/services' : '/transactions');
                   }}
                   className="text-sm font-medium text-primary hover:text-primary-hover transition-colors flex items-center gap-1"
                 >
@@ -278,41 +347,9 @@ export default function DashboardPage() {
               </div>
             ))
           ) : (
-            <>
-              <div className="group bg-surface border border-border rounded-xl p-5 hover:shadow-md hover:border-primary/30 transition-all duration-300">
-                <p className="text-sm font-semibold text-foreground mb-1.5 group-hover:text-primary transition-colors">
-                  {t.dashboard.actions.signAgreement}
-                </p>
-                <p className="text-sm text-foreground/50 mb-4">
-                  124 E 55th St - Apt 4A (Client: John D.)
-                </p>
-                <button className="text-sm font-medium text-primary hover:text-primary-hover transition-colors flex items-center gap-1">
-                  {t.dashboard.actions.reviewSign} <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                </button>
-              </div>
-              <div className="group bg-surface border border-border rounded-xl p-5 hover:shadow-md hover:border-primary/30 transition-all duration-300">
-                <p className="text-sm font-semibold text-foreground mb-1.5 group-hover:text-primary transition-colors">
-                  {t.dashboard.actions.counterOffer}
-                </p>
-                <p className="text-sm text-foreground/50 mb-4">
-                  Buyer accepted $1.4M for 10 Downing St.
-                </p>
-                <button className="text-sm font-medium text-primary hover:text-primary-hover transition-colors flex items-center gap-1">
-                  {t.dashboard.actions.viewTerms} <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                </button>
-              </div>
-              <div className="group bg-surface border border-border rounded-xl p-5 hover:shadow-md hover:border-primary/30 transition-all duration-300">
-                <p className="text-sm font-semibold text-foreground mb-1.5 group-hover:text-primary transition-colors">
-                  {t.dashboard.actions.anniversary}
-                </p>
-                <p className="text-sm text-foreground/50 mb-4">
-                  Send a nice gift to the Smith Family.
-                </p>
-                <button className="text-sm font-medium text-primary hover:text-primary-hover transition-colors flex items-center gap-1">
-                  {t.dashboard.actions.orderGift} <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                </button>
-              </div>
-            </>
+            <div className="bg-surface border border-border rounded-xl p-5 text-sm text-foreground/50">
+              ✓ {X.dashboard.allCaughtUp}
+            </div>
           )}
         </div>
       </div>

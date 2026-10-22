@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { prisma } from '../server';
 import { authenticateToken, AuthRequest } from '../middleware/authMiddleware';
+import { clientScope, isManager } from '../lib/access';
 
 const router = Router();
 router.use(authenticateToken);
@@ -21,13 +22,13 @@ router.get('/', async (req: AuthRequest, res) => {
         const [clients, properties, transactions] = await Promise.all([
             prisma.client.findMany({
                 where: {
-                    orgId,
-                    OR: [
+                    ...clientScope(req.user),
+                    AND: [{ OR: [
                         { firstName: { contains: q, mode } },
                         { lastName:  { contains: q, mode } },
                         { email:     { contains: q, mode } },
                         { phone:     { contains: q, mode } },
-                    ],
+                    ] }],
                 },
                 select: { id: true, firstName: true, lastName: true, email: true, phone: true, funnelStage: true },
                 take: LIMIT,
@@ -48,6 +49,7 @@ router.get('/', async (req: AuthRequest, res) => {
             prisma.transaction.findMany({
                 where: {
                     orgId,
+                    ...(isManager(req.user) ? {} : { AND: [{ OR: [{ agentId: req.user.userId }, { coAgentId: req.user.userId }] }] }),
                     OR: [
                         { property: { address: { contains: q, mode } } },
                         { client:   { firstName: { contains: q, mode } } },

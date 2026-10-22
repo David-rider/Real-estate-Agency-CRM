@@ -27,6 +27,17 @@ const PROFILE_SELECT = {
     bio: true, timezone: true, avatarUrl: true,
 } as const;
 
+// GET /api/settings/team — colleague directory (any member): names and roles only,
+// used for referrals, co-agents and assignment pickers
+router.get('/team', async (req: AuthRequest, res) => {
+    const team = await prisma.user.findMany({
+        where: { orgId: req.user!.orgId, isActive: true },
+        select: { id: true, name: true, role: true, title: true },
+        orderBy: { name: 'asc' },
+    });
+    res.json(team);
+});
+
 // GET /api/settings/profile — the caller's own profile
 router.get('/profile', async (req: AuthRequest, res) => {
     try {
@@ -79,7 +90,7 @@ router.get('/organization', async (req: AuthRequest, res) => {
         if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
         const org = await prisma.organization.findUnique({
             where:  { id: req.user.orgId },
-            select: { id: true, name: true, website: true, address: true, phone: true, licenseNumber: true, logoUrl: true, subscription: true },
+            select: { id: true, name: true, website: true, address: true, phone: true, licenseNumber: true, logoUrl: true, subscription: true, defaultCommissionRate: true, defaultFirmSplit: true, slug: true },
         });
         if (!org) return res.status(404).json({ error: 'Organization not found' });
         const seats = await getSeatUsage(req.user.orgId);
@@ -95,6 +106,17 @@ router.patch('/organization', authorizeRole(ADMIN_ROLES), async (req: AuthReques
     try {
         if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
         const { name, website, address, phone, licenseNumber, logoUrl } = req.body;
+
+        // Commission defaults (percent). Applied when a deal closes without its own rate.
+        const pct: Record<string, number> = {};
+        for (const f of ['defaultCommissionRate', 'defaultFirmSplit']) {
+            if (req.body[f] === undefined || req.body[f] === '') continue;
+            const n = Number(req.body[f]);
+            if (!Number.isFinite(n) || n < 0 || n > 100) {
+                return res.status(400).json({ error: `${f} must be a percentage between 0 and 100` });
+            }
+            pct[f] = n;
+        }
 
         if (name !== undefined && !String(name).trim()) {
             return res.status(400).json({ error: 'Company name cannot be empty' });
@@ -118,12 +140,17 @@ router.patch('/organization', authorizeRole(ADMIN_ROLES), async (req: AuthReques
                 phone:         clean(phone, 40),
                 licenseNumber: clean(licenseNumber, 60),
                 logoUrl:       clean(logoUrl, 500),
+                ...pct,
             },
-            select: { id: true, name: true, website: true, address: true, phone: true, licenseNumber: true, logoUrl: true, subscription: true },
+            select: {
+                id: true, name: true, website: true, address: true, phone: true, licenseNumber: true, logoUrl: true,
+                subscription: true, defaultCommissionRate: true, defaultFirmSplit: true,
+            },
         });
         await audit(req, 'UPDATE_ORGANIZATION', 'Organization', updated.id, before, {
             name: updated.name, website: updated.website, address: updated.address,
             phone: updated.phone, licenseNumber: updated.licenseNumber, logoUrl: updated.logoUrl,
+            defaultCommissionRate: updated.defaultCommissionRate, defaultFirmSplit: updated.defaultFirmSplit,
         });
         res.json(updated);
     } catch (error) {

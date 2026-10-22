@@ -3,10 +3,31 @@
 import React from "react";
 import { useI18n } from "@/lib/i18n/I18nContext";
 import { useToast } from "@/components/ui/Toast";
+import { useExtra } from "@/lib/i18n/extra";
+import { api } from "@/lib/api";
 
 export default function TransactionsPage() {
   const { t } = useI18n();
   const toast = useToast();
+  const X = useExtra();
+
+  const respondToOffer = async (offer: any, status: string) => {
+    let counterAmount: number | undefined;
+    if (status === "COUNTER") {
+      const v = window.prompt(X.offers.counterPrompt, String(offer.amount));
+      if (!v) return;
+      counterAmount = Number(String(v).replace(/[$,\s]/g, ""));
+      if (!Number.isFinite(counterAmount) || counterAmount <= 0) return;
+    }
+    try {
+      const res = await api(`/api/offers/${offer.id}`, { method: "PATCH", body: { status, counterAmount } });
+      toast.success(res.transaction ? X.offers.dealOpened : X.offers.updated);
+      fetchOffers();
+      fetchTransactions();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : X.common.error);
+    }
+  };
 
   const [transactions, setTransactions] = React.useState<any[]>([]);
   const [offers, setOffers] = React.useState<any[]>([]);
@@ -40,7 +61,7 @@ export default function TransactionsPage() {
   const fetchTransactions = () => {
     setLoading(true);
     const token = localStorage.getItem("token");
-    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/transactions`, {
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/transactions?limit=100`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => res.json())
@@ -404,13 +425,14 @@ export default function TransactionsPage() {
                   <th className="py-4 px-6 text-sm uppercase tracking-widest text-foreground/50 font-medium text-right">
                     {t.transactions.offers.table.date}
                   </th>
+                  <th className="py-4 px-6" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/50">
                 {offers.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={5}
+                      colSpan={6}
                       className="py-16 text-center text-sm uppercase tracking-widest text-foreground/40"
                     >
                       {t.transactions.offers.table.noOffers}
@@ -443,11 +465,23 @@ export default function TransactionsPage() {
                                   : "bg-foreground/5 text-foreground/70 border-foreground/10"
                           }`}
                         >
-                          {offer.status}
+                          {(X.offers.status as any)[offer.status] || offer.status}
                         </span>
+                        {offer.status === "COUNTER" && offer.counterAmount && (
+                          <div className="text-xs text-foreground/50 mt-1">${offer.counterAmount.toLocaleString()}</div>
+                        )}
                       </td>
                       <td className="py-5 px-6 font-sans text-base text-foreground/60 text-right">
                         {new Date(offer.createdAt).toLocaleDateString()}
+                      </td>
+                      <td className="py-5 px-6 text-right whitespace-nowrap">
+                        {(offer.status === "PENDING" || offer.status === "COUNTER") && (
+                          <div className="flex gap-3 justify-end text-sm">
+                            <button onClick={() => respondToOffer(offer, "ACCEPTED")} className="text-primary hover:underline">{X.offers.accept}</button>
+                            <button onClick={() => respondToOffer(offer, "COUNTER")} className="text-orange-500 hover:underline">{X.offers.counter}</button>
+                            <button onClick={() => respondToOffer(offer, "REJECTED")} className="text-red-500 hover:underline">{X.offers.reject}</button>
+                          </div>
+                        )}
                       </td>
                     </tr>
                   ))

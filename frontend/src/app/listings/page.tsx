@@ -3,9 +3,12 @@
 import React from "react";
 import { useI18n } from "@/lib/i18n/I18nContext";
 import { useToast } from "@/components/ui/Toast";
+import { useExtra } from "@/lib/i18n/extra";
+import { AI_ASSISTANT_ENABLED } from "@/lib/features";
 
 export default function ListingsPage() {
   const { t } = useI18n();
+  const X = useExtra();
   const toast = useToast();
 
   const [properties, setProperties] = React.useState<any[]>([]);
@@ -378,10 +381,31 @@ export default function ListingsPage() {
                     >
                       {t.listings.media.photos}
                     </button>
-                    <button className="font-sans text-base font-semibold text-primary hover:text-primary-hover transition-colors duration-300 flex items-center gap-1 group/btn">
-                      {t.listings.card.details}
-                      <svg className="w-4 h-4 transform group-hover/btn:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                    {AI_ASSISTANT_ENABLED && <a
+                      href={`/marketing?skill=listing_description&propertyId=${prop.id}`}
+                      className="font-sans text-sm font-medium text-foreground/60 hover:text-foreground transition-colors duration-300"
+                    >
+                      ✨ {X.listings.aiDescribe}
+                    </a>}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigator.clipboard.writeText(`${window.location.origin}/public-listings/${prop.id}?openhouse=1`);
+                        toast.success(X.listings.linkCopied);
+                      }}
+                      title={X.listings.openHouseLink}
+                      className="font-sans text-sm font-medium text-foreground/60 hover:text-foreground transition-colors duration-300"
+                    >
+                      QR
                     </button>
+                    <a
+                      href={`/public-listings/${prop.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-sans text-base font-semibold text-primary hover:text-primary-hover transition-colors duration-300 flex items-center gap-1"
+                    >
+                      {X.listings.publicPage} ↗
+                    </a>
                   </div>
                 </div>
               </div>

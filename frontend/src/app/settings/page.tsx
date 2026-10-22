@@ -5,6 +5,7 @@ import { useI18n } from "@/lib/i18n/I18nContext";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { useTheme, ThemeName } from "@/lib/theme/ThemeContext";
 import { useToast } from "@/components/ui/Toast";
+import { useExtra } from "@/lib/i18n/extra";
 
 // ─── Role hierarchy ─────────────────────────────────────────────────────────────
 const ROLE_WEIGHT: Record<string, number> = {
@@ -242,7 +243,9 @@ export default function SettingsPage() {
   const ls = <T,>(key: string, def: T): T => { try { return { ...def, ...JSON.parse(localStorage.getItem(key) || "{}") }; } catch { return def; } };
   // Profile and org details are server-backed (loaded below), not localStorage
   const [profile,     setProfile]     = React.useState(DEFAULT_PROFILE);
-  const [orgSettings, setOrgSettings] = React.useState({ companyName: "", website: "", address: "", licenseNumber: "", phone: "", logoUrl: "" });
+  const [orgSettings, setOrgSettings] = React.useState({ companyName: "", website: "", address: "", licenseNumber: "", phone: "", logoUrl: "", defaultCommissionRate: "3", defaultFirmSplit: "30", slug: "" });
+  const XE = useExtra();
+  const XS = XE.settings;
   const [orgPlan,     setOrgPlan]     = React.useState<{ subscription: string; seats: { limit: number | null; used: number; pendingInvites: number } } | null>(null);
   const [saving,      setSaving]      = React.useState(false);
   const [notif,       setNotif]       = React.useState(() => ls("settings_notif",         DEFAULT_NOTIF));
@@ -291,6 +294,8 @@ export default function SettingsPage() {
         setOrgSettings({
           companyName: o.name ?? "", website: o.website ?? "", address: o.address ?? "",
           licenseNumber: o.licenseNumber ?? "", phone: o.phone ?? "", logoUrl: o.logoUrl ?? "",
+          defaultCommissionRate: String(o.defaultCommissionRate ?? 3), defaultFirmSplit: String(o.defaultFirmSplit ?? 30),
+          slug: o.slug ?? "",
         });
         setOrgPlan({ subscription: o.subscription, seats: o.seats });
       })
@@ -317,7 +322,8 @@ export default function SettingsPage() {
       const res = await fetch(`${API_BASE}/api/settings/organization`, {
         method: "PATCH", headers: authHeaders(),
         body: JSON.stringify({ name: orgSettings.companyName, website: orgSettings.website, address: orgSettings.address,
-          phone: orgSettings.phone, licenseNumber: orgSettings.licenseNumber, logoUrl: orgSettings.logoUrl }),
+          phone: orgSettings.phone, licenseNumber: orgSettings.licenseNumber, logoUrl: orgSettings.logoUrl,
+          defaultCommissionRate: orgSettings.defaultCommissionRate, defaultFirmSplit: orgSettings.defaultFirmSplit }),
       });
       const d = await res.json();
       if (res.ok) toast.success(Sc.saveChanges ?? "Organization saved");
@@ -506,6 +512,31 @@ export default function SettingsPage() {
         </LockedRow>
         <LockedRow label={O.logoUrl ?? "Logo URL"} description={O.logoUrlDesc} minRoleLabel={roleLabel("FIRMADMIN")} canEdit={isFirmAdmin}>
           <input className={INPUT_CLS} style={{ width: 280 }} value={orgSettings.logoUrl} onChange={(e) => setOrgSettings({ ...orgSettings, logoUrl: e.target.value })} placeholder="https://cdn.example.com/logo.png" />
+        </LockedRow>
+        {orgSettings.slug && (
+          <div className="mt-6 p-4 bg-surface rounded-lg border border-border">
+            <div className="text-xs font-semibold uppercase tracking-widest text-foreground/40">{XS.publicPage}</div>
+            <p className="text-xs text-foreground/50 mt-1">{XS.publicPageHelp}</p>
+            <div className="flex flex-wrap items-center gap-3 mt-2">
+              <a href={`/public-listings?b=${orgSettings.slug}`} target="_blank" rel="noopener noreferrer" className="text-sm text-primary break-all hover:underline">
+                {typeof window !== "undefined" ? window.location.origin : ""}/public-listings?b={orgSettings.slug}
+              </a>
+              <button
+                className="px-3 py-1 text-xs border border-border rounded-md hover:bg-background"
+                onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/public-listings?b=${orgSettings.slug}`); toast.success(XE.common.copied); }}
+              >
+                {XE.common.copy}
+              </button>
+            </div>
+          </div>
+        )}
+        <div className="mt-6 text-xs font-semibold uppercase tracking-widest text-foreground/40">{XS.commissionDefaults}</div>
+        <p className="text-xs text-foreground/50 mt-1 mb-2">{XS.commissionHelp}</p>
+        <LockedRow label={XS.defaultCommissionRate} minRoleLabel={roleLabel("FIRMADMIN")} canEdit={isFirmAdmin}>
+          <input type="number" min="0" max="100" step="0.25" className={INPUT_CLS} value={orgSettings.defaultCommissionRate} onChange={(e) => setOrgSettings({ ...orgSettings, defaultCommissionRate: e.target.value })} />
+        </LockedRow>
+        <LockedRow label={XS.defaultFirmSplit} minRoleLabel={roleLabel("FIRMADMIN")} canEdit={isFirmAdmin}>
+          <input type="number" min="0" max="100" step="1" className={INPUT_CLS} value={orgSettings.defaultFirmSplit} onChange={(e) => setOrgSettings({ ...orgSettings, defaultFirmSplit: e.target.value })} />
         </LockedRow>
         <div className="mt-6 pb-6 border-b border-border">
           <div className="text-xs font-semibold uppercase tracking-widest text-foreground/40 mb-4">{O.subscription ?? "Subscription"}</div>

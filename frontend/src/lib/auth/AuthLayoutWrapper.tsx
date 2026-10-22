@@ -16,7 +16,8 @@ export default function AuthLayoutWrapper({ children }: { children: React.ReactN
     const { isLoading } = useAuth();
     const [sidebarOpen, setSidebarOpen] = useState(false);
 
-    const isAuthRoute = PUBLIC_ROUTES.some(r =>
+    // "/" is the public marketing landing page
+    const isAuthRoute = pathname === '/' || PUBLIC_ROUTES.some(r =>
         pathname === r || pathname.startsWith(r + '/')
     );
 
