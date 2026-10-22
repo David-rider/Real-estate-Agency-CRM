@@ -68,7 +68,7 @@ export default function PublicListingPage() {
     <div className="min-h-screen bg-background text-foreground">
       <header className="border-b border-border">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-          <Link href="/public-listings" className="text-sm text-foreground/60 hover:text-primary">← {P.back}</Link>
+          <Link href={listing.organization?.slug ? `/public-listings?b=${listing.organization.slug}` : "/public-listings"} className="text-sm text-foreground/60 hover:text-primary">← {P.back}</Link>
           <span className="text-sm font-semibold">{listing.organization?.name}</span>
         </div>
       </header>

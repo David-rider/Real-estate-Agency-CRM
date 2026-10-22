@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { prisma } from '../server';
 import { AuthRequest } from '../middleware/authMiddleware';
-import { SKILLS, runSkill, aiConfigured, tierAllows, AiUnavailableError } from '../lib/ai';
+import { SKILLS, runSkill, aiConfigured, aiEnabled, tierAllows, AiUnavailableError } from '../lib/ai';
 import { clientScope } from '../lib/access';
 
 const router = Router();
@@ -49,6 +49,7 @@ async function buildContext(req: AuthRequest, propertyId?: string, clientId?: st
 router.get('/skills', (req: AuthRequest, res) => {
     const user = req.user!;
     res.json({
+        enabled: aiEnabled(),
         configured: aiConfigured(),
         skills: SKILLS.map(s => ({
             id: s.id, name: s.name, description: s.description, minTier: s.minTier,

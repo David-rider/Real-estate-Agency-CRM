@@ -4,6 +4,7 @@ import React from "react";
 import { useI18n } from "@/lib/i18n/I18nContext";
 import { useToast } from "@/components/ui/Toast";
 import { useExtra } from "@/lib/i18n/extra";
+import { AI_ASSISTANT_ENABLED } from "@/lib/features";
 
 export default function ListingsPage() {
   const { t } = useI18n();
@@ -380,12 +381,12 @@ export default function ListingsPage() {
                     >
                       {t.listings.media.photos}
                     </button>
-                    <a
+                    {AI_ASSISTANT_ENABLED && <a
                       href={`/marketing?skill=listing_description&propertyId=${prop.id}`}
                       className="font-sans text-sm font-medium text-foreground/60 hover:text-foreground transition-colors duration-300"
                     >
                       ✨ {X.listings.aiDescribe}
-                    </a>
+                    </a>}
                     <button
                       onClick={(e) => {
                         e.stopPropagation();

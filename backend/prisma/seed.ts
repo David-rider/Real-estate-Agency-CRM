@@ -40,6 +40,7 @@ async function main() {
     const org = await prisma.organization.create({
         data: {
             name: DEMO_ORG_NAME,
+            slug: 'demo-brokerage',
             subscription: 'ENTERPRISE',
             defaultCommissionRate: 3,
             defaultFirmSplit: 30,

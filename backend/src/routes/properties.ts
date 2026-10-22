@@ -24,51 +24,37 @@ const PUBLIC_SELECT = {
     virtualTourUrl: true,
     mediaAssets: { orderBy: { sortOrder: 'asc' as const }, select: { url: true, type: true, caption: true } },
     agent: { select: { name: true, phone: true, email: true, title: true } },
-    organization: { select: { name: true, phone: true } },
+    organization: { select: { name: true, phone: true, slug: true } },
 };
 
-// GET /api/properties/public — unauthenticated public listings showcase
-// Returns active properties across all orgs (for public listings portal)
-router.get('/public', async (_req, res) => {
-    try {
-        const properties = await prisma.property.findMany({
-            where: { status: 'ACTIVE' },
-            take: 24,
-            orderBy: { createdAt: 'desc' },
-            select: {
-                id:           true,
-                address:      true,
-                city:         true,
-                state:        true,
-                zip:          true,
-                price:        true,
-                beds:         true,
-                baths:        true,
-                sqft:         true,
-                status:       true,
-                mediaAssets:  { take: 1, orderBy: { sortOrder: 'asc' }, select: { url: true } },
-            },
-        });
+// GET /api/properties/public?b=<brokerage-slug> — one brokerage's public listings page.
+// Each brokerage only ever shows its own listings.
+router.get('/public', async (req, res) => {
+    const slug = typeof req.query.b === 'string' ? req.query.b.trim().toLowerCase() : '';
+    if (!slug) return res.status(400).json({ error: 'Brokerage not specified' });
 
-        const result = properties.map(p => ({
-            id:       p.id,
-            address:  p.address,
-            city:     p.city,
-            state:    p.state,
-            zip:      p.zip,
-            price:    p.price,
-            beds:     p.beds,
-            baths:    p.baths,
-            sqft:     p.sqft,
-            status:   p.status,
-            imageUrl: p.mediaAssets[0]?.url ?? null,
-        }));
+    const organization = await prisma.organization.findUnique({
+        where: { slug },
+        select: { id: true, name: true, slug: true, phone: true, website: true, logoUrl: true },
+    });
+    if (!organization) return res.status(404).json({ error: 'Brokerage not found' });
 
-        res.json(result);
-    } catch (error) {
-        console.error('Public listings error:', error);
-        res.status(500).json({ error: 'Failed to fetch public listings' });
-    }
+    const properties = await prisma.property.findMany({
+        where: { orgId: organization.id, status: { in: ['ACTIVE', 'COMING_SOON', 'IN_CONTRACT'] } },
+        take: 100,
+        orderBy: [{ featured: 'desc' }, { createdAt: 'desc' }],
+        select: {
+            id: true, address: true, city: true, state: true, zip: true, price: true,
+            beds: true, baths: true, sqft: true, status: true,
+            mediaAssets: { take: 1, orderBy: { sortOrder: 'asc' }, select: { url: true } },
+        },
+    });
+
+    const { id: _orgId, ...org } = organization;
+    res.json({
+        organization: org,
+        listings: properties.map(({ mediaAssets, ...p }) => ({ ...p, imageUrl: mediaAssets[0]?.url ?? null })),
+    });
 });
 
 // GET /api/properties/public/:id — public listing page

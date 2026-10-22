@@ -4,7 +4,8 @@ import React, { useEffect, useState } from "react";
 import { useI18n } from "@/lib/i18n/I18nContext";
 import { useAuth } from "@/lib/auth/AuthContext";
 import AiAssistantPanel from "@/components/ai/AiAssistantPanel";
-import { aiLanguage } from "@/lib/i18n/extra";
+import { aiLanguage, useExtra } from "@/lib/i18n/extra";
+import { AI_ASSISTANT_ENABLED } from "@/lib/features";
 
 interface MarketingTask {
   id: string;
@@ -16,6 +17,7 @@ interface MarketingTask {
 
 export default function MarketingPage() {
   const { t, language } = useI18n();
+  const X = useExtra();
 
   const [audience, setAudience] = useState("Luxury & Elegant");
   const [features, setFeatures] = useState("");
@@ -157,6 +159,9 @@ export default function MarketingPage() {
               Copilot
             </span>{" "}
             {t.marketing.copilot}
+            {!AI_ASSISTANT_ENABLED && (
+              <span className="text-xs font-sans font-semibold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 border border-amber-500/30">{X.ai.inDevelopment}</span>
+            )}
           </h2>
 
           <div className="space-y-8 flex-1">
@@ -165,8 +170,7 @@ export default function MarketingPage() {
                 {t.marketing.selectProperty}
               </label>
               <select className="w-full px-4 py-3 bg-background border border-border rounded-none text-base text-foreground focus:border-primary outline-none transition-colors appearance-none cursor-pointer">
-                <option>124 E 55th St, Apt 4A (Draft)</option>
-                <option>10 Downing St, PH-B</option>
+                <option>—</option>
               </select>
             </div>
 
@@ -273,7 +277,7 @@ export default function MarketingPage() {
           <div className="pt-8 mt-auto">
             <button
               onClick={handleGenerate}
-              disabled={generating}
+              disabled={generating || !AI_ASSISTANT_ENABLED}
               className="w-full py-4 bg-primary text-background rounded-none text-base uppercase tracking-widest font-medium transition-colors hover:bg-primary-hover flex items-center justify-center gap-3 disabled:opacity-50 group"
             >
               {generating ? (

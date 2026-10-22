@@ -90,7 +90,7 @@ router.get('/organization', async (req: AuthRequest, res) => {
         if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
         const org = await prisma.organization.findUnique({
             where:  { id: req.user.orgId },
-            select: { id: true, name: true, website: true, address: true, phone: true, licenseNumber: true, logoUrl: true, subscription: true, defaultCommissionRate: true, defaultFirmSplit: true },
+            select: { id: true, name: true, website: true, address: true, phone: true, licenseNumber: true, logoUrl: true, subscription: true, defaultCommissionRate: true, defaultFirmSplit: true, slug: true },
         });
         if (!org) return res.status(404).json({ error: 'Organization not found' });
         const seats = await getSeatUsage(req.user.orgId);

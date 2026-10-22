@@ -23,6 +23,8 @@ model Organization {
   phone             String?
   licenseNumber     String?
   logoUrl           String?
+  // Public web address of the brokerage's listings page: /public-listings?b=<slug>
+  slug              String?  @unique
   // Commission defaults applied when a deal closes (percent values, e.g. 3 = 3%)
   defaultCommissionRate Float @default(3)
   defaultFirmSplit      Float @default(30)

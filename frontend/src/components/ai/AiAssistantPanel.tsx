@@ -5,6 +5,7 @@ import { useI18n } from "@/lib/i18n/I18nContext";
 import { useExtra, fmt, aiLanguage } from "@/lib/i18n/extra";
 import { useToast } from "@/components/ui/Toast";
 import { api } from "@/lib/api";
+import { AI_ASSISTANT_ENABLED } from "@/lib/features";
 
 interface SkillInfo {
   id: string;
@@ -26,6 +27,7 @@ export default function AiAssistantPanel({ onSaved }: { onSaved?: () => void }) 
 
   const [skills, setSkills] = useState<SkillInfo[]>([]);
   const [configured, setConfigured] = useState(true);
+  const enabled = AI_ASSISTANT_ENABLED;
   const [skillId, setSkillId] = useState("listing_description");
   const [properties, setProperties] = useState<any[]>([]);
   const [clients, setClients] = useState<any[]>([]);
@@ -37,6 +39,7 @@ export default function AiAssistantPanel({ onSaved }: { onSaved?: () => void }) 
 
   useEffect(() => {
     api("/api/marketing/skills").then((d) => { setSkills(d.skills || []); setConfigured(!!d.configured); }).catch(() => {});
+    if (!AI_ASSISTANT_ENABLED) return;
     api("/api/properties?limit=100").then((d) => setProperties(d.data || [])).catch(() => {});
     api("/api/clients?limit=100").then((d) => setClients(d.data || [])).catch(() => {});
     // Deep link from a client page: /marketing?skill=follow_up&clientId=…
@@ -84,10 +87,15 @@ export default function AiAssistantPanel({ onSaved }: { onSaved?: () => void }) 
   return (
     <div className="bg-background border border-border rounded-xl p-6 space-y-4">
       <div>
-        <h2 className="text-base font-semibold text-foreground">✨ {X.ai.title}</h2>
-        <p className="text-sm text-foreground/50 mt-1">{X.ai.subtitle}</p>
+        <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
+          ✨ {X.ai.title}
+          {!enabled && (
+            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 border border-amber-500/30">{X.ai.inDevelopment}</span>
+          )}
+        </h2>
+        <p className="text-sm text-foreground/50 mt-1">{enabled ? X.ai.subtitle : X.ai.inDevelopmentNote}</p>
       </div>
-      {!configured && (
+      {enabled && !configured && (
         <div className="text-sm rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400 px-3 py-2">{X.ai.notConfigured}</div>
       )}
 
@@ -96,21 +104,22 @@ export default function AiAssistantPanel({ onSaved }: { onSaved?: () => void }) 
           <button
             key={s.id}
             type="button"
-            onClick={() => setSkillId(s.id)}
+            onClick={() => enabled && setSkillId(s.id)}
+            disabled={!enabled}
             title={s.description}
             className={`text-left px-3 py-2 rounded-lg border text-sm transition-colors ${
-              skillId === s.id ? "border-primary bg-primary/10 text-primary" : "border-border hover:border-foreground/30"
-            } ${s.unlocked ? "" : "opacity-60"}`}
+              enabled && skillId === s.id ? "border-primary bg-primary/10 text-primary" : "border-border" + (enabled ? " hover:border-foreground/30" : " cursor-default")
+            } ${enabled && s.unlocked ? "" : "opacity-60"}`}
           >
             <div className="font-semibold">{s.name}</div>
             <div className="text-xs text-foreground/50 mt-0.5 line-clamp-2">
-              {s.unlocked ? s.description : `🔒 ${fmt(X.ai.locked, { tier: s.minTier })}`}
+              {!enabled || s.unlocked ? s.description : `🔒 ${fmt(X.ai.locked, { tier: s.minTier })}`}
             </div>
           </button>
         ))}
       </div>
 
-      {skill && (
+      {enabled && skill && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {skill.uses.includes("property") && (
             <div>
@@ -137,13 +146,13 @@ export default function AiAssistantPanel({ onSaved }: { onSaved?: () => void }) 
         </div>
       )}
 
-      <button
+      {enabled && <button
         onClick={run}
         disabled={running || !skill || !skill.unlocked || !configured}
         className="px-4 py-2 bg-primary text-background hover:opacity-90 transition-opacity rounded-lg text-sm font-semibold shadow-sm disabled:opacity-50"
       >
         {running ? X.ai.running : X.ai.run}
-      </button>
+      </button>}
 
       {result && (
         <div className="space-y-2">

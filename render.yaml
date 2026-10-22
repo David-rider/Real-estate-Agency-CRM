@@ -31,7 +31,9 @@ services:
       # --- Google OAuth (optional) ---
       - key: GOOGLE_CLIENT_ID
         sync: false
-      # --- AI assistant (optional) ---
+      # --- AI assistant (in development, off) ---
+      - key: AI_ASSISTANT_ENABLED
+        value: "false"
       - key: ANTHROPIC_API_KEY
         sync: false
       # --- Stripe (optional) ---

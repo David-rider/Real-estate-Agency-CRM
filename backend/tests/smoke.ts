@@ -204,6 +204,35 @@ async function main() {
         assert.equal(search.body.clients.length, 0);
     });
 
+    await step('public listings page is per brokerage', async () => {
+        const none = await call('GET', '/api/properties/public');
+        assert.equal(none.status, 400);
+        const orgA = await call('GET', '/api/settings/organization', a);
+        const orgB = await call('GET', '/api/settings/organization', b);
+        assert.ok(orgA.body.slug && orgB.body.slug && orgA.body.slug !== orgB.body.slug);
+        const pageA = await call('GET', `/api/properties/public?b=${orgA.body.slug}`);
+        assert.equal(pageA.status, 200);
+        assert.ok(pageA.body.listings.length >= 1);
+        const pageB = await call('GET', `/api/properties/public?b=${orgB.body.slug}`);
+        assert.equal(pageB.body.listings.length, 0, 'B must not see A listings');
+        const missing = await call('GET', '/api/properties/public?b=does-not-exist');
+        assert.equal(missing.status, 404);
+    });
+
+    await step('social sign-in cannot join an existing brokerage', async () => {
+        const apple = await call('POST', '/api/oauth/apple', undefined, { email: `x-${run}@example.com`, appleId: 'fake' });
+        assert.equal(apple.status, 503);
+        const g = await call('POST', '/api/oauth/google', undefined, { idToken: 'x', email: `g-${run}@example.com`, googleId: `g-${run}` });
+        if (g.status === 200) {
+            // dev mode only: new social users get their own brokerage
+            const me = await call('GET', '/api/settings/organization', g.body.token);
+            const orgA = await call('GET', '/api/settings/organization', a);
+            assert.notEqual(me.body.id, orgA.body.id);
+        } else {
+            assert.equal(g.status, 503);
+        }
+    });
+
     await step('archive client hides it from the list', async () => {
         const r = await call('DELETE', `/api/clients/${clientId}`, a);
         assert.equal(r.status, 200);

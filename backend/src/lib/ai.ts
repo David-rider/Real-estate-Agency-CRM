@@ -142,8 +142,13 @@ Return plain text only — no markdown headings or bold.`;
 
 const LANG_NAMES: Record<string, string> = { en: 'English', zh: 'Simplified Chinese', 'zh-TW': 'Traditional Chinese', es: 'Spanish' };
 
+// The assistant is still in development: it stays off unless explicitly enabled.
+export function aiEnabled(): boolean {
+    return process.env.AI_ASSISTANT_ENABLED === 'true';
+}
+
 export function aiConfigured(): boolean {
-    return Boolean(process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN);
+    return aiEnabled() && Boolean(process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN);
 }
 
 let client: Anthropic | null = null;
@@ -159,6 +164,7 @@ export class AiUnavailableError extends Error {}
  * recent notes, agent name). Returns the generated text.
  */
 export async function runSkill(skill: Skill, opts: { context: string; input?: string; language?: string; tone?: string }) {
+    if (!aiEnabled()) throw new AiUnavailableError('The AI assistant is in development and not available yet.');
     if (!aiConfigured()) throw new AiUnavailableError('AI assistant is not configured (set ANTHROPIC_API_KEY on the server).');
 
     const language = LANG_NAMES[opts.language || 'en'] || 'English';

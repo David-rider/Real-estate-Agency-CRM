@@ -51,7 +51,7 @@ const en = {
   ai: {
     title: "AI Assistant", subtitle: "Run real-estate skills against your listings and clients.", skill: "Skill",
     property: "Listing", client: "Client", input: "Your input", run: "Generate", running: "Writing…",
-    locked: "Requires {tier} plan", notConfigured: "The AI assistant isn't configured on the server yet (ANTHROPIC_API_KEY). Listing copy uses basic templates until then.",
+    locked: "Requires {tier} plan", inDevelopment: "In development", inDevelopmentNote: "The AI assistant is still in development and will be available in a later release. Below is a preview of the planned skills.", notConfigured: "The AI assistant isn't configured on the server yet (ANTHROPIC_API_KEY). Listing copy uses basic templates until then.",
     result: "Result", saveToLibrary: "Save to library", language: "Language",
   },
   publicListing: {
@@ -64,7 +64,7 @@ const en = {
   },
   listings: { publicPage: "Public page", openHouseLink: "Copy open-house sign-in link", linkCopied: "Link copied — print it as a QR code at the door", aiDescribe: "AI description", },
   settings: {
-    commissionDefaults: "Commission defaults", defaultCommissionRate: "Default commission rate (%)", defaultFirmSplit: "Firm split (%)",
+    commissionDefaults: "Commission defaults", publicPage: "Public listings page", publicPageHelp: "Share this link or put it on your website — it shows only your brokerage's active listings.", defaultCommissionRate: "Default commission rate (%)", defaultFirmSplit: "Firm split (%)",
     commissionHelp: "Used to create the agent's commission automatically when a deal is marked Closed.",
   },
 };
@@ -120,7 +120,7 @@ const zhCN: Dict = {
   ai: {
     title: "AI 助手", subtitle: "基于你的房源和客户运行房产专用技能。", skill: "技能",
     property: "房源", client: "客户", input: "补充说明", run: "生成", running: "生成中…",
-    locked: "需要 {tier} 套餐", notConfigured: "服务器尚未配置 AI 助手（ANTHROPIC_API_KEY）。在此之前房源文案使用基础模板。",
+    locked: "需要 {tier} 套餐", inDevelopment: "正在开发", inDevelopmentNote: "AI 助手正在开发中，将在后续版本开放。下面是计划提供的技能预览。", notConfigured: "服务器尚未配置 AI 助手（ANTHROPIC_API_KEY）。在此之前房源文案使用基础模板。",
     result: "结果", saveToLibrary: "保存到素材库", language: "语言",
   },
   publicListing: {
@@ -133,7 +133,7 @@ const zhCN: Dict = {
   },
   listings: { publicPage: "公开页面", openHouseLink: "复制开放日签到链接", linkCopied: "链接已复制——可打印成二维码放在门口", aiDescribe: "AI 写文案", },
   settings: {
-    commissionDefaults: "佣金默认设置", defaultCommissionRate: "默认佣金比例（%）", defaultFirmSplit: "公司分成（%）",
+    commissionDefaults: "佣金默认设置", publicPage: "公开房源页面", publicPageHelp: "分享此链接或放到公司网站上——只展示本公司的在售房源。", defaultCommissionRate: "默认佣金比例（%）", defaultFirmSplit: "公司分成（%）",
     commissionHelp: "交易标记为“已成交”时，用于自动生成经纪人的佣金记录。",
   },
 };
@@ -187,7 +187,7 @@ const zhTW: Dict = {
   ai: {
     title: "AI 助理", subtitle: "以你的物件與客戶執行房產專用技能。", skill: "技能",
     property: "物件", client: "客戶", input: "補充說明", run: "產生", running: "撰寫中…",
-    locked: "需要 {tier} 方案", notConfigured: "伺服器尚未設定 AI 助理（ANTHROPIC_API_KEY）。在此之前物件文案使用基本範本。",
+    locked: "需要 {tier} 方案", inDevelopment: "開發中", inDevelopmentNote: "AI 助理仍在開發中，將於後續版本開放。以下為規劃中的技能預覽。", notConfigured: "伺服器尚未設定 AI 助理（ANTHROPIC_API_KEY）。在此之前物件文案使用基本範本。",
     result: "結果", saveToLibrary: "儲存到素材庫", language: "語言",
   },
   publicListing: {
@@ -200,7 +200,7 @@ const zhTW: Dict = {
   },
   listings: { publicPage: "公開頁面", openHouseLink: "複製開放參觀簽到連結", linkCopied: "連結已複製——可列印成 QR code 放在門口", aiDescribe: "AI 撰寫文案", },
   settings: {
-    commissionDefaults: "佣金預設", defaultCommissionRate: "預設佣金比例（%）", defaultFirmSplit: "公司分成（%）",
+    commissionDefaults: "佣金預設", publicPage: "公開物件頁面", publicPageHelp: "分享此連結或放到公司網站——只顯示本公司的在售物件。", defaultCommissionRate: "預設佣金比例（%）", defaultFirmSplit: "公司分成（%）",
     commissionHelp: "交易標記為「已成交」時，用於自動建立經紀人的佣金紀錄。",
   },
 };
@@ -254,7 +254,7 @@ const es: Dict = {
   ai: {
     title: "Asistente IA", subtitle: "Ejecuta habilidades inmobiliarias sobre tus propiedades y clientes.", skill: "Habilidad",
     property: "Propiedad", client: "Cliente", input: "Tus indicaciones", run: "Generar", running: "Escribiendo…",
-    locked: "Requiere el plan {tier}", notConfigured: "El asistente IA aún no está configurado en el servidor (ANTHROPIC_API_KEY). Mientras tanto se usan plantillas básicas.",
+    locked: "Requiere el plan {tier}", inDevelopment: "En desarrollo", inDevelopmentNote: "El asistente de IA aún está en desarrollo y estará disponible en una versión posterior. Abajo hay una vista previa de las habilidades previstas.", notConfigured: "El asistente IA aún no está configurado en el servidor (ANTHROPIC_API_KEY). Mientras tanto se usan plantillas básicas.",
     result: "Resultado", saveToLibrary: "Guardar en la biblioteca", language: "Idioma",
   },
   publicListing: {
@@ -267,7 +267,7 @@ const es: Dict = {
   },
   listings: { publicPage: "Página pública", openHouseLink: "Copiar enlace de registro del open house", linkCopied: "Enlace copiado: imprímelo como código QR en la entrada", aiDescribe: "Descripción con IA", },
   settings: {
-    commissionDefaults: "Comisiones predeterminadas", defaultCommissionRate: "Comisión predeterminada (%)", defaultFirmSplit: "Parte de la agencia (%)",
+    commissionDefaults: "Comisiones predeterminadas", publicPage: "Página pública de propiedades", publicPageHelp: "Comparte este enlace o ponlo en tu sitio web: solo muestra las propiedades activas de tu agencia.", defaultCommissionRate: "Comisión predeterminada (%)", defaultFirmSplit: "Parte de la agencia (%)",
     commissionHelp: "Se usa para crear automáticamente la comisión del agente cuando una operación se marca como cerrada.",
   },
 };
