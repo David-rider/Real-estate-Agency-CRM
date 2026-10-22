@@ -135,7 +135,7 @@ export default function ServicesPage() {
               {colleagues.map((m) => <option key={m.id} value={m.id}>{m.name}{m.title ? ` — ${m.title}` : ""}</option>)}
             </select>
             <textarea value={ref.notes} onChange={(e) => setRef({ ...ref, notes: e.target.value })} placeholder={X.services.referralNotes} rows={2} className={`${INPUT} resize-none`} />
-            <input type="number" min="0" value={ref.feeAmount} onChange={(e) => setRef({ ...ref, feeAmount: e.target.value })} placeholder={`Referral fee ($) — ${X.common.optional}`} className={INPUT} />
+            <input type="number" min="0" value={ref.feeAmount} onChange={(e) => setRef({ ...ref, feeAmount: e.target.value })} placeholder={`${X.publicListing.referralFee} — ${X.common.optional}`} className={INPUT} />
             <button disabled={busy || colleagues.length === 0} className={BTN}>{X.services.sendReferral}</button>
           </form>
           {referrals.length === 0 ? (

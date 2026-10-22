@@ -103,13 +103,13 @@ export default function PublicListingPage() {
               <span>{listing.baths} {P.baths}</span>
               {listing.sqft && <span>{Number(listing.sqft).toLocaleString()} {P.sqft}</span>}
               {listing.propertyType && <span>{String(listing.propertyType).replace(/_/g, " ")}</span>}
-              {listing.yearBuilt && <span>Built {listing.yearBuilt}</span>}
-              {listing.status === "IN_CONTRACT" && <span className="text-amber-600 font-semibold">In contract</span>}
+              {listing.yearBuilt && <span>{P.built} {listing.yearBuilt}</span>}
+              {listing.status === "IN_CONTRACT" && <span className="text-amber-600 font-semibold">{P.inContract}</span>}
             </div>
           </div>
           {listing.description && <p className="text-foreground/80 leading-relaxed whitespace-pre-line">{listing.description}</p>}
           {listing.virtualTourUrl && (
-            <a href={listing.virtualTourUrl} target="_blank" rel="noopener noreferrer" className="inline-block text-primary hover:underline">Virtual tour →</a>
+            <a href={listing.virtualTourUrl} target="_blank" rel="noopener noreferrer" className="inline-block text-primary hover:underline">{P.virtualTour} →</a>
           )}
         </section>
 

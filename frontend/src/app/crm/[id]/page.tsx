@@ -256,7 +256,7 @@ export default function ClientProfilePage() {
               )}
               {client.agent?.name && (
                 <div>
-                  <label className="block text-xs uppercase tracking-widest text-foreground/30 font-bold mb-1">Agent</label>
+                  <label className="block text-xs uppercase tracking-widest text-foreground/30 font-bold mb-1">{X.publicListing.agent}</label>
                   <p className="font-sans text-base text-foreground/80">{client.agent.name}</p>
                 </div>
               )}

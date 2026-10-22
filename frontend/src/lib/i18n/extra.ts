@@ -60,6 +60,7 @@ const en = {
     sent: "Thanks! The listing agent will reach out shortly.", back: "All listings", viewDetails: "View details",
     listedBy: "Listed by", notFound: "This listing is no longer available.", openHouseSignIn: "Open house sign-in",
     beds: "beds", baths: "baths", sqft: "sq ft",
+    virtualTour: "Virtual tour", built: "Built", inContract: "In contract", agent: "Agent", referralFee: "Referral fee ($)",
   },
   listings: { publicPage: "Public page", openHouseLink: "Copy open-house sign-in link", linkCopied: "Link copied — print it as a QR code at the door", aiDescribe: "AI description", },
   settings: {
@@ -128,6 +129,7 @@ const zhCN: Dict = {
     sent: "感谢！经纪人会尽快与您联系。", back: "全部房源", viewDetails: "查看详情",
     listedBy: "挂牌经纪人", notFound: "该房源已下架。", openHouseSignIn: "开放日签到",
     beds: "卧", baths: "卫", sqft: "平方英尺",
+    virtualTour: "虚拟看房", built: "建于", inContract: "已签约", agent: "经纪人", referralFee: "转介费（美元）",
   },
   listings: { publicPage: "公开页面", openHouseLink: "复制开放日签到链接", linkCopied: "链接已复制——可打印成二维码放在门口", aiDescribe: "AI 写文案", },
   settings: {
@@ -194,6 +196,7 @@ const zhTW: Dict = {
     sent: "感謝！經紀人將盡快與您聯絡。", back: "全部物件", viewDetails: "查看詳情",
     listedBy: "刊登經紀人", notFound: "此物件已下架。", openHouseSignIn: "開放參觀簽到",
     beds: "房", baths: "衛", sqft: "平方英尺",
+    virtualTour: "虛擬看屋", built: "建於", inContract: "已簽約", agent: "經紀人", referralFee: "轉介費（美元）",
   },
   listings: { publicPage: "公開頁面", openHouseLink: "複製開放參觀簽到連結", linkCopied: "連結已複製——可列印成 QR code 放在門口", aiDescribe: "AI 撰寫文案", },
   settings: {
@@ -260,6 +263,7 @@ const es: Dict = {
     sent: "¡Gracias! El agente te contactará pronto.", back: "Todas las propiedades", viewDetails: "Ver detalles",
     listedBy: "Publicado por", notFound: "Esta propiedad ya no está disponible.", openHouseSignIn: "Registro de open house",
     beds: "hab.", baths: "baños", sqft: "pies²",
+    virtualTour: "Recorrido virtual", built: "Construida en", inContract: "En contrato", agent: "Agente", referralFee: "Comisión por referido ($)",
   },
   listings: { publicPage: "Página pública", openHouseLink: "Copiar enlace de registro del open house", linkCopied: "Enlace copiado: imprímelo como código QR en la entrada", aiDescribe: "Descripción con IA", },
   settings: {
