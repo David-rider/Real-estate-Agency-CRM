@@ -23,8 +23,9 @@
 | 1.0.x | 0.2 处理 `manager@` / `agent@xyz.com` | ✅ | 1.0.0，删除或停用并匿名化 |
 | 1.0.x | 版本管理：健康检查返回版本号、发版流程 | ✅ | 1.0.1 |
 | 1.0.x | 安全检查与加固（2026-10） | ✅ | 1.0.1；报告见 `guides/security-audit-2026-10.md` |
+| 1.0.2 | 提交 `dependabot.yml` 和 `SECURITY.md` | ⬜ | 见交接记录 3.C6、3.E |
+| 1.0.x | GitHub 仓库设置（Dependabot、密钥扫描、`main` 分支保护等） | ⬜ | 需要在 GitHub 网页手动设置，清单见 `guides/handoff-2026-10-22.md` 的 C 部分 |
 | 1.1.0 | 0.3 CI 自动测试 | ⬜ | |
-| 1.1.0 | S1 开启 GitHub Dependabot / 安全告警 | ⬜ | 仓库设置中开启即可 |
 | 1.1.0 | S2 登录令牌改为 httpOnly Cookie + CSRF 防护 | ⬜ | 安全报告“剩余风险” |
 | 1.1.0 | S3 前端 CSP（先只报告，再正式启用） | ⬜ | 安全报告“剩余风险” |
 | 1.2.0 | S4 Prisma 4 → 当前版本 | ⬜ | 需要单独回归测试 |

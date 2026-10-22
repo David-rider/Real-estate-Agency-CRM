@@ -12,6 +12,7 @@
 | 线上版本 | `GET https://real-estate-agency-crm.onrender.com/api/health` 返回的 `version` | 部署后核对 |
 | 版本标签 | git tag `vX.Y.Z`，对应 `main` 上的合并提交 | 发版时 |
 | 试用测试清单 | `guides/testing-checklist.md` | 新功能需要客户验证时 |
+| 阶段性交接 / 待办 | `guides/handoff-YYYY-MM-DD.md` | 一天或一个阶段结束，需要接力时 |
 
 ## 版本号规则（语义化版本）
 
