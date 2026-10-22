@@ -26,3 +26,13 @@ read_xlsx_custom.py
 Thumbs.db
 
 .vercel
+
+# Build output & local logs
+backend/dist/
+*.log
+compile_errors*.txt
+tsc_errors*
+
+# Local agent tooling
+.agents/
+.claude/worktrees/
