@@ -14,6 +14,9 @@ if (missingEnvVars.length > 0) {
 }
 
 const app = express();
+// Behind Render/Vercel the client IP arrives in X-Forwarded-For. Without this,
+// every user shares the proxy's IP and one rate-limit bucket.
+app.set('trust proxy', process.env.TRUST_PROXY ? Number(process.env.TRUST_PROXY) || process.env.TRUST_PROXY : (process.env.NODE_ENV === 'production' ? 1 : false));
 const prisma = new PrismaClient();
 const PORT = process.env.PORT || 4000;
 
@@ -41,6 +44,7 @@ import notificationsRoutes from './routes/notifications';
 import searchRoutes from './routes/search';
 
 import { authenticateToken } from './middleware/authMiddleware';
+import { startReminderLoop } from './lib/reminders';
 
 // Middleware
 // In production an explicit FRONTEND_URL allowlist is mandatory: falling back to
@@ -124,9 +128,11 @@ app.use((err: any, req: express.Request, res: express.Response, _next: express.N
 const server = app.listen(PORT, () => {
     console.log(`Server running on port ${PORT} [${process.env.NODE_ENV || 'development'}]`);
 });
+const reminderTimer = process.env.DISABLE_JOBS === 'true' ? null : startReminderLoop();
 
 const shutdown = async (signal: string) => {
     console.log(`${signal} received — shutting down gracefully`);
+    if (reminderTimer) clearInterval(reminderTimer);
     server.close(async () => {
         await prisma.$disconnect();
         console.log('Database disconnected. Bye.');

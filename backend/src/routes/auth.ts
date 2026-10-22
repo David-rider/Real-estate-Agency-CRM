@@ -21,7 +21,8 @@ const emailServiceConfigured = () => !!(process.env.EMAIL_API_KEY && process.env
 
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 10, // Limit each IP to 10 requests per 15 minutes
+    max: 10, // Limit each IP to 10 failed requests per 15 minutes
+    skipSuccessfulRequests: true, // a whole office on one IP shouldn't lock itself out by logging in
     message: { error: 'Too many authentication attempts from this IP, please try again after 15 minutes' },
     standardHeaders: true,
     legacyHeaders: false,

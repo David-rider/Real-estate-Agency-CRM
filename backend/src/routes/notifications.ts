@@ -74,12 +74,14 @@ export async function createNotification(
     link?:  string,
     metadata?: object,
 ) {
+    const VALID = ['NEW_CLIENT', 'OFFER_RECEIVED', 'OFFER_ACCEPTED', 'OFFER_REJECTED', 'APPOINTMENT_REMINDER',
+        'TRANSACTION_UPDATE', 'COMMISSION_PAID', 'TASK_DUE', 'DOCUMENT_SIGNED', 'SYSTEM'];
     try {
         await prisma.notification.create({
             data: {
                 userId,
                 orgId,
-                type:     type as any,
+                type:     (VALID.includes(type) ? type : 'SYSTEM') as any,
                 title,
                 message,
                 link,

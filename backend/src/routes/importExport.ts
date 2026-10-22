@@ -1,14 +1,25 @@
 import express from 'express';
 import multer from 'multer';
 import { parse } from 'csv-parse/sync';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../server';
 import { AuthRequest } from '../middleware/authMiddleware';
+import { getSeatUsage } from '../lib/seats';
+import { audit } from '../lib/audit';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 
 const router = express.Router();
-const prisma = new PrismaClient();
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 2 * 1024 * 1024 } });
+
+// Members inherit the organization's plan
+const ORG_SUB_TO_TIER: Record<string, 'CORE' | 'PRO' | 'ELITE'> = { BASIC: 'CORE', PRO: 'PRO', ENTERPRISE: 'ELITE' };
+
+// Neutralise spreadsheet formula injection (=, +, -, @ at the start of a cell)
+function csvCell(v: unknown) {
+    let s = String(v ?? '');
+    if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
+    return `"${s.replace(/"/g, '""')}"`;
+}
 
 // GET /api/settings/users/export
 router.get('/export', async (req: AuthRequest, res) => {
@@ -26,7 +37,7 @@ router.get('/export', async (req: AuthRequest, res) => {
         });
 
         const header = ["Name", "Email", "Role", "Tier", "Joined Date"].join(",");
-        const rows = users.map(u => `"${u.name}","${u.email}","${u.role}","${u.tier}","${u.createdAt.toISOString()}"`).join("\n");
+        const rows = users.map(u => [u.name, u.email, u.role, u.tier, u.createdAt.toISOString()].map(csvCell).join(',')).join("\n");
         const csvContent = `${header}\n${rows}`;
 
         res.setHeader('Content-Type', 'text/csv');
@@ -59,18 +70,24 @@ router.post('/import', upload.single('file'), async (req: AuthRequest, res) => {
         }) as any[];
 
         let importedCount = 0;
+        const skipped: string[] = [];
+        const seats = await getSeatUsage(req.user.orgId);
+        let used = seats.users + seats.pendingInvites;
+        const tier = ORG_SUB_TO_TIER[seats.subscription] || 'CORE';
+        // Bulk import can create staff roles, never platform or firm admins
+        const IMPORTABLE_ROLES = ['AGENT', 'MANAGER', 'OFFICE_SUPPORT', 'MARKETING'];
 
         for (const record of records) {
-            const email = record.Email || record.email;
-            const name = record.Name || record.name;
-            const role = record.Role || record.role || 'AGENT';
-            const tier = record.Tier || record.tier || 'CORE';
+            const email = String(record.Email || record.email || '').trim().toLowerCase();
+            const name = String(record.Name || record.name || '').trim();
+            const role = String(record.Role || record.role || 'AGENT').trim().toUpperCase();
 
-            if (!email) continue;
+            if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { if (email) skipped.push(`${email} (invalid email)`); continue; }
+            if (seats.limit !== null && used >= seats.limit) { skipped.push(`${email} (seat limit reached)`); continue; }
 
             const existingUser = await prisma.user.findUnique({ where: { email } });
-            
-            if (!existingUser) {
+            if (existingUser) { skipped.push(`${email} (already exists)`); continue; }
+            {
                 // Hash a random secret so the account is locked until the user sets a
                 // real password via a password-reset flow.
                 const lockedPasswordHash = await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 10);
@@ -79,19 +96,21 @@ router.post('/import', upload.single('file'), async (req: AuthRequest, res) => {
                         email,
                         password: lockedPasswordHash,
                         name: name || email.split('@')[0],
-                        role: ['AGENT', 'MANAGER', 'FIRMADMIN', 'SUPERADMIN'].includes(role.toUpperCase()) ? role.toUpperCase() as any : 'AGENT',
-                        tier: ['CORE', 'PRO', 'ELITE'].includes(tier.toUpperCase()) ? tier.toUpperCase() as any : 'CORE',
+                        role: (IMPORTABLE_ROLES.includes(role) ? role : 'AGENT') as any,
+                        tier,
                         orgId: req.user.orgId
                     }
                 });
                 importedCount++;
+                used++;
             }
         }
 
-        res.status(200).json({ message: `Successfully imported ${importedCount} users` });
+        await audit(req, 'IMPORT_USERS', 'User', null, undefined, { importedCount, skipped: skipped.length });
+        res.status(200).json({ message: `Imported ${importedCount} users`, importedCount, skipped });
     } catch (error: any) {
         console.error('Import error:', error);
-        res.status(500).json({ error: `Failed to import users: ${error.message}` });
+        res.status(400).json({ error: 'Could not read the CSV file. Expected columns: Name, Email, Role' });
     }
 });
 

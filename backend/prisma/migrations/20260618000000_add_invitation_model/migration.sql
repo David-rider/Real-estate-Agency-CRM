@@ -1,5 +1,5 @@
 -- CreateTable
-CREATE TABLE "Invitation" (
+CREATE TABLE IF NOT EXISTS "Invitation" (
     "id" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "role" TEXT NOT NULL DEFAULT 'AGENT',
@@ -14,7 +14,10 @@ CREATE TABLE "Invitation" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Invitation_token_key" ON "Invitation"("token");
+CREATE UNIQUE INDEX IF NOT EXISTS "Invitation_token_key" ON "Invitation"("token");
 
 -- AddForeignKey
-ALTER TABLE "Invitation" ADD CONSTRAINT "Invitation_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$ BEGIN
+    ALTER TABLE "Invitation" ADD CONSTRAINT "Invitation_orgId_fkey" FOREIGN KEY ("orgId") REFERENCES "Organization"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
