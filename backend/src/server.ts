@@ -13,6 +13,12 @@ if (missingEnvVars.length > 0) {
     process.exit(1);
 }
 
+// Version from package.json (works from src/ and dist/), shown by /api/health
+let APP_VERSION = 'unknown';
+try {
+    APP_VERSION = JSON.parse(require('fs').readFileSync(require('path').join(__dirname, '..', 'package.json'), 'utf8')).version;
+} catch { /* keep 'unknown' */ }
+
 const app = express();
 // Behind Render/Vercel the client IP arrives in X-Forwarded-For. Without this,
 // every user shares the proxy's IP and one rate-limit bucket.
@@ -93,9 +99,9 @@ app.use('/api/payments',      paymentRoutes);
 app.get('/api/health', async (req, res) => {
     try {
         await prisma.$queryRaw`SELECT 1`;
-        res.status(200).json({ status: 'ok', db: 'connected', timestamp: new Date().toISOString() });
+        res.status(200).json({ status: 'ok', version: APP_VERSION, db: 'connected', timestamp: new Date().toISOString() });
     } catch {
-        res.status(503).json({ status: 'error', db: 'disconnected', timestamp: new Date().toISOString() });
+        res.status(503).json({ status: 'error', version: APP_VERSION, db: 'disconnected', timestamp: new Date().toISOString() });
     }
 });
 
