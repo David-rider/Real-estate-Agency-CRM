@@ -3,10 +3,13 @@
 import React from "react";
 import { useI18n } from "@/lib/i18n/I18nContext";
 import { useToast } from "@/components/ui/Toast";
+import { useExtra } from "@/lib/i18n/extra";
+import { api } from "@/lib/api";
 
 export default function DocumentsPage() {
   const { t } = useI18n();
   const toast = useToast();
+  const X = useExtra();
 
   const [documents, setDocuments] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -83,7 +86,8 @@ export default function DocumentsPage() {
         setFormData({ name: "", url: "", type: "CONTRACT", transactionId: "" });
         fetchDocuments();
       } else {
-        toast.error("Failed to upload document. Please try again.");
+        const err = await res.json().catch(() => ({}));
+        toast.error(err.error || "Failed to upload document. Please try again.");
       }
     } catch (error) {
       console.error(error);
@@ -208,11 +212,7 @@ export default function DocumentsPage() {
                     <td className="p-6">
                       {doc.transaction ? (
                         <span className="font-sans text-base text-foreground/70">
-                          {doc.transaction.clientId?.substring(
-                            0,
-                            8,
-                          ) /* Mock Deal Name */}{" "}
-                          Deal
+                          {doc.transaction.property?.address || "Deal"}
                         </span>
                       ) : (
                         <span className="text-foreground/30 text-sm italic">
@@ -230,6 +230,20 @@ export default function DocumentsPage() {
                           className="text-sm font-sans uppercase tracking-widest text-primary hover:text-primary-hover transition-colors"
                         >
                           {t.documents.table.view}
+                        </button>
+                        <button
+                          onClick={async () => {
+                            if (!window.confirm(X.common.confirmDelete)) return;
+                            try {
+                              await api(`/api/documents/${doc.id}`, { method: "DELETE" });
+                              fetchDocuments();
+                            } catch (err) {
+                              toast.error(err instanceof Error ? err.message : X.common.error);
+                            }
+                          }}
+                          className="text-sm font-sans uppercase tracking-widest text-foreground/40 hover:text-red-500 transition-colors"
+                        >
+                          {X.common.delete}
                         </button>
                       </div>
                     </td>

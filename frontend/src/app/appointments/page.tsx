@@ -3,6 +3,8 @@
 import React from "react";
 import { useI18n } from "@/lib/i18n/I18nContext";
 import { useToast } from "@/components/ui/Toast";
+import { useExtra } from "@/lib/i18n/extra";
+import { api, dateInputToISO } from "@/lib/api";
 import { Calendar, dateFnsLocalizer } from "react-big-calendar";
 import { format, parse, startOfWeek, getDay } from "date-fns";
 import { enUS, zhCN, es } from "date-fns/locale";
@@ -25,6 +27,7 @@ const localizer = dateFnsLocalizer({
 export default function AppointmentsPage() {
   const { t, language } = useI18n();
   const toast = useToast();
+  const X = useExtra();
 
   const [appointments, setAppointments] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -41,6 +44,8 @@ export default function AppointmentsPage() {
     status: "SCHEDULED",
     clientId: "",
     propertyId: "",
+    type: "SHOWING",
+    location: "",
   });
 
   // Reference data
@@ -99,6 +104,7 @@ export default function AppointmentsPage() {
         },
         body: JSON.stringify({
           ...formData,
+          date: dateInputToISO(formData.date),
           clientId: formData.clientId || undefined,
           propertyId: formData.propertyId || undefined,
         }),
@@ -112,11 +118,14 @@ export default function AppointmentsPage() {
           status: "SCHEDULED",
           clientId: "",
           propertyId: "",
+          type: "SHOWING",
+          location: "",
         });
         fetchAppointments();
         toast.success(t.appointments.modal.save ?? "Meeting scheduled");
       } else {
-        toast.error(t.appointments.failSchedule ?? "Failed to schedule appointment");
+        const err = await res.json().catch(() => ({}));
+        toast.error(err.error || t.appointments.failSchedule || "Failed to schedule appointment");
       }
     } catch (error) {
       console.error(error);
@@ -131,6 +140,27 @@ export default function AppointmentsPage() {
     await new Promise(resolve => setTimeout(resolve, 1200));
     setIsSyncingGoogle(false);
     toast.info(t.appointments.syncSuccess ?? "Google Calendar sync is coming soon.");
+  };
+
+  const updateAppointment = async (id: string, body: Record<string, unknown>) => {
+    try {
+      await api(`/api/appointments/${id}`, { method: "PATCH", body });
+      toast.success(X.appts.updated);
+      fetchAppointments();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : X.common.error);
+    }
+  };
+
+  const deleteAppointment = async (id: string) => {
+    if (!window.confirm(X.common.confirmDelete)) return;
+    try {
+      await api(`/api/appointments/${id}`, { method: "DELETE" });
+      toast.success(X.appts.deleted);
+      fetchAppointments();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : X.common.error);
+    }
   };
 
   const upcomingAppointments = appointments.filter(
@@ -177,7 +207,7 @@ export default function AppointmentsPage() {
             </h3>
             <span
               className={`text-xs px-2 py-1 uppercase tracking-widest border
-                            ${apt.status === "SCHEDULED" ? "bg-primary/10 border-primary/20 text-primary" : ""}
+                            ${apt.status === "SCHEDULED" || apt.status === "CONFIRMED" ? "bg-primary/10 border-primary/20 text-primary" : ""}
                             ${apt.status === "COMPLETED" ? "bg-surface border-border text-foreground/50" : ""}
                             ${apt.status === "CANCELLED" ? "bg-red-900/10 border-red-900/20 text-red-500/80" : ""}
                         `}
@@ -186,7 +216,9 @@ export default function AppointmentsPage() {
                 ? t.appointments.modal.completed
                 : apt.status === "CANCELLED"
                   ? t.appointments.modal.cancelled
-                  : t.appointments.modal.scheduled}
+                  : apt.status === "CONFIRMED"
+                    ? X.appts.confirm
+                    : t.appointments.modal.scheduled}
             </span>
           </div>
 
@@ -210,6 +242,20 @@ export default function AppointmentsPage() {
               {apt.notes}
             </p>
           )}
+          <div className="mt-3 flex flex-wrap items-center gap-4 text-xs">
+            {apt.type && <span className="px-2 py-0.5 border border-border text-foreground/60 uppercase tracking-widest">{(X.appts.types as any)[apt.type] || apt.type}</span>}
+            {apt.location && <span className="text-foreground/50">📍 {apt.location}</span>}
+            {apt.status !== "COMPLETED" && apt.status !== "CANCELLED" && (
+              <>
+                {apt.status !== "CONFIRMED" && (
+                  <button onClick={() => updateAppointment(apt.id, { status: "CONFIRMED" })} className="text-primary hover:underline">{X.appts.confirm}</button>
+                )}
+                <button onClick={() => updateAppointment(apt.id, { status: "COMPLETED" })} className="text-primary hover:underline">{X.appts.markComplete}</button>
+                <button onClick={() => updateAppointment(apt.id, { status: "CANCELLED" })} className="text-foreground/50 hover:underline">{X.appts.markCancelled}</button>
+              </>
+            )}
+            <button onClick={() => deleteAppointment(apt.id)} className="text-foreground/40 hover:text-red-500">{X.common.delete}</button>
+          </div>
         </div>
       </div>
     );
@@ -220,7 +266,7 @@ export default function AppointmentsPage() {
     id: apt.id,
     title: `${apt.title} ${apt.status === "CANCELLED" ? "(Cancelled)" : ""}`,
     start: new Date(apt.date),
-    end: new Date(new Date(apt.date).getTime() + 60 * 60 * 1000), // Assuming 1 hour meetings
+    end: apt.endDate ? new Date(apt.endDate) : new Date(new Date(apt.date).getTime() + (apt.durationMin || 60) * 60 * 1000),
     raw: apt,
   }));
 
@@ -441,6 +487,29 @@ export default function AppointmentsPage() {
                       {t.appointments.modal.cancelled}
                     </option>
                   </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                  <label className="block font-sans text-sm uppercase tracking-widest text-foreground/50 mb-2">{X.appts.type}</label>
+                  <select
+                    name="type"
+                    value={formData.type}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 bg-surface border border-border rounded-none text-base text-foreground focus:border-primary outline-none transition-colors appearance-none cursor-pointer"
+                  >
+                    {Object.entries(X.appts.types).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-sans text-sm uppercase tracking-widest text-foreground/50 mb-2">{X.appts.location}</label>
+                  <input
+                    name="location"
+                    value={formData.location}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 bg-surface border border-border rounded-none text-base text-foreground focus:border-primary outline-none transition-colors font-sans"
+                  />
                 </div>
               </div>
 

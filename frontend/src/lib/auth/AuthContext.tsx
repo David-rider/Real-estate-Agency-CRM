@@ -53,8 +53,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (isLoading) return;
 
         const publicRoutes = ['/login', '/signup', '/forgot-password', '/reset-password', '/verify-email', '/public-listings'];
+        // "/" is the public landing page; sub-pages of public routes (e.g. a listing) are public too
+        const isPublic = pathname === '/' || publicRoutes.some(r => pathname === r || pathname.startsWith(r + '/'));
         // Route protection
-        if (!token && !publicRoutes.includes(pathname)) {
+        if (!token && !isPublic) {
             router.push('/login');
         } else if (token && (pathname === '/login' || pathname === '/signup')) {
             router.push('/dashboard');

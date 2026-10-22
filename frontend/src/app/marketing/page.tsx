@@ -3,6 +3,8 @@
 import React, { useEffect, useState } from "react";
 import { useI18n } from "@/lib/i18n/I18nContext";
 import { useAuth } from "@/lib/auth/AuthContext";
+import AiAssistantPanel from "@/components/ai/AiAssistantPanel";
+import { aiLanguage } from "@/lib/i18n/extra";
 
 interface MarketingTask {
   id: string;
@@ -87,10 +89,9 @@ export default function MarketingPage() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ 
-          propertyId: "mock-id", 
-          audience, 
-          features, 
-          language, 
+          audience,
+          features,
+          language: aiLanguage(language),
           type: contentType,
           tone: canTone ? tone : undefined
         }),
@@ -145,6 +146,8 @@ export default function MarketingPage() {
           </p>
         </div>
       </div>
+
+      <AiAssistantPanel onSaved={fetchTasks} />
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* AI Content Generator (Span 5 for asymmetric look) */}

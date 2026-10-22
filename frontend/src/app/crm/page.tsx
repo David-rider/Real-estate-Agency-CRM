@@ -4,9 +4,23 @@ import React from "react";
 import { useI18n } from "@/lib/i18n/I18nContext";
 import { useToast } from "@/components/ui/Toast";
 import Link from "next/link";
+import { useExtra, fmt } from "@/lib/i18n/extra";
+import { api, ApiError } from "@/lib/api";
+
+const TEMP_STYLES: Record<string, string> = {
+  HOT: "bg-red-500/10 text-red-500 border-red-500/30",
+  WARM: "bg-amber-500/10 text-amber-600 border-amber-500/30",
+  COLD: "bg-sky-500/10 text-sky-600 border-sky-500/30",
+};
+
+function daysSince(d?: string | null) {
+  if (!d) return null;
+  return Math.floor((Date.now() - new Date(d).getTime()) / 86400000);
+}
 
 export default function CRMPage() {
   const { t } = useI18n();
+  const X = useExtra();
   const toast = useToast();
 
   const [clients, setClients] = React.useState<any[]>([]);
@@ -23,49 +37,45 @@ export default function CRMPage() {
     type: "BUYER",
     budget: "",
     status: "LEAD",
+    source: "",
+    temperature: "WARM",
+    tags: "",
   });
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const [searchQuery, setSearchQuery] = React.useState("");
   const [filterType, setFilterType] = React.useState("ALL");
   const [filterStatus, setFilterStatus] = React.useState("ALL");
+  const [filterTemp, setFilterTemp] = React.useState("ALL");
+  const [staleOnly, setStaleOnly] = React.useState(false);
 
-  const fetchClients = (page = 1) => {
+  const fetchClients = React.useCallback((page = 1) => {
     setLoading(true);
-    const token = localStorage.getItem("token");
-    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/clients?page=${page}&limit=10`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then(async (res) => {
-        if (res.status === 401) {
-          localStorage.removeItem("token");
-          localStorage.removeItem("user");
-          window.location.href = "/login";
-          throw new Error("Session Expired");
-        }
-        if (res.status === 403) {
-          // Role has no CRM access (e.g. attorney / lender / title co.) — stay logged in
-          const d = await res.json().catch(() => ({}));
-          setAccessDenied(d.error || "Your role does not have access to the CRM.");
-          throw new Error("Forbidden");
-        }
-        return res.json();
-      })
+    const params = new URLSearchParams({ page: String(page), limit: "10" });
+    if (searchQuery.trim()) params.set("q", searchQuery.trim());
+    if (filterType !== "ALL") params.set("type", filterType);
+    if (filterStatus !== "ALL") params.set("status", filterStatus);
+    if (filterTemp !== "ALL") params.set("temperature", filterTemp);
+    if (staleOnly) params.set("stale", "true");
+    api(`/api/clients?${params}`)
       .then((data) => {
         setClients(data.data || []);
         setTotalClients(data.total || 0);
         setCurrentPage(data.page || 1);
-        setLoading(false);
       })
       .catch((err) => {
-        console.error(err);
-        setLoading(false);
-      });
-  };
+        // Role has no CRM access (e.g. attorney / lender / title co.) — stay logged in
+        if (err instanceof ApiError && err.status === 403) setAccessDenied(err.message);
+        else console.error(err);
+      })
+      .finally(() => setLoading(false));
+  }, [searchQuery, filterType, filterStatus, filterTemp, staleOnly]);
 
+  // Debounce search typing; filters apply immediately
   React.useEffect(() => {
-    fetchClients(1);
-  }, []);
+    const id = setTimeout(() => fetchClients(1), 300);
+    return () => clearTimeout(id);
+  }, [fetchClients]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
@@ -73,48 +83,28 @@ export default function CRMPage() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const filteredClients = clients.filter((client) => {
-    const matchesSearch =
-      `${client.firstName} ${client.lastName} ${client.email} ${client.phone}`
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase());
-    const matchesType = filterType === "ALL" || client.type === filterType;
-    const matchesStatus =
-      filterStatus === "ALL" || client.status === filterStatus;
-    return matchesSearch && matchesType && matchesStatus;
-  });
+  // Filtering happens on the server, across every page
+  const filteredClients = clients;
 
-  const handleAddClient = async (e: React.FormEvent) => {
+  const emptyForm = { firstName: "", lastName: "", email: "", phone: "", type: "BUYER", budget: "", status: "LEAD", source: "", temperature: "WARM", tags: "" };
+
+  const handleAddClient = async (e: React.FormEvent, force = false) => {
     e.preventDefault();
     setIsSubmitting(true);
-    const token = localStorage.getItem("token");
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/clients`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(formData),
-      });
-      if (res.ok) {
-        setIsAddModalOpen(false);
-        setFormData({
-          firstName: "",
-          lastName: "",
-          email: "",
-          phone: "",
-          type: "BUYER",
-          budget: "",
-          status: "LEAD",
-        });
-        fetchClients();
+      await api("/api/clients", { method: "POST", body: { ...formData, force } });
+      setIsAddModalOpen(false);
+      setFormData(emptyForm);
+      fetchClients(1);
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 409) {
+        if (window.confirm(fmt(X.crm.duplicateConfirm, { msg: err.message }))) {
+          setIsSubmitting(false);
+          return handleAddClient(e, true);
+        }
       } else {
-        const errData = await res.json().catch(() => ({}));
-        toast.error(errData.error || "Failed to add client. Please try again.");
+        toast.error(err instanceof Error ? err.message : "Failed to add client. Please try again.");
       }
-    } catch (error) {
-      console.error(error);
     } finally {
       setIsSubmitting(false);
     }
@@ -172,7 +162,23 @@ export default function CRMPage() {
             <option value="BUYER">{t.crm.modal.typeBuyer}</option>
             <option value="SELLER">{t.crm.modal.typeSeller}</option>
             <option value="REFERRAL">{t.crm.modal.typeReferral}</option>
+            <option value="RENTER">{X.crm.typeRenter}</option>
+            <option value="INVESTOR">{X.crm.typeInvestor}</option>
           </select>
+          <select
+            value={filterTemp}
+            onChange={(e) => setFilterTemp(e.target.value)}
+            className="px-4 py-2.5 bg-background border border-border/60 rounded-xl font-sans text-base text-foreground/80 outline-none cursor-pointer focus:border-primary focus:ring-1 focus:ring-primary transition-all shadow-sm appearance-none md:w-40"
+          >
+            <option value="ALL">{X.crm.allPriorities}</option>
+            <option value="HOT">{X.crm.HOT}</option>
+            <option value="WARM">{X.crm.WARM}</option>
+            <option value="COLD">{X.crm.COLD}</option>
+          </select>
+          <label className="flex items-center gap-2 px-3 text-sm text-foreground/70 cursor-pointer whitespace-nowrap">
+            <input type="checkbox" checked={staleOnly} onChange={(e) => setStaleOnly(e.target.checked)} className="accent-primary" />
+            {X.crm.needsFollowUp}
+          </label>
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
@@ -200,6 +206,7 @@ export default function CRMPage() {
                   {t.crm.table.searchBudget}
                 </th>
                 <th className="px-6 py-4 font-semibold">{t.crm.table.status}</th>
+                <th className="px-6 py-4 font-semibold">{X.crm.lastContact}</th>
                 <th className="px-6 py-4 font-semibold text-right">
                   {t.crm.table.actions}
                 </th>
@@ -209,7 +216,7 @@ export default function CRMPage() {
               {loading ? (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={7}
                     className="px-6 py-12 text-center text-foreground/50 tracking-widest text-xs font-medium"
                   >
                     {t.crm.table.loading}
@@ -218,7 +225,7 @@ export default function CRMPage() {
               ) : filteredClients.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={7}
                     className="px-6 py-12 text-center text-foreground/50 tracking-widest text-xs font-medium"
                   >
                     {t.crm.table.noClients}
@@ -238,6 +245,11 @@ export default function CRMPage() {
                       <span className="tracking-wide text-foreground">
                         {client.firstName} {client.lastName}
                       </span>
+                      {client.temperature && (
+                        <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${TEMP_STYLES[client.temperature] || ""}`}>
+                          {(X.crm as any)[client.temperature] || client.temperature}
+                        </span>
+                      )}
                     </td>
                     <td className="px-6 py-4">
                       <span className="text-sm font-semibold px-2.5 py-1 rounded-md bg-surface border border-border/40 text-foreground/70">
@@ -245,7 +257,11 @@ export default function CRMPage() {
                           ? t.crm.modal.typeBuyer
                           : client.type === "SELLER"
                             ? t.crm.modal.typeSeller
-                            : t.crm.modal.typeReferral}
+                            : client.type === "RENTER"
+                              ? X.crm.typeRenter
+                              : client.type === "INVESTOR"
+                                ? X.crm.typeInvestor
+                                : t.crm.modal.typeReferral}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-foreground/60 tracking-wide font-medium">
@@ -277,6 +293,17 @@ export default function CRMPage() {
                               ? t.crm.modal.statusLead
                               : t.crm.modal.statusClosed}
                       </span>
+                    </td>
+                    <td className="px-6 py-4 text-sm">
+                      {(() => {
+                        const d = daysSince(client.lastContactedAt);
+                        const stale = d === null || d >= 14;
+                        return (
+                          <span className={stale ? "text-red-500 font-medium" : "text-foreground/60"}>
+                            {d === null ? X.crm.never : d === 0 ? X.crm.today : fmt(X.crm.daysAgo, { n: d })}
+                          </span>
+                        );
+                      })()}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <Link
@@ -339,7 +366,7 @@ export default function CRMPage() {
               </button>
             </div>
             <form
-              onSubmit={handleAddClient}
+              onSubmit={(e) => handleAddClient(e)}
               className="p-8 overflow-y-auto space-y-6"
             >
               <div className="grid grid-cols-2 gap-6">
@@ -415,6 +442,8 @@ export default function CRMPage() {
                     <option value="BUYER">{t.crm.modal.typeBuyer}</option>
                     <option value="SELLER">{t.crm.modal.typeSeller}</option>
                     <option value="REFERRAL">{t.crm.modal.typeReferral}</option>
+                    <option value="RENTER">{X.crm.typeRenter}</option>
+                    <option value="INVESTOR">{X.crm.typeInvestor}</option>
                   </select>
                 </div>
                 <div>
@@ -448,6 +477,49 @@ export default function CRMPage() {
                   type="text"
                   className="w-full px-4 py-3 bg-background border border-border/60 rounded-xl text-base text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all placeholder:text-foreground/30 shadow-sm"
                   placeholder="e.g. $1.2M - $1.5M"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <label className="block font-sans text-sm font-semibold text-foreground/60 mb-2">{X.crm.source}</label>
+                  <input
+                    name="source"
+                    value={formData.source}
+                    onChange={handleChange}
+                    list="lead-sources"
+                    className="w-full px-4 py-3 bg-background border border-border/60 rounded-xl text-base text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all placeholder:text-foreground/30 shadow-sm"
+                    placeholder={X.crm.sourcePlaceholder}
+                  />
+                  <datalist id="lead-sources">
+                    {["Referral", "Website", "Zillow", "StreetEasy", "Realtor.com", "Open House", "Sign Call", "Social Media", "Past Client", "Sphere"].map((s) => (
+                      <option key={s} value={s} />
+                    ))}
+                  </datalist>
+                </div>
+                <div>
+                  <label className="block font-sans text-sm font-semibold text-foreground/60 mb-2">{X.crm.priority}</label>
+                  <select
+                    name="temperature"
+                    value={formData.temperature}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 bg-background border border-border/60 rounded-xl text-base text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none cursor-pointer shadow-sm"
+                  >
+                    <option value="HOT">{X.crm.HOT}</option>
+                    <option value="WARM">{X.crm.WARM}</option>
+                    <option value="COLD">{X.crm.COLD}</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-sans text-sm font-semibold text-foreground/60 mb-2">{X.crm.tags}</label>
+                <input
+                  name="tags"
+                  value={formData.tags}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 bg-background border border-border/60 rounded-xl text-base text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all placeholder:text-foreground/30 shadow-sm"
+                  placeholder={X.crm.tagsPlaceholder}
                 />
               </div>
 

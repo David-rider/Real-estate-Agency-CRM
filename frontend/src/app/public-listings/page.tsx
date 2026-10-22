@@ -129,10 +129,10 @@ function PropertyCard({ property, index, onContact }: { property: Property; inde
         <div className="mt-auto">
           <button
             onClick={onContact}
-            disabled={property.status === 'IN_CONTRACT' || property.status === 'SOLD'}
+            disabled={property.status === 'SOLD'}
             className="w-full py-2 bg-primary text-background text-xs uppercase tracking-widest font-semibold rounded-lg hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
           >
-            {property.status === 'IN_CONTRACT' ? 'In Contract' : property.status === 'SOLD' ? 'Sold' : 'Request Showing →'}
+            {property.status === 'IN_CONTRACT' ? 'In Contract — View Details →' : property.status === 'SOLD' ? 'Sold' : 'Request Showing →'}
           </button>
         </div>
       </div>
@@ -149,8 +149,6 @@ export default function PublicListingsPage() {
   const [maxPrice, setMaxPrice] = useState('');
   const [minBeds, setMinBeds] = useState('Any');
   const [minBaths, setMinBaths] = useState('Any');
-  const [showContactModal, setShowContactModal] = useState(false);
-  const [contactSuccess, setContactSuccess] = useState(false);
   const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
   useEffect(() => {
@@ -200,12 +198,6 @@ export default function PublicListingsPage() {
           </Link>
           <div className="flex items-center gap-3">
             <Link href="/login" className="text-xs text-foreground/50 hover:text-primary uppercase tracking-widest transition-colors hidden sm:block">Agent Login</Link>
-            <button
-              onClick={() => setShowContactModal(true)}
-              className="px-4 py-1.5 bg-primary text-background text-xs uppercase tracking-widest font-semibold rounded-lg hover:opacity-90 transition"
-            >
-              Contact Us
-            </button>
           </div>
         </div>
       </header>
@@ -344,7 +336,7 @@ export default function PublicListingsPage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {filtered.map((p, i) => (
-              <PropertyCard key={p.id} property={p} index={i} onContact={() => setShowContactModal(true)} />
+              <PropertyCard key={p.id} property={p} index={i} onContact={() => { window.location.href = `/public-listings/${p.id}`; }} />
             ))}
           </div>
         )}
@@ -357,21 +349,13 @@ export default function PublicListingsPage() {
             <div className="w-8 h-8 rounded-full bg-primary/15 ring-1 ring-primary/20 flex items-center justify-center text-primary font-bold text-sm flex-shrink-0">A</div>
             <div className="min-w-0 hidden sm:block">
               <p className="text-foreground text-xs font-semibold truncate">Speak with an Agent</p>
-              <p className="text-foreground/40 text-xs truncate">Available Mon–Fri, 9am–6pm EST</p>
+              <p className="text-foreground/40 text-xs truncate">Pick a home and send a request — the listing agent replies directly.</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <a
-              href="tel:+12125550100"
-              className="flex items-center gap-2 px-4 py-2 bg-surface border border-border text-foreground hover:border-primary hover:text-primary text-xs uppercase tracking-widest font-semibold rounded-lg transition-all"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-              </svg>
-              <span className="hidden sm:inline">Call Us</span>
-            </a>
+
             <button
-              onClick={() => setShowContactModal(true)}
+              onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
               className="flex items-center gap-2 px-4 py-2 bg-primary text-background text-xs uppercase tracking-widest font-semibold rounded-lg hover:opacity-90 transition-all"
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -383,52 +367,6 @@ export default function PublicListingsPage() {
         </div>
       </footer>
 
-      {/* Contact Modal */}
-      {showContactModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
-          <div className="bg-surface border border-border rounded-xl w-full max-w-md p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex items-start justify-between mb-6">
-              <div>
-                <h2 className="text-lg font-bold text-foreground">Contact an Agent</h2>
-                <p className="text-foreground/50 text-sm mt-1">We&apos;ll get back to you within 24 hours.</p>
-              </div>
-              <button onClick={() => { setShowContactModal(false); setContactSuccess(false); }} className="text-foreground/30 hover:text-foreground transition-colors text-lg ml-4">✕</button>
-            </div>
-            <form
-              onSubmit={e => { e.preventDefault(); setShowContactModal(false); setContactSuccess(true); }}
-              className="space-y-4"
-            >
-              <div className="space-y-1.5">
-                <label className="text-xs uppercase tracking-widest text-foreground/50">Name</label>
-                <input type="text" required placeholder="Your full name" className="w-full px-0 py-2.5 bg-transparent border-b border-border focus:border-primary outline-none transition-colors text-foreground text-sm" />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-xs uppercase tracking-widest text-foreground/50">Email</label>
-                <input type="email" required placeholder="your@email.com" className="w-full px-0 py-2.5 bg-transparent border-b border-border focus:border-primary outline-none transition-colors text-foreground text-sm" />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-xs uppercase tracking-widest text-foreground/50">Phone (Optional)</label>
-                <input type="tel" placeholder="+1 (212) 555-0100" className="w-full px-0 py-2.5 bg-transparent border-b border-border focus:border-primary outline-none transition-colors text-foreground text-sm" />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-xs uppercase tracking-widest text-foreground/50">Message</label>
-                <textarea rows={3} placeholder="I'm interested in..." className="w-full px-0 py-2.5 bg-transparent border-b border-border focus:border-primary outline-none transition-colors text-foreground text-sm resize-none" />
-              </div>
-              {contactSuccess ? (
-                <div className="py-4 text-center">
-                  <div className="text-2xl mb-2">✓</div>
-                  <div className="text-sm font-semibold text-foreground">Thank you!</div>
-                  <div className="text-xs text-foreground/50 mt-1">An agent will be in touch shortly.</div>
-                </div>
-              ) : (
-                <button type="submit" className="w-full py-3 bg-primary text-background text-sm uppercase tracking-widest font-semibold rounded-lg hover:opacity-90 transition mt-2">
-                  Send Message →
-                </button>
-              )}
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

@@ -1,195 +1,166 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useI18n } from "@/lib/i18n/I18nContext";
+import { useExtra } from "@/lib/i18n/extra";
+import { useToast } from "@/components/ui/Toast";
+import { useAuth } from "@/lib/auth/AuthContext";
+import { api } from "@/lib/api";
+
+const INPUT = "w-full px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground focus:border-primary outline-none";
+const BTN = "px-4 py-2 bg-primary text-background hover:opacity-90 transition-opacity rounded-lg text-sm font-semibold shadow-sm disabled:opacity-50";
 
 export default function ServicesPage() {
   const { t } = useI18n();
-  const [referring, setReferring] = useState<string | null>(null);
-  const [ordering, setOrdering] = useState(false);
+  const X = useExtra();
+  const toast = useToast();
+  const { user } = useAuth() as any;
 
-  const handleRefer = async (partnerName: string) => {
-    setReferring(partnerName);
-    const token = localStorage.getItem("token");
+  const [clients, setClients] = useState<any[]>([]);
+  const [team, setTeam] = useState<any[]>([]);
+  const [gifts, setGifts] = useState<any[]>([]);
+  const [referrals, setReferrals] = useState<any[]>([]);
+  const [gift, setGift] = useState({ clientId: "", item: "", amount: "" });
+  const [ref, setRef] = useState({ refereeId: "", notes: "", feeAmount: "" });
+  const [busy, setBusy] = useState(false);
+
+  const load = useCallback(() => {
+    api("/api/clients?limit=100").then((d) => setClients(d.data || [])).catch(() => {});
+    api("/api/settings/team").then(setTeam).catch(() => {});
+    api("/api/gifts").then(setGifts).catch(() => {});
+    api("/api/referrals").then(setReferrals).catch(() => {});
+  }, []);
+  useEffect(load, [load]);
+
+  const orderGift = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/referrals`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          refereeId: "mock-partner-id",
-          status: "PENDING",
-        }),
-      });
-      setTimeout(() => setReferring(null), 2000);
-    } catch (error) {
-      setReferring(null);
-      console.error("Failed to refer", error);
+      await api("/api/gifts", { method: "POST", body: { ...gift, amount: gift.amount || undefined } });
+      toast.success(X.services.giftOrdered);
+      setGift({ clientId: "", item: "", amount: "" });
+      load();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : X.common.error);
+    } finally {
+      setBusy(false);
     }
   };
 
-  const handleGift = async () => {
-    setOrdering(true);
-    const token = localStorage.getItem("token");
+  const sendReferral = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/gifts`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          item: "Closing Anniversary Champagne",
-          clientId: "mock-client-id",
-        }),
-      });
-      setTimeout(() => setOrdering(false), 2000);
-    } catch (error) {
-      setOrdering(false);
-      console.error("Failed to order gift", error);
+      await api("/api/referrals", { method: "POST", body: { ...ref, feeAmount: ref.feeAmount || undefined } });
+      toast.success(X.services.referralSent);
+      setRef({ refereeId: "", notes: "", feeAmount: "" });
+      load();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : X.common.error);
+    } finally {
+      setBusy(false);
     }
   };
+
+  const updateGift = async (id: string, status: string) => {
+    try { await api(`/api/gifts/${id}`, { method: "PATCH", body: { status } }); load(); }
+    catch (err) { toast.error(err instanceof Error ? err.message : X.common.error); }
+  };
+  const updateReferral = async (id: string, status: string) => {
+    try { await api(`/api/referrals/${id}`, { method: "PATCH", body: { status } }); load(); }
+    catch (err) { toast.error(err instanceof Error ? err.message : X.common.error); }
+  };
+
+  const colleagues = team.filter((m) => m.id !== user?.id);
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out text-foreground pb-12">
-      {/* Header Area */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 pb-6 border-b border-border">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            {t.services.title}
-          </h1>
-          <p className="text-foreground/50 mt-1 text-sm">
-            {t.services.subtitle}
-          </p>
-        </div>
-        <button className="px-4 py-2 bg-primary text-background hover:opacity-90 transition-opacity rounded-lg text-sm font-semibold shadow-sm w-full md:w-auto text-center">
-          {t.services.addPartner}
-        </button>
+      <div className="pb-6 border-b border-border">
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">{t.services.title}</h1>
+        <p className="text-foreground/50 mt-1 text-sm">{t.services.subtitle}</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Partner Directory */}
-        <div className="bg-background border border-border rounded-xl p-6 flex flex-col">
-          <div className="flex items-center justify-between mb-5 pb-4 border-b border-border">
-            <h2 className="text-base font-semibold text-foreground">
-              {t.services.directoryTitle}
-            </h2>
-            <span className="text-sm text-primary border border-primary/20 px-3 py-1 bg-primary/5 rounded-md font-sans font-bold">
-              {t.services.topRated}
-            </span>
+        {/* Client gifts */}
+        <div className="bg-background border border-border rounded-xl p-6 space-y-5">
+          <div>
+            <h2 className="text-base font-semibold text-foreground flex items-center gap-2">🍾 {t.services.loyaltyTitle}</h2>
+            <p className="text-sm text-foreground/50 mt-1">{t.services.loyaltyDesc}</p>
           </div>
-
-          <div className="space-y-5">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between p-6 bg-surface/30 ring-1 ring-border/50 rounded-2xl hover:bg-background hover:shadow-md hover:ring-primary/50 transition-all duration-300 group gap-6 sm:gap-4">
-              <div className="flex items-start sm:items-center gap-5">
-                <div className="w-12 h-12 rounded-full border border-border/80 bg-surface flex items-center justify-center text-foreground font-sans font-bold text-xl shadow-sm group-hover:text-primary transition-colors">
-                  G
-                </div>
-                <div className="flex flex-col">
-                  <h4 className="font-sans text-lg font-semibold text-foreground group-hover:text-primary transition-colors">
-                    Goldberg & Associates
-                  </h4>
-                  <p className="font-sans text-sm font-medium text-foreground/60 mt-0.5">
-                    {t.services.attorney}
-                  </p>
-                </div>
-              </div>
-              <div className="flex sm:flex-col items-end justify-between sm:justify-center gap-4 sm:gap-3">
-                <div className="font-sans text-base font-semibold text-primary flex items-center gap-1.5">
-                  ★ 4.9{" "}
-                  <span className="text-foreground/50 font-medium text-sm">(124)</span>
-                </div>
-                <button
-                  onClick={() => handleRefer("Goldberg")}
-                  disabled={referring === "Goldberg"}
-                  className="font-sans text-base font-semibold text-foreground/70 hover:text-primary transition-colors disabled:opacity-50 flex items-center gap-1.5 group/btn"
-                >
-                  {referring === "Goldberg" || referring === "EagleEye"
-                    ? t.services.referred
-                    : t.services.referClient}
-                  {referring === "Goldberg" ? (
-                    <span className="text-primary font-bold">✓</span>
-                  ) : (
-                    <svg className="w-4 h-4 transform group-hover/btn:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                  )}
-                </button>
-              </div>
+          <form onSubmit={orderGift} className="space-y-3">
+            <select required value={gift.clientId} onChange={(e) => setGift({ ...gift, clientId: e.target.value })} className={INPUT}>
+              <option value="">{X.services.chooseClient}</option>
+              {clients.map((c) => <option key={c.id} value={c.id}>{c.firstName} {c.lastName}</option>)}
+            </select>
+            <div className="grid grid-cols-3 gap-3">
+              <input required value={gift.item} onChange={(e) => setGift({ ...gift, item: e.target.value })} placeholder={X.services.giftPlaceholder} className={`${INPUT} col-span-2`} />
+              <input type="number" min="0" value={gift.amount} onChange={(e) => setGift({ ...gift, amount: e.target.value })} placeholder={X.services.amount} className={INPUT} />
             </div>
-
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between p-6 bg-surface/30 ring-1 ring-border/50 rounded-2xl hover:bg-background hover:shadow-md hover:ring-primary/50 transition-all duration-300 group gap-6 sm:gap-4">
-              <div className="flex items-start sm:items-center gap-5">
-                <div className="w-12 h-12 rounded-full border border-border/80 bg-surface flex items-center justify-center text-foreground font-sans font-bold text-xl shadow-sm group-hover:text-primary transition-colors">
-                  E
-                </div>
-                <div className="flex flex-col">
-                  <h4 className="font-sans text-lg font-semibold text-foreground group-hover:text-primary transition-colors">
-                    Eagle Eye Inspections
-                  </h4>
-                  <p className="font-sans text-sm font-medium text-foreground/60 mt-0.5">
-                    {t.services.inspector}
-                  </p>
-                </div>
-              </div>
-              <div className="flex sm:flex-col items-end justify-between sm:justify-center gap-4 sm:gap-3">
-                <div className="font-sans text-base font-semibold text-primary flex items-center gap-1.5">
-                  ★ 4.7{" "}
-                  <span className="text-foreground/50 font-medium text-sm">(89)</span>
-                </div>
-                <button
-                  onClick={() => handleRefer("EagleEye")}
-                  disabled={referring === "EagleEye"}
-                  className="font-sans text-base font-semibold text-foreground/70 hover:text-primary transition-colors disabled:opacity-50 flex items-center gap-1.5 group/btn"
-                >
-                  {referring === "EagleEye"
-                    ? "Referred"
-                    : t.services.referClient}
-                  {referring === "EagleEye" ? (
-                    <span className="text-primary font-bold">✓</span>
-                  ) : (
-                    <svg className="w-4 h-4 transform group-hover/btn:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                  )}
-                </button>
-              </div>
-            </div>
+            <button disabled={busy} className={BTN}>{X.services.sendGift}</button>
+          </form>
+          <div>
+            <h3 className="text-sm font-semibold text-foreground/60 mb-2">{X.services.myGifts}</h3>
+            {gifts.length === 0 ? (
+              <p className="text-sm text-foreground/40">{X.services.empty}</p>
+            ) : (
+              <ul className="divide-y divide-border/50">
+                {gifts.map((g) => (
+                  <li key={g.id} className="py-2 flex items-center justify-between gap-3 text-sm">
+                    <div>
+                      <div className="font-medium">{g.item}</div>
+                      <div className="text-foreground/50 text-xs">{g.client?.firstName} {g.client?.lastName} · {new Date(g.createdAt).toLocaleDateString()}</div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs px-2 py-0.5 rounded bg-surface border border-border">{g.status}</span>
+                      {g.status !== "DELIVERED" && g.status !== "CANCELLED" && (
+                        <button onClick={() => updateGift(g.id, "DELIVERED")} className="text-xs text-primary hover:underline">{X.services.markDelivered}</button>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </div>
 
-        {/* Loyalty & Gifts */}
-        <div className="bg-background ring-1 ring-border/50 rounded-2xl shadow-sm p-8 flex flex-col h-full min-h-[400px]">
-          <h2 className="font-sans text-2xl font-semibold text-foreground mb-8 pb-6 border-b border-border/40 flex items-center gap-3">
-            {t.services.loyaltyTitle}
-          </h2>
-
-          <div className="bg-surface/30 ring-1 ring-border/50 rounded-xl flex flex-col items-center justify-center text-center flex-1 p-10 group hover:shadow-md hover:bg-background hover:ring-primary/50 transition-all duration-300">
-            <div className="p-5 ring-1 ring-border/50 rounded-2xl bg-surface flex items-center justify-center text-4xl mb-8 group-hover:scale-105 transition-transform duration-500 ease-out shadow-sm">
-              🍾
-            </div>
-            <h3 className="font-sans text-2xl font-semibold text-foreground mb-3">
-              {t.services.loyaltySubtitle}
-            </h3>
-            <p className="font-sans text-base text-foreground/60 max-w-sm mb-10 leading-relaxed">
-              {t.services.loyaltyDesc}
-            </p>
-            <button
-              onClick={handleGift}
-              disabled={ordering}
-              className="px-8 py-3.5 bg-primary text-background rounded-xl text-base font-semibold transition-opacity hover:opacity-90 shadow-md disabled:opacity-50 flex items-center gap-2 w-full sm:w-auto justify-center group/btn"
-            >
-              {ordering ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-background/30 border-t-background rounded-full animate-spin" />
-                  {t.services.processing}
-                </>
-              ) : (
-                <>
-                  {t.services.browseGift}
-                  <svg className="w-4 h-4 transform group-hover/btn:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                </>
-              )}
-            </button>
+        {/* Colleague referrals */}
+        <div className="bg-background border border-border rounded-xl p-6 space-y-5">
+          <div>
+            <h2 className="text-base font-semibold text-foreground">🤝 {X.services.myReferrals}</h2>
+            <p className="text-sm text-foreground/50 mt-1">{t.services.directoryTitle}</p>
           </div>
+          <form onSubmit={sendReferral} className="space-y-3">
+            <select required value={ref.refereeId} onChange={(e) => setRef({ ...ref, refereeId: e.target.value })} className={INPUT}>
+              <option value="">{X.services.chooseAgent}</option>
+              {colleagues.map((m) => <option key={m.id} value={m.id}>{m.name}{m.title ? ` — ${m.title}` : ""}</option>)}
+            </select>
+            <textarea value={ref.notes} onChange={(e) => setRef({ ...ref, notes: e.target.value })} placeholder={X.services.referralNotes} rows={2} className={`${INPUT} resize-none`} />
+            <input type="number" min="0" value={ref.feeAmount} onChange={(e) => setRef({ ...ref, feeAmount: e.target.value })} placeholder={`Referral fee ($) — ${X.common.optional}`} className={INPUT} />
+            <button disabled={busy || colleagues.length === 0} className={BTN}>{X.services.sendReferral}</button>
+          </form>
+          {referrals.length === 0 ? (
+            <p className="text-sm text-foreground/40">{X.services.empty}</p>
+          ) : (
+            <ul className="divide-y divide-border/50">
+              {referrals.map((r) => (
+                <li key={r.id} className="py-2 flex items-center justify-between gap-3 text-sm">
+                  <div>
+                    <div className="font-medium">{r.referrer?.name} → {r.referee?.name}</div>
+                    {r.notes && <div className="text-foreground/50 text-xs">{r.notes}</div>}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs px-2 py-0.5 rounded bg-surface border border-border">{r.status}</span>
+                    {r.status === "PENDING" && r.referee?.id === user?.id && (
+                      <>
+                        <button onClick={() => updateReferral(r.id, "ACCEPTED")} className="text-xs text-primary hover:underline">{X.services.accept}</button>
+                        <button onClick={() => updateReferral(r.id, "DECLINED")} className="text-xs text-foreground/50 hover:underline">{X.services.decline}</button>
+                      </>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </div>
     </div>
