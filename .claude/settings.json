@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cd \"D:/study/projects01/Real estate-Agency-CRM/frontend\" && npm run audit:i18n"
+            "command": "cd frontend && npm run audit:i18n"
           }
         ]
       }
