@@ -46,7 +46,7 @@ export const authenticateToken = async (req: AuthRequest, res: Response, next: N
 
     let decoded: AuthRequest['user'];
     try {
-        decoded = jwt.verify(token, JWT_SECRET) as AuthRequest['user'];
+        decoded = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] }) as AuthRequest['user'];
     } catch (error) {
         // 401, not 403: the caller is not authenticated. 403 is reserved for
         // "authenticated but not permitted" (role / plan gating), so clients

@@ -237,6 +237,9 @@ router.post('/', async (req: AuthRequest, res) => {
         for (const [k, v] of Object.entries({ address, city, state, zip })) {
             if (typeof v !== 'string' || !v.trim()) return res.status(400).json({ error: `${k} is required` });
         }
+        if (virtualTourUrl && !/^https?:\/\//i.test(String(virtualTourUrl).trim())) {
+            return res.status(400).json({ error: 'Virtual tour link must start with http:// or https://' });
+        }
         const nPrice = optNumber(price), nBeds = optNumber(beds), nBaths = optNumber(baths);
         if (nPrice === undefined || nPrice < 0) return res.status(400).json({ error: 'A valid price is required' });
         if (nBeds === undefined || nBaths === undefined) return res.status(400).json({ error: 'Beds and baths are required' });
@@ -293,6 +296,11 @@ router.patch('/:id', async (req: AuthRequest, res) => {
         const data: any = {};
         for (const key of allowed) {
             if (req.body[key] !== undefined) data[key] = req.body[key];
+        }
+        for (const f of ['virtualTourUrl', 'featuredImage']) {
+            if (data[f] && !/^https?:\/\//i.test(String(data[f]).trim())) {
+                return res.status(400).json({ error: `${f} must start with http:// or https://` });
+            }
         }
         if (data.status !== undefined && !PROP_STATUSES.includes(data.status)) {
             return res.status(400).json({ error: 'Invalid status' });

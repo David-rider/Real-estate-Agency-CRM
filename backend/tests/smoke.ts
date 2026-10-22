@@ -233,6 +233,18 @@ async function main() {
         }
     });
 
+    await step('security basics: password policy, safe links, headers', async () => {
+        const weak = await call('POST', '/api/auth/register', undefined, { name: 'W', email: `weak-${run}@smoke.test`, password: '123', orgName: 'Weak' });
+        assert.equal(weak.status, 400);
+        const js = await call('POST', '/api/properties', a, { address: '3 Bad Ln', city: 'NY', state: 'NY', zip: '10003', price: 1, beds: 1, baths: 1, virtualTourUrl: 'javascript:alert(1)' });
+        assert.equal(js.status, 400);
+        const res = await fetch(`${API}/api/health`);
+        assert.equal(res.headers.get('x-content-type-options'), 'nosniff');
+        assert.equal(res.headers.get('x-powered-by'), null);
+        const forged = await call('GET', '/api/clients', 'eyJhbGciOiJub25lIn0.eyJ1c2VySWQiOiJ4In0.');
+        assert.equal(forged.status, 401, 'unsigned tokens are rejected');
+    });
+
     await step('archive client hides it from the list', async () => {
         const r = await call('DELETE', `/api/clients/${clientId}`, a);
         assert.equal(r.status, 200);

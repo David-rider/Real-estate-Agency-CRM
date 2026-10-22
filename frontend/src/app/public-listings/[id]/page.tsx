@@ -108,7 +108,7 @@ export default function PublicListingPage() {
             </div>
           </div>
           {listing.description && <p className="text-foreground/80 leading-relaxed whitespace-pre-line">{listing.description}</p>}
-          {listing.virtualTourUrl && (
+          {/^https?:\/\//i.test(listing.virtualTourUrl || "") && (
             <a href={listing.virtualTourUrl} target="_blank" rel="noopener noreferrer" className="inline-block text-primary hover:underline">{P.virtualTour} →</a>
           )}
         </section>
