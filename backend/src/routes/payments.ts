@@ -69,7 +69,7 @@ router.post('/checkout', authenticateToken, async (req: AuthRequest, res) => {
         res.json({ sessionId: session.id, url: session.url });
     } catch (error: any) {
         console.error('Stripe checkout error:', error);
-        res.status(500).json({ error: error.message || 'Checkout failed' });
+        res.status(500).json({ error: 'Checkout failed. Please try again or contact support.' });
     }
 });
 
@@ -97,7 +97,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
         }
     } catch (err: any) {
         console.error('Webhook signature error:', err.message);
-        return res.status(400).json({ error: `Webhook Error: ${err.message}` });
+        return res.status(400).json({ error: 'Invalid webhook signature' });
     }
 
     if (event.type === 'checkout.session.completed') {
@@ -159,7 +159,7 @@ router.get('/portal', authenticateToken, async (req: AuthRequest, res) => {
         res.json({ url: portalSession.url });
     } catch (error: any) {
         console.error('Portal error:', error);
-        res.status(500).json({ error: error.message || 'Failed to create portal session' });
+        res.status(500).json({ error: 'Failed to open the billing portal. Please try again.' });
     }
 });
 

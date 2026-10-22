@@ -83,7 +83,9 @@ deals, commissions, lead capture and tenant isolation.
 
 Every migration after the first is idempotent, so it is safe on an existing
 database. See [CHANGELOG.md](CHANGELOG.md) for what changed and how to sync a
-local checkout, and [guides/roadmap.md](guides/roadmap.md) for planned work.
+local checkout, [guides/roadmap.md](guides/roadmap.md) for planned work, and
+[guides/release-process.md](guides/release-process.md) for how versions are released.
+`GET /api/health` reports the running version.
 
 ## License
 

@@ -33,6 +33,8 @@ const router = express.Router();
 const prisma = new PrismaClient();
 
 const JWT_SECRET = process.env.JWT_SECRET as string;
+
+const hashToken = (t: string) => crypto.createHash('sha256').update(t).digest('hex');
 if (!JWT_SECRET) {
     console.error('FATAL ERROR: JWT_SECRET is not defined in environment variables.');
     process.exit(1);
@@ -108,6 +110,9 @@ router.post('/register', authLimiter, async (req, res) => {
 
         if (!orgName || !orgName.trim()) {
             return res.status(400).json({ error: 'Organization / firm name is required' });
+        }
+        if (typeof password !== 'string' || password.length < 8 || password.length > 200) {
+            return res.status(400).json({ error: 'Password must be at least 8 characters' });
         }
 
         const existingUser = await prisma.user.findUnique({ where: { email } });
@@ -191,9 +196,10 @@ router.post('/forgot-password', authLimiter, async (req, res) => {
         const token = crypto.randomBytes(32).toString('hex');
         const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
+        // Only a hash is stored: a leaked database must not yield usable reset links
         await prisma.user.update({
             where: { email },
-            data: { passwordResetToken: token, passwordResetExpiry: expiresAt }
+            data: { passwordResetToken: hashToken(token), passwordResetExpiry: expiresAt }
         });
 
         const appUrl = process.env.APP_URL || 'http://localhost:3000';
@@ -218,11 +224,13 @@ router.post('/reset-password', authLimiter, async (req, res) => {
     try {
         const { token, password } = req.body;
         if (!token || !password) return res.status(400).json({ error: 'Token and password are required' });
-        if (password.length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters' });
+        if (typeof password !== 'string' || password.length < 8 || password.length > 200) {
+            return res.status(400).json({ error: 'Password must be at least 8 characters' });
+        }
 
         const user = await prisma.user.findFirst({
             where: {
-                passwordResetToken: token,
+                passwordResetToken: hashToken(String(token)),
                 passwordResetExpiry: { gt: new Date() }
             }
         });
