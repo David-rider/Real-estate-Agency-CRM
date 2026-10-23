@@ -192,7 +192,10 @@ router.get('/payout-requests', authorizeRole(['SUPERADMIN', 'FIRMADMIN', 'MANAGE
             orderBy: { updatedAt: 'desc' },
         });
 
-        res.json(requests);
+        // Tell the UI which requests this reviewer may act on, using the same rule the
+        // approve/reject endpoints enforce: not your own — unless you are the only approver.
+        const sole = await isSoleApprover(req.user.orgId, req.user.userId);
+        res.json(requests.map((r) => ({ ...r, canReview: r.agentId !== req.user!.userId || sole })));
     } catch (error) {
         console.error('Error fetching payout requests:', error);
         res.status(500).json({ error: 'Failed to fetch payout requests' });

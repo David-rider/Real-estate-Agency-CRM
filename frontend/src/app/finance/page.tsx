@@ -224,7 +224,8 @@ export default function FinancePage() {
           ) : (
             <div className="divide-y divide-border/50">
               {payoutRequests.map((r) => {
-                const isOwn = r.agent?.id === user?.id;
+                // The server decides (own request is blocked unless you are the only approver)
+                const isOwn = r.canReview === false;
                 return (
                   <div key={r.id} className="py-3 flex flex-col md:flex-row md:items-center justify-between gap-3">
                     <div className="min-w-0">

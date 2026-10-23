@@ -140,6 +140,12 @@ async function main() {
         const id = list.body.data[0].id;
         const req = await call('POST', `/api/finance/commissions/${id}/payout`, a);
         assert.equal(req.status, 200, JSON.stringify(req.body));
+        // the approval queue must tell the UI a solo broker may review their own request
+        const queue = await call('GET', '/api/finance/payout-requests', a);
+        assert.equal(queue.status, 200, JSON.stringify(queue.body));
+        const queued = queue.body.find((q: any) => q.id === id);
+        assert.ok(queued, 'request appears in the approval queue');
+        assert.equal(queued.canReview, true, 'sole approver can review their own request');
         const ok = await call('POST', `/api/finance/commissions/${id}/approve`, a);
         assert.equal(ok.status, 200, JSON.stringify(ok.body));
         assert.equal(ok.body.status, 'PAID');
