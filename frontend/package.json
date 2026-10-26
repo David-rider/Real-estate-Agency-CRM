@@ -17,7 +17,7 @@
     "react": "19.2.9",
     "react-big-calendar": "^1.19.4",
     "react-dom": "19.2.9",
-    "recharts": "^3.8.0"
+    "recharts": "^3.10.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
