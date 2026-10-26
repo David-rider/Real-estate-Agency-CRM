@@ -27,7 +27,7 @@
   "type": "commonjs",
   "dependencies": {
     "@anthropic-ai/sdk": "^1.1.0",
-    "@prisma/client": "^4.16.2",
+    "@prisma/client": "^7.10.1",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "csv-parse": "^7.0.3",
