@@ -57,8 +57,8 @@ const jsonLd = {
     offerCount: '3',
     offers: [
       { '@type': 'Offer', name: 'Core', price: '0', priceCurrency: 'USD' },
-      { '@type': 'Offer', name: 'Pro', price: '49', priceCurrency: 'USD' },
-      { '@type': 'Offer', name: 'Elite', price: '99', priceCurrency: 'USD' },
+      { '@type': 'Offer', name: 'Pro', price: '39', priceCurrency: 'USD' },
+      { '@type': 'Offer', name: 'Elite', price: '79', priceCurrency: 'USD' },
     ],
   },
   featureList: [

@@ -554,12 +554,14 @@ export default function LandingPageClient() {
   const { theme, setTheme } = useTheme();
   const { token } = useAuth();
 
+  const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">("annual");
   const [isLangOpen, setIsLangOpen] = useState(false);
   const [isThemeOpen, setIsThemeOpen] = useState(false);
   const langRef = useRef<HTMLDivElement>(null);
   const themeRef = useRef<HTMLDivElement>(null);
 
   const copy = COPY[language] || COPY.en;
+  const U = t.upgrade;
   const tn = (t as any).settings?.appearance?.themeNames ?? {};
   const themes: { id: ThemeName; label: string; color: string }[] = [
     { id: "luxury", label: tn.luxury || "Luxury", color: "#B8977E" },
@@ -801,14 +803,78 @@ export default function LandingPageClient() {
         </div>
       </section>
 
-      {/* ── Pricing ── */}
+      {/* ── Pricing (Synced with t.upgrade: Core $0 / Pro $39 mo, $390 yr / Elite $79 mo, $790 yr) ── */}
       <section className="max-w-6xl mx-auto px-6 py-20" id="pricing">
-        <h2 className="text-2xl sm:text-3xl font-bold text-center text-foreground mb-3">{copy.pricingTitle}</h2>
-        <p className="text-center text-foreground/50 mb-14">{copy.pricingSubtitle}</p>
+        <h2 className="text-2xl sm:text-3xl font-bold text-center text-foreground mb-3">{U.title}</h2>
+        <p className="text-center text-foreground/50 mb-8 max-w-2xl mx-auto">{U.subtitle}</p>
+
+        {/* Monthly / Annual Billing Toggle */}
+        <div className="flex justify-center mb-12">
+          <div className="inline-flex items-center gap-2 bg-surface p-1 rounded-full border border-border">
+            <button
+              onClick={() => setBillingCycle("monthly")}
+              className={`px-5 py-2 rounded-full text-sm font-sans uppercase tracking-widest transition-all ${
+                billingCycle === "monthly"
+                  ? "bg-background shadow text-foreground"
+                  : "text-foreground/50 hover:text-foreground"
+              }`}
+            >
+              {U.monthly}
+            </button>
+            <button
+              onClick={() => setBillingCycle("annual")}
+              className={`px-5 py-2 rounded-full text-sm font-sans uppercase tracking-widest transition-all flex items-center gap-2 ${
+                billingCycle === "annual"
+                  ? "bg-background shadow text-foreground"
+                  : "text-foreground/50 hover:text-foreground"
+              }`}
+            >
+              {U.annual}
+              <span className="bg-primary/10 text-primary text-xs px-2 py-0.5 rounded-full font-medium">
+                {U.save}
+              </span>
+            </button>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {copy.plans.map((plan) => (
+          {[
+            {
+              key: "core",
+              name: U.core.name,
+              price: U.core.price,
+              period: "",
+              desc: U.core.desc,
+              features: U.core.features,
+              highlight: false,
+              cta: copy.nav.getStarted,
+              href: token ? "/upgrade" : "/signup",
+            },
+            {
+              key: "pro",
+              name: U.pro.name,
+              price: billingCycle === "annual" ? U.pro.priceA : U.pro.priceM,
+              period: billingCycle === "annual" ? "/yr" : "/mo",
+              desc: U.pro.desc,
+              features: U.pro.features,
+              highlight: true,
+              cta: U.pro.btn,
+              href: token ? "/upgrade" : "/signup",
+            },
+            {
+              key: "elite",
+              name: U.elite.name,
+              price: billingCycle === "annual" ? U.elite.priceA : U.elite.priceM,
+              period: billingCycle === "annual" ? "/yr" : "/mo",
+              desc: U.elite.desc,
+              features: U.elite.features,
+              highlight: false,
+              cta: U.elite.btn,
+              href: token ? "/upgrade" : "/signup",
+            },
+          ].map((plan) => (
             <div
-              key={plan.name}
+              key={plan.key}
               className={`rounded-xl p-7 border flex flex-col ${
                 plan.highlight
                   ? "bg-primary border-primary text-background shadow-xl scale-105"
@@ -816,18 +882,27 @@ export default function LandingPageClient() {
               }`}
             >
               <div className="text-sm font-semibold uppercase tracking-widest mb-1 opacity-70">{plan.name}</div>
-              <div className="text-3xl font-bold mb-0.5">{plan.price}</div>
-              <div className={`text-xs mb-6 ${plan.highlight ? "opacity-70" : "text-foreground/40"}`}>{plan.sub}</div>
-              <ul className="space-y-2 flex-1 mb-7">
-                {plan.features.map((f) => (
+              <div className="flex items-baseline gap-1 mb-2">
+                <span className="text-4xl font-bold">{plan.price}</span>
+                {plan.period && (
+                  <span className={`text-sm font-medium ${plan.highlight ? "opacity-75" : "text-foreground/40"}`}>
+                    {plan.period}
+                  </span>
+                )}
+              </div>
+              <p className={`text-xs mb-6 min-h-[32px] leading-relaxed ${plan.highlight ? "opacity-85" : "text-foreground/50"}`}>
+                {plan.desc}
+              </p>
+              <ul className="space-y-2.5 flex-1 mb-7">
+                {plan.features.map((f: string) => (
                   <li key={f} className="flex items-center gap-2 text-sm">
-                    <span className={plan.highlight ? "text-background/70" : "text-primary"}>✓</span>
+                    <span className={plan.highlight ? "text-background/80" : "text-primary"}>✓</span>
                     {f}
                   </li>
                 ))}
               </ul>
               <Link
-                href="/signup"
+                href={plan.href}
                 className={`w-full py-2.5 rounded-lg text-sm font-semibold text-center transition ${
                   plan.highlight
                     ? "bg-background text-primary hover:opacity-90"
