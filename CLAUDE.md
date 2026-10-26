@@ -13,8 +13,8 @@ comments in English.
 3. New env vars → `backend/.env.example` / `frontend/.env.example`, `render.yaml`,
    and the 环境变量 table in `CHANGELOG.md`.
 4. Customer-visible features → `guides/testing-checklist.md`.
-5. Releases follow `guides/release-process.md` (semver; bump both package.json
-   versions; move [未发布] to `## [X.Y.Z] — date`; verify `GET /api/health` → `version`
+5. Releases follow `guides/release-process.md` (4-segment version `X.Y.Z.W`, e.g. `1.0.1.0`; bump both package.json
+   versions; move [未发布] to `## [X.Y.Z.W] — date`; verify `GET /api/health` → `version`
    after deploy; add a row to the 版本历史 table). Tags are pushed by the owner.
 
 ## Conventions

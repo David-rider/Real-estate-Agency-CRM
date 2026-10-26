@@ -25,6 +25,7 @@ model Organization {
   logoUrl           String?
   // Public web address of the brokerage's listings page: /public-listings?b=<slug>
   slug              String?  @unique
+  brandColor        String?
   // Commission defaults applied when a deal closes (percent values, e.g. 3 = 3%)
   defaultCommissionRate Float @default(3)
   defaultFirmSplit      Float @default(30)
@@ -46,8 +47,11 @@ model Organization {
   tasks          Task[]
   notes          Note[]
   notifications  Notification[]
-  auditLogs      AuditLog[]
-  invitations    Invitation[]
+  auditLogs        AuditLog[]
+  invitations      Invitation[]
+  uploadedFiles    UploadedFile[]
+  leadRoutingRules LeadRoutingRule[]
+  slugHistory      OrgSlugHistory[]
 }
 
 enum SubTier {
@@ -86,6 +90,9 @@ model User {
   emailVerifyToken    String?
   emailVerified       Boolean  @default(false)
   isActive            Boolean  @default(true)
+  acceptingLeads      Boolean  @default(true)
+  maxActiveLeads      Int?
+  notificationPrefs   Json?
   lastLoginAt         DateTime?
 
   createdAt DateTime @default(now())
@@ -352,6 +359,7 @@ model Document {
   type          String      // CONTRACT | INSPECTION | APPRAISAL | BOARD_PACKAGE | ID | DISCLOSURE | OTHER
   sizeBytes     Int?
   mimeType      String?
+  storageKey    String?
   version       Int         @default(1)
   signatureRequired Boolean @default(false)
   signedAt      DateTime?
@@ -424,6 +432,8 @@ model MediaAsset {
   caption    String?
   sortOrder  Int      @default(0)
   sizeBytes  Int?
+  mimeType   String?
+  storageKey String?
   propertyId String
   property   Property @relation(fields: [propertyId], references: [id])
   orgId      String
@@ -496,6 +506,7 @@ model Task {
   priority    TaskPriority @default(MEDIUM)
   dueDate     DateTime?
   completedAt DateTime?
+  overdueNotified Boolean  @default(false)
 
   // Linked entities (all optional)
   linkedClientId      String?
@@ -608,6 +619,52 @@ model AuditLog {
 
   userId       String
   user         User         @relation(fields: [userId], references: [id])
+  orgId        String
+  organization Organization @relation(fields: [orgId], references: [id])
+  createdAt    DateTime     @default(now())
+}
+
+// ─── UploadedFile ────────────────────────────────────────────────────────────
+
+model UploadedFile {
+  id         String       @id @default(uuid())
+  orgId      String
+  organization Organization @relation(fields: [orgId], references: [id])
+  visibility String       @default("PUBLIC") // PUBLIC | PRIVATE
+  filename   String
+  mimeType   String
+  sizeBytes  Int
+  r2Key      String?
+  data       Bytes?
+  createdAt  DateTime     @default(now())
+}
+
+// ─── LeadRoutingRule ─────────────────────────────────────────────────────────
+
+model LeadRoutingRule {
+  id            String       @id @default(uuid())
+  orgId         String
+  organization  Organization @relation(fields: [orgId], references: [id])
+  name          String
+  priority      Int          @default(0)
+  enabled       Boolean      @default(true)
+  source        String?      // e.g. Website, Open House, Zillow (null = any)
+  city          String?      // e.g. New York, Brooklyn (null = any)
+  propertyType  String?      // e.g. CONDO, COOP, TOWNHOUSE (null = any)
+  minPrice      Float?
+  maxPrice      Float?
+  strategy      String       @default("ROUND_ROBIN") // LISTING_AGENT | SPECIFIC_AGENT | ROUND_ROBIN | LEAST_LOADED
+  targetAgentId String?
+  lastAssignedIndex Int      @default(0)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}
+
+// ─── OrgSlugHistory ──────────────────────────────────────────────────────────
+
+model OrgSlugHistory {
+  id           String       @id @default(uuid())
+  oldSlug      String       @unique
   orgId        String
   organization Organization @relation(fields: [orgId], references: [id])
   createdAt    DateTime     @default(now())

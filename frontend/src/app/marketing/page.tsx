@@ -37,10 +37,6 @@ export default function MarketingPage() {
   const canSocialEmail = !isCore;
   const canTone = isElite;
 
-  useEffect(() => {
-    fetchTasks();
-  }, []);
-
   const fetchTasks = async () => {
     const token = localStorage.getItem("token");
     if (!token) return;
@@ -56,6 +52,10 @@ export default function MarketingPage() {
       console.error("Failed to fetch tasks", error);
     }
   };
+
+  useEffect(() => {
+    fetchTasks();
+  }, []);
 
   // Typewriter effect
   useEffect(() => {

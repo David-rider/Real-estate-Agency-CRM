@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/auth/AuthContext";
 import { useTheme, ThemeName } from "@/lib/theme/ThemeContext";
 import { useToast } from "@/components/ui/Toast";
 import { useExtra } from "@/lib/i18n/extra";
+import { uploadFile } from "@/lib/api";
 
 // ─── Role hierarchy ─────────────────────────────────────────────────────────────
 const ROLE_WEIGHT: Record<string, number> = {
@@ -109,7 +110,7 @@ const DEFAULT_ACCESS: Record<string, Record<string, PermLevel>> = {
 
 // ─── Default state ───────────────────────────────────────────────────────────────
 const DEFAULT_PROFILE    = { name: "", phone: "", title: "", timezone: "America/New_York", bio: "", licenseNumber: "", linkedIn: "" };
-const DEFAULT_NOTIF      = { emailNewClient: true, emailAppointmentReminder: true, emailTransactionUpdate: true, emailOfferReceived: true, emailCommissionPaid: false, emailWeeklyReport: true, inAppAll: true, inAppMentions: true, smsUrgent: false, digestFrequency: "daily" };
+const DEFAULT_NOTIF      = { emailNewClient: true, emailAppointmentReminder: true, emailTransactionUpdate: true, emailOfferReceived: true, emailCommissionPaid: true, emailTaskOverdue: true, emailWeeklyReport: true, inAppAll: true, inAppMentions: true, smsUrgent: false, digestFrequency: "daily" };
 const DEFAULT_CRM_ORG    = { requiredFields: "firstName,lastName,phone", maxClientsPerAgent: "100", leadSources: "Referral,Zillow,StreetEasy,Website,Cold Call,Open House", clientVisibility: "own", autoArchiveDays: "180", duplicateEmailCheck: true, allowAgentSelfAssign: true };
 const DEFAULT_CRM_PREF   = { defaultClientType: "BUYER", autoAssignToMe: true, defaultFunnelStage: "LEAD", showBudgetField: true, compactView: false };
 const DEFAULT_PROP_ORG   = { listingApprovalRequired: false, whoCanCreateListing: "AGENT", requiredFields: "address,city,state,zip,price,beds,baths", photoMinRequired: "3", photoLimit: "25", mlsSyncEnabled: false, descMaxChars: "1500" };
@@ -137,9 +138,9 @@ export default function SettingsPage() {
   // Sections that are previews only: nothing in the app reads these values yet, so
   // they render read-only and labelled "Coming soon" rather than pretending to save.
   // Remove a key from this set when its backend enforcement ships.
-  // (Profile, Org Settings, Team & Roles and the theme picker are real and server-backed.)
+  // (Profile, Notifications, Org Settings, Team & Roles, Lead Routing and the theme picker are real and server-backed.)
   const COMING_SOON = new Set([
-    "notifications", "access-control", "security", "integrations",
+    "access-control", "security", "integrations",
     "crm", "properties", "finance", "appointments", "documents", "marketing",
   ]);
   const soonLabel = Sc.comingSoon ?? "Coming soon";
@@ -200,6 +201,7 @@ export default function SettingsPage() {
         { key: "org-settings",   label: S.nav?.orgSettings   ?? "Org Settings",   icon: "🏢", adminOnly: true },
         { key: "access-control", label: S.nav?.accessControl ?? "Access Control", icon: "🛡️", adminOnly: true },
         { key: "users",          label: S.nav?.users         ?? "Team & Roles",   icon: "👥", adminOnly: true },
+        { key: "lead-routing",   label: useExtra().leadRouting.navLabel,          icon: "🎯", adminOnly: true },
         { key: "security",       label: S.nav?.security      ?? "Security",       icon: "🔐" },
         { key: "appearance",     label: S.nav?.appearance    ?? "Appearance",     icon: "🎨" },
         { key: "integrations",   label: S.nav?.integrations  ?? "Integrations",  icon: "🔗" },
@@ -228,11 +230,15 @@ export default function SettingsPage() {
   const [docTab,  setDocTab]  = React.useState<"org"|"personal">("org");
   const [mktTab,  setMktTab]  = React.useState<"org"|"personal">("org");
 
-  // ── Users ────────────────────────────────────────────────────────────────────
+  // ── Users & Lead Routing ─────────────────────────────────────────────────────
   const [users, setUsers]               = React.useState<any[]>([]);
   const [usersLoading, setUsersLoading] = React.useState(false);
   const [inviteEmail, setInviteEmail]   = React.useState("");
   const [inviteRole,  setInviteRole]    = React.useState("AGENT");
+  const [routingRules, setRoutingRules] = React.useState<any[]>([]);
+  const [newRule, setNewRule]           = React.useState({ name: "", source: "", city: "", minPrice: "", maxPrice: "", strategy: "ROUND_ROBIN", targetAgentId: "" });
+  const [simInput, setSimInput]         = React.useState({ source: "Open House", city: "New York", price: "1500000" });
+  const [simResult, setSimResult]       = React.useState<any>(null);
 
   // ── Access matrix ────────────────────────────────────────────────────────────
   const loadMatrix = () => { try { return JSON.parse(localStorage.getItem("settings_access_matrix") || "null") || DEFAULT_ACCESS; } catch { return DEFAULT_ACCESS; } };
@@ -243,7 +249,7 @@ export default function SettingsPage() {
   const ls = <T,>(key: string, def: T): T => { try { return { ...def, ...JSON.parse(localStorage.getItem(key) || "{}") }; } catch { return def; } };
   // Profile and org details are server-backed (loaded below), not localStorage
   const [profile,     setProfile]     = React.useState(DEFAULT_PROFILE);
-  const [orgSettings, setOrgSettings] = React.useState({ companyName: "", website: "", address: "", licenseNumber: "", phone: "", logoUrl: "", defaultCommissionRate: "3", defaultFirmSplit: "30", slug: "" });
+  const [orgSettings, setOrgSettings] = React.useState({ companyName: "", website: "", address: "", licenseNumber: "", phone: "", logoUrl: "", brandColor: "", defaultCommissionRate: "3", defaultFirmSplit: "30", slug: "" });
   const XE = useExtra();
   const XS = XE.settings;
   const [orgPlan,     setOrgPlan]     = React.useState<{ subscription: string; seats: { limit: number | null; used: number; pendingInvites: number } } | null>(null);
@@ -264,12 +270,16 @@ export default function SettingsPage() {
   const [security,    setSecurity]    = React.useState({ twoFAEnabled: false, sessionTimeout: "60", ipWhitelist: "", loginAlerts: true, passwordExpiry: "90", minPasswordLength: "10", requireSpecialChar: true, forceLogoutOnPwChange: true });
   const [integrations,setIntegrations]= React.useState({ stripeConnected: false, googleCalendarConnected: false, mlsConnected: false, docusignConnected: false, mailchimpConnected: false, zapierConnected: false, mapboxKey: "", openaiKey: "" });
 
-  // ── Load team ────────────────────────────────────────────────────────────────
+  // ── Load team & lead routing ──────────────────────────────────────────────────
   React.useEffect(() => {
-    if (activeSection !== "users") return;
+    if (activeSection !== "users" && activeSection !== "lead-routing") return;
     setUsersLoading(true);
-    fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/api/settings/users`, { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } })
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/api/settings/users`, { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }, credentials: "include" })
       .then((r) => r.json()).then((d) => setUsers(Array.isArray(d) ? d : [])).catch(() => setUsers([])).finally(() => setUsersLoading(false));
+    if (activeSection === "lead-routing") {
+      fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/api/settings/lead-routing`, { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }, credentials: "include" })
+        .then((r) => r.json()).then((d) => setRoutingRules(Array.isArray(d) ? d : [])).catch(() => setRoutingRules([]));
+    }
   }, [activeSection]);
 
   // ── Load server-backed profile & organization ────────────────────────────────
@@ -277,7 +287,7 @@ export default function SettingsPage() {
   const authHeaders = () => ({ "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("token")}` });
 
   React.useEffect(() => {
-    fetch(`${API_BASE}/api/settings/profile`, { headers: authHeaders() })
+    fetch(`${API_BASE}/api/settings/profile`, { headers: authHeaders(), credentials: "include" })
       .then((r) => (r.ok ? r.json() : null))
       .then((p) => {
         if (!p) return;
@@ -287,7 +297,13 @@ export default function SettingsPage() {
         });
       })
       .catch(() => {});
-    fetch(`${API_BASE}/api/settings/organization`, { headers: authHeaders() })
+    fetch(`${API_BASE}/api/settings/notifications`, { headers: authHeaders(), credentials: "include" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((n) => {
+        if (n) setNotif({ ...DEFAULT_NOTIF, ...n });
+      })
+      .catch(() => {});
+    fetch(`${API_BASE}/api/settings/organization`, { headers: authHeaders(), credentials: "include" })
       .then((r) => (r.ok ? r.json() : null))
       .then((o) => {
         if (!o) return;
@@ -295,7 +311,7 @@ export default function SettingsPage() {
           companyName: o.name ?? "", website: o.website ?? "", address: o.address ?? "",
           licenseNumber: o.licenseNumber ?? "", phone: o.phone ?? "", logoUrl: o.logoUrl ?? "",
           defaultCommissionRate: String(o.defaultCommissionRate ?? 3), defaultFirmSplit: String(o.defaultFirmSplit ?? 30),
-          slug: o.slug ?? "",
+          slug: o.slug ?? "", brandColor: o.brandColor ?? "",
         });
         setOrgPlan({ subscription: o.subscription, seats: o.seats });
       })
@@ -309,11 +325,34 @@ export default function SettingsPage() {
       const res = await fetch(`${API_BASE}/api/settings/profile`, { method: "PATCH", headers: authHeaders(), body: JSON.stringify(profile) });
       const d = await res.json();
       if (res.ok) {
-        toast.success(Sc.saveChanges ?? "Profile saved");
+        toast.success(Sc.saveChanges ?? XE.common.saved);
         // Keep the header/sidebar name in sync with the saved value
         if (user && d.name && d.name !== user.name) updateUser({ ...user, name: d.name });
-      } else toast.error(d.error || "Failed to save profile");
-    } catch { toast.error("Network error"); } finally { setSaving(false); }
+      } else toast.error(d.error || XS.saveProfileFailed);
+    } catch { toast.error(t.login.serverError); } finally { setSaving(false); }
+  };
+
+  const saveNotifications = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/settings/notifications`, {
+        method: "PATCH",
+        headers: { ...authHeaders(), "X-CSRF-Protection": "1" },
+        credentials: "include",
+        body: JSON.stringify(notif),
+      });
+      const d = await res.json();
+      if (res.ok) {
+        setNotif({ ...DEFAULT_NOTIF, ...d });
+        toast.success(Sc.saveChanges ?? XE.common.saved);
+      } else {
+        toast.error(d.error || XE.common.error);
+      }
+    } catch {
+      toast.error(t.login.serverError);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const saveOrg = async () => {
@@ -322,31 +361,31 @@ export default function SettingsPage() {
       const res = await fetch(`${API_BASE}/api/settings/organization`, {
         method: "PATCH", headers: authHeaders(),
         body: JSON.stringify({ name: orgSettings.companyName, website: orgSettings.website, address: orgSettings.address,
-          phone: orgSettings.phone, licenseNumber: orgSettings.licenseNumber, logoUrl: orgSettings.logoUrl,
+          phone: orgSettings.phone, licenseNumber: orgSettings.licenseNumber, logoUrl: orgSettings.logoUrl, slug: orgSettings.slug, brandColor: orgSettings.brandColor,
           defaultCommissionRate: orgSettings.defaultCommissionRate, defaultFirmSplit: orgSettings.defaultFirmSplit }),
       });
       const d = await res.json();
-      if (res.ok) toast.success(Sc.saveChanges ?? "Organization saved");
-      else toast.error(d.error || "Failed to save organization");
-    } catch { toast.error("Network error"); } finally { setSaving(false); }
+      if (res.ok) { if (d.slug) setOrgSettings((prev) => ({ ...prev, slug: d.slug, brandColor: d.brandColor ?? "" })); toast.success(Sc.saveChanges ?? XE.common.saved); }
+      else toast.error(d.error || XS.saveOrgFailed);
+    } catch { toast.error(t.login.serverError); } finally { setSaving(false); }
   };
 
   // Downloads a JSON export from an authenticated endpoint
   const downloadJson = async (path: string, fallbackName: string) => {
     try {
       const res = await fetch(`${API_BASE}${path}`, { headers: authHeaders() });
-      if (!res.ok) { const d = await res.json().catch(() => ({})); toast.error(d.error || "Export failed"); return; }
+      if (!res.ok) { const d = await res.json().catch(() => ({})); toast.error(d.error || XS.exportFailed); return; }
       const blob = await res.blob();
       const name = res.headers.get("Content-Disposition")?.match(/filename="([^"]+)"/)?.[1] || fallbackName;
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url; a.download = name; a.click();
       URL.revokeObjectURL(url);
-    } catch { toast.error("Network error"); }
+    } catch { toast.error(t.login.serverError); }
   };
 
   // ── Save helper (device-local personal preferences) ──────────────────────────
-  const save = (key: string, data: any) => { localStorage.setItem(key, JSON.stringify(data)); toast.success(Sc.saveChanges ?? "Settings saved"); };
+  const save = (key: string, data: any) => { localStorage.setItem(key, JSON.stringify(data)); toast.success(Sc.saveChanges ?? XE.common.saved); };
 
   const handleRoleChange = async (userId: string, newRole: string) => {
     try {
@@ -354,20 +393,20 @@ export default function SettingsPage() {
         method: "PATCH", headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("token")}` },
         body: JSON.stringify({ role: newRole }),
       });
-      if (res.ok) { setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u))); toast.success("Role updated"); }
-      else { const d = await res.json().catch(() => ({})); toast.error(d.error || "Failed to update role"); }
-    } catch { toast.error("Network error"); }
+      if (res.ok) { setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u))); toast.success(XS.roleUpdated); }
+      else { const d = await res.json().catch(() => ({})); toast.error(d.error || XE.common.error); }
+    } catch { toast.error(t.login.serverError); }
   };
 
   const handleDeactivate = async (userId: string, userName: string) => {
-    if (!window.confirm(`Deactivate ${userName}? They will no longer be able to log in.`)) return;
+    if (!window.confirm(XS.deactivateConfirm.replace("{name}", userName))) return;
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/api/settings/users/${userId}`, {
         method: "DELETE", headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
-      if (res.ok) { setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, isActive: false } : u))); toast.success("User deactivated"); }
-      else { const d = await res.json(); toast.error(d.error || "Failed to deactivate user"); }
-    } catch { toast.error("Network error"); }
+      if (res.ok) { setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, isActive: false } : u))); toast.success(XS.userDeactivated); }
+      else { const d = await res.json(); toast.error(d.error || XE.common.error); }
+    } catch { toast.error(t.login.serverError); }
   };
 
   const handleReactivate = async (userId: string) => {
@@ -375,9 +414,9 @@ export default function SettingsPage() {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/api/settings/users/${userId}/reactivate`, {
         method: "PATCH", headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
-      if (res.ok) { setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, isActive: true } : u))); toast.success("User reactivated"); }
-      else { const d = await res.json(); toast.error(d.error || "Failed to reactivate user"); }
-    } catch { toast.error("Network error"); }
+      if (res.ok) { setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, isActive: true } : u))); toast.success(XS.userReactivated); }
+      else { const d = await res.json(); toast.error(d.error || XE.common.error); }
+    } catch { toast.error(t.login.serverError); }
   };
 
   const handleInvite = async () => {
@@ -387,9 +426,9 @@ export default function SettingsPage() {
         method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("token")}` },
         body: JSON.stringify({ email: inviteEmail, role: inviteRole }),
       });
-      if (res.ok) { toast.success(`Invitation sent to ${inviteEmail}`); setInviteEmail(""); }
-      else { const d = await res.json(); toast.error(d.error || "Failed to send invite"); }
-    } catch { toast.error("Network error"); }
+      if (res.ok) { toast.success(XS.inviteSent.replace("{email}", inviteEmail)); setInviteEmail(""); }
+      else { const d = await res.json(); toast.error(d.error || XE.common.error); }
+    } catch { toast.error(t.login.serverError); }
   };
 
   // ── PolicyLockNotice ─────────────────────────────────────────────────────────
@@ -465,6 +504,7 @@ export default function SettingsPage() {
             <SettingRow label={N.transactionUpdate ?? "Transaction status update"}><Toggle checked={notif.emailTransactionUpdate} onChange={(v) => setNotif({ ...notif, emailTransactionUpdate: v })} /></SettingRow>
             <SettingRow label={N.offerReceived ?? "Offer received on listing"}><Toggle checked={notif.emailOfferReceived} onChange={(v) => setNotif({ ...notif, emailOfferReceived: v })} /></SettingRow>
             <SettingRow label={N.commissionPaid ?? "Commission payment processed"}><Toggle checked={notif.emailCommissionPaid} onChange={(v) => setNotif({ ...notif, emailCommissionPaid: v })} /></SettingRow>
+            <SettingRow label={XS.taskOverdueEmail} description={XS.taskOverdueEmailDesc}><Toggle checked={notif.emailTaskOverdue !== false} onChange={(v) => setNotif({ ...notif, emailTaskOverdue: v })} /></SettingRow>
             <SettingRow label={N.weeklyReport ?? "Weekly performance digest"}><Toggle checked={notif.emailWeeklyReport} onChange={(v) => setNotif({ ...notif, emailWeeklyReport: v })} /></SettingRow>
           </div>
         </div>
@@ -484,7 +524,7 @@ export default function SettingsPage() {
             <option value="none">{N.digestOff ?? "Off"}</option>
           </select>
         </SettingRow>
-        <SaveBtn label={N.save ?? "Save Preferences"} onClick={() => save("settings_notif", notif)} />
+        <SaveBtn label={saving ? "…" : (N.save ?? "Save Preferences")} onClick={saveNotifications} />
       </div>
     );
   };
@@ -511,7 +551,45 @@ export default function SettingsPage() {
           <input className={INPUT_CLS} value={orgSettings.licenseNumber} onChange={(e) => setOrgSettings({ ...orgSettings, licenseNumber: e.target.value })} />
         </LockedRow>
         <LockedRow label={O.logoUrl ?? "Logo URL"} description={O.logoUrlDesc} minRoleLabel={roleLabel("FIRMADMIN")} canEdit={isFirmAdmin}>
-          <input className={INPUT_CLS} style={{ width: 280 }} value={orgSettings.logoUrl} onChange={(e) => setOrgSettings({ ...orgSettings, logoUrl: e.target.value })} placeholder="https://cdn.example.com/logo.png" />
+          <div className="flex items-center gap-2 flex-wrap">
+            {orgSettings.logoUrl && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={orgSettings.logoUrl} alt="Logo" className="w-8 h-8 object-contain rounded border border-border bg-surface" />
+            )}
+            <input className={INPUT_CLS} style={{ width: 220 }} value={orgSettings.logoUrl} onChange={(e) => setOrgSettings({ ...orgSettings, logoUrl: e.target.value })} placeholder="https://cdn.example.com/logo.png" />
+            {isFirmAdmin && (
+              <label className="px-3 py-1.5 bg-surface border border-border rounded-lg text-xs font-medium text-foreground hover:bg-background cursor-pointer transition-colors">
+                {XS.uploadLogoBtn}
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  className="hidden"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    try {
+                      const uploaded = await uploadFile(file, "PUBLIC");
+                      setOrgSettings((prev) => ({ ...prev, logoUrl: uploaded.url }));
+                      toast.success(XS.logoUploaded);
+                    } catch (err: any) {
+                      toast.error(err?.message || XE.common.error);
+                    } finally {
+                      e.target.value = "";
+                    }
+                  }}
+                />
+              </label>
+            )}
+          </div>
+        </LockedRow>
+        <LockedRow label={XS.customSlugLabel} description={XS.customSlugHelp} minRoleLabel={roleLabel("FIRMADMIN")} canEdit={isFirmAdmin}>
+          <input className={INPUT_CLS} style={{ width: 220 }} value={orgSettings.slug} onChange={(e) => setOrgSettings({ ...orgSettings, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "") })} placeholder="premier-nyc-realty" />
+        </LockedRow>
+        <LockedRow label={XS.brandColorLabel} description={XS.brandColorHelp} minRoleLabel={roleLabel("FIRMADMIN")} canEdit={isFirmAdmin}>
+          <div className="flex items-center gap-2">
+            <input type="color" value={/^#[0-9A-Fa-f]{6}$/.test(orgSettings.brandColor) ? orgSettings.brandColor : "#C5A059"} onChange={(e) => setOrgSettings({ ...orgSettings, brandColor: e.target.value })} disabled={!isFirmAdmin} className="w-8 h-8 rounded border border-border cursor-pointer bg-transparent" />
+            <input className={INPUT_CLS} style={{ width: 120 }} value={orgSettings.brandColor} onChange={(e) => setOrgSettings({ ...orgSettings, brandColor: e.target.value })} placeholder="#C5A059" />
+          </div>
         </LockedRow>
         {orgSettings.slug && (
           <div className="mt-6 p-4 bg-surface rounded-lg border border-border">
@@ -667,13 +745,14 @@ export default function SettingsPage() {
                 <tr className="border-b border-border bg-surface">
                   <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-widest text-foreground/40">{U.memberHeader ?? "Member"}</th>
                   <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-widest text-foreground/40">{U.roleHeader ?? "Role"}</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-widest text-foreground/40">{U.tierHeader ?? "Tier"}</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-widest text-foreground/40">{XE.leadRouting.acceptingHeader}</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-widest text-foreground/40">{XE.leadRouting.maxLeadsHeader}</th>
                   <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-widest text-foreground/40">{U.actionsHeader ?? "Actions"}</th>
                 </tr>
               </thead>
               <tbody>
                 {users.length === 0 ? (
-                  <tr><td colSpan={4} className="px-4 py-8 text-center text-foreground/40 text-sm">{U.noMembers ?? "No team members found."}</td></tr>
+                  <tr><td colSpan={5} className="px-4 py-8 text-center text-foreground/40 text-sm">{U.noMembers ?? "No team members found."}</td></tr>
                 ) : users.map((u) => (
                   <tr key={u.id} className={`border-b border-border/40 last:border-0 hover:bg-surface/50 ${u.isActive === false ? "opacity-50" : ""}`}>
                     <td className="px-4 py-3">
@@ -696,7 +775,51 @@ export default function SettingsPage() {
                         <span className="px-2 py-0.5 bg-primary/10 text-primary rounded text-xs font-medium">{roleLabel(u.role)}</span>
                       )}
                     </td>
-                    <td className="px-4 py-3"><span className="text-xs text-foreground/60">{u.tier || "CORE"}</span></td>
+                    <td className="px-4 py-3">
+                      <Toggle
+                        checked={u.acceptingLeads !== false}
+                        disabled={!isManager}
+                        onChange={async (val) => {
+                          try {
+                            const res = await fetch(`${API_BASE}/api/settings/users/${u.id}/lead-availability`, {
+                              method: "PATCH",
+                              headers: { ...authHeaders(), "X-CSRF-Protection": "1" },
+                              credentials: "include",
+                              body: JSON.stringify({ acceptingLeads: val }),
+                            });
+                            if (res.ok) {
+                              setUsers((prev) => prev.map((m) => (m.id === u.id ? { ...m, acceptingLeads: val } : m)));
+                              toast.success(XE.leadRouting.availabilityUpdated);
+                            }
+                          } catch { toast.error(XE.common.error); }
+                        }}
+                      />
+                    </td>
+                    <td className="px-4 py-3">
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder={XE.leadRouting.unlimited}
+                        disabled={!isManager}
+                        className={`${INPUT_CLS} w-24`}
+                        value={u.maxActiveLeads ?? ""}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setUsers((prev) => prev.map((m) => (m.id === u.id ? { ...m, maxActiveLeads: val === "" ? null : Number(val) } : m)));
+                        }}
+                        onBlur={async (e) => {
+                          const val = e.target.value === "" ? null : Number(e.target.value);
+                          try {
+                            await fetch(`${API_BASE}/api/settings/users/${u.id}/lead-availability`, {
+                              method: "PATCH",
+                              headers: { ...authHeaders(), "X-CSRF-Protection": "1" },
+                              credentials: "include",
+                              body: JSON.stringify({ maxActiveLeads: val }),
+                            });
+                          } catch { /* ignore */ }
+                        }}
+                      />
+                    </td>
                     <td className="px-4 py-3">
                       {isManager && u.id !== user?.id && (
                         u.isActive === false ? (
@@ -1230,6 +1353,249 @@ export default function SettingsPage() {
     );
   };
 
+  const renderLeadRouting = () => {
+    const LR = XE.leadRouting;
+    const strategyLabel = (st: string) => {
+      if (st === "ROUND_ROBIN") return LR.strategyRoundRobin;
+      if (st === "LEAST_LOADED") return LR.strategyLeastLoaded;
+      if (st === "LISTING_AGENT") return LR.strategyListingAgent;
+      if (st === "SPECIFIC_AGENT") return LR.strategySpecificAgent;
+      return st;
+    };
+
+    const handleAddRule = async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!newRule.name.trim()) return;
+      try {
+        const res = await fetch(`${API_BASE}/api/settings/lead-routing`, {
+          method: "POST",
+          headers: { ...authHeaders(), "X-CSRF-Protection": "1" },
+          credentials: "include",
+          body: JSON.stringify({
+            name: newRule.name.trim(),
+            source: newRule.source || null,
+            city: newRule.city.trim() || null,
+            minPrice: newRule.minPrice !== "" ? Number(newRule.minPrice) : null,
+            maxPrice: newRule.maxPrice !== "" ? Number(newRule.maxPrice) : null,
+            strategy: newRule.strategy,
+            targetAgentId: newRule.strategy === "SPECIFIC_AGENT" ? newRule.targetAgentId : null,
+          }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          setRoutingRules((prev) => [...prev, data]);
+          setNewRule({ name: "", source: "", city: "", minPrice: "", maxPrice: "", strategy: "ROUND_ROBIN", targetAgentId: "" });
+          toast.success(LR.ruleCreated);
+        } else {
+          toast.error(data.error || XE.common.error);
+        }
+      } catch {
+        toast.error(XE.common.error);
+      }
+    };
+
+    const handleToggleRule = async (ruleId: string, enabled: boolean) => {
+      try {
+        const res = await fetch(`${API_BASE}/api/settings/lead-routing/${ruleId}`, {
+          method: "PATCH",
+          headers: { ...authHeaders(), "X-CSRF-Protection": "1" },
+          credentials: "include",
+          body: JSON.stringify({ enabled }),
+        });
+        if (res.ok) {
+          setRoutingRules((prev) => prev.map((r) => (r.id === ruleId ? { ...r, enabled } : r)));
+        }
+      } catch { /* ignore */ }
+    };
+
+    const handleDeleteRule = async (ruleId: string) => {
+      if (!window.confirm(XE.common.confirmDelete)) return;
+      try {
+        const res = await fetch(`${API_BASE}/api/settings/lead-routing/${ruleId}`, {
+          method: "DELETE",
+          headers: { ...authHeaders(), "X-CSRF-Protection": "1" },
+          credentials: "include",
+        });
+        if (res.ok) {
+          setRoutingRules((prev) => prev.filter((r) => r.id !== ruleId));
+          toast.success(LR.ruleDeleted);
+        }
+      } catch {
+        toast.error(XE.common.error);
+      }
+    };
+
+    const handleSimulate = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/settings/lead-routing/test`, {
+          method: "POST",
+          headers: { ...authHeaders(), "X-CSRF-Protection": "1" },
+          credentials: "include",
+          body: JSON.stringify({
+            source: simInput.source || null,
+            city: simInput.city.trim() || null,
+            price: simInput.price !== "" ? Number(simInput.price) : null,
+          }),
+        });
+        if (res.ok) {
+          setSimResult(await res.json());
+        }
+      } catch {
+        toast.error(XE.common.error);
+      }
+    };
+
+    return (
+      <div className="space-y-8">
+        <SectionHeader title={LR.title} description={LR.desc} badge={isManager ? (Sc.managerBadge ?? "Manager+") : undefined} />
+        {!isManager && <PolicyLockNotice minRole="MANAGER" />}
+
+        {/* Existing Rules List */}
+        <div className="space-y-3">
+          {routingRules.length === 0 ? (
+            <div className="p-6 border border-dashed border-border rounded-lg text-center text-sm text-foreground/50 bg-surface/40">
+              {LR.noRules}
+            </div>
+          ) : (
+            routingRules.map((rule, idx) => {
+              const targetName = users.find((u) => u.id === rule.targetAgentId)?.name;
+              return (
+                <div key={rule.id} className="p-4 border border-border rounded-lg bg-surface flex flex-wrap items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-0.5 bg-primary/10 text-primary rounded text-xs font-bold">#{idx + 1}</span>
+                      <span className="text-sm font-semibold text-foreground">{rule.name}</span>
+                      <span className="px-2 py-0.5 bg-background border border-border rounded text-xs text-foreground/70">
+                        {strategyLabel(rule.strategy)}
+                        {rule.strategy === "SPECIFIC_AGENT" && targetName ? `: ${targetName}` : ""}
+                      </span>
+                    </div>
+                    <div className="text-xs text-foreground/50 flex flex-wrap gap-3">
+                      <span>{LR.sourceLabel}: <strong>{rule.source || LR.anySource}</strong></span>
+                      {rule.city && <span>{LR.cityLabel}: <strong>{rule.city}</strong></span>}
+                      {(rule.minPrice !== null || rule.maxPrice !== null) && (
+                        <span>
+                          ${rule.minPrice?.toLocaleString() || "0"} – {rule.maxPrice ? `$${rule.maxPrice.toLocaleString()}` : "∞"}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Toggle checked={rule.enabled !== false} disabled={!isManager} onChange={(v) => handleToggleRule(rule.id, v)} />
+                    {isManager && (
+                      <button type="button" onClick={() => handleDeleteRule(rule.id)} className="text-xs text-red-400 hover:text-red-300">
+                        {XE.common.delete}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* Create Rule Form */}
+        {isManager && (
+          <form onSubmit={handleAddRule} className="p-5 bg-surface border border-border rounded-lg space-y-4">
+            <div className="text-xs font-semibold uppercase tracking-widest text-foreground/40">{LR.addRuleTitle}</div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs text-foreground/50 mb-1">{LR.ruleName}</label>
+                <input required className={`${INPUT_CLS} w-full`} value={newRule.name} onChange={(e) => setNewRule({ ...newRule, name: e.target.value })} placeholder={LR.ruleNamePlaceholder} />
+              </div>
+              <div>
+                <label className="block text-xs text-foreground/50 mb-1">{LR.sourceLabel}</label>
+                <select className={`${SELECT_CLS} w-full`} value={newRule.source} onChange={(e) => setNewRule({ ...newRule, source: e.target.value })}>
+                  <option value="">{LR.anySource}</option>
+                  <option value="Website">Website</option>
+                  <option value="Open House">Open House</option>
+                  <option value="Zillow">Zillow</option>
+                  <option value="StreetEasy">StreetEasy</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs text-foreground/50 mb-1">{LR.cityLabel}</label>
+                <input className={`${INPUT_CLS} w-full`} value={newRule.city} onChange={(e) => setNewRule({ ...newRule, city: e.target.value })} placeholder={LR.cityPlaceholder} />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-xs text-foreground/50 mb-1">{LR.minPriceLabel}</label>
+                  <input type="number" min="0" className={`${INPUT_CLS} w-full`} value={newRule.minPrice} onChange={(e) => setNewRule({ ...newRule, minPrice: e.target.value })} placeholder="0" />
+                </div>
+                <div>
+                  <label className="block text-xs text-foreground/50 mb-1">{LR.maxPriceLabel}</label>
+                  <input type="number" min="0" className={`${INPUT_CLS} w-full`} value={newRule.maxPrice} onChange={(e) => setNewRule({ ...newRule, maxPrice: e.target.value })} placeholder="∞" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs text-foreground/50 mb-1">{LR.strategyLabel}</label>
+                <select className={`${SELECT_CLS} w-full`} value={newRule.strategy} onChange={(e) => setNewRule({ ...newRule, strategy: e.target.value })}>
+                  <option value="ROUND_ROBIN">{LR.strategyRoundRobin}</option>
+                  <option value="LEAST_LOADED">{LR.strategyLeastLoaded}</option>
+                  <option value="LISTING_AGENT">{LR.strategyListingAgent}</option>
+                  <option value="SPECIFIC_AGENT">{LR.strategySpecificAgent}</option>
+                </select>
+              </div>
+              {newRule.strategy === "SPECIFIC_AGENT" && (
+                <div>
+                  <label className="block text-xs text-foreground/50 mb-1">{LR.targetAgentLabel}</label>
+                  <select required className={`${SELECT_CLS} w-full`} value={newRule.targetAgentId} onChange={(e) => setNewRule({ ...newRule, targetAgentId: e.target.value })}>
+                    <option value="">—</option>
+                    {users.filter((u) => u.isActive !== false).map((u) => (
+                      <option key={u.id} value={u.id}>{u.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+            <button type="submit" className="px-4 py-2 bg-primary text-background rounded-lg text-sm font-medium hover:bg-primary/90">
+              {LR.addRuleBtn}
+            </button>
+          </form>
+        )}
+
+        {/* Dry-run Routing Simulator */}
+        {isManager && (
+          <div className="p-5 bg-surface/60 border border-border rounded-lg space-y-4">
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-widest text-foreground/40">{LR.simulatorTitle}</div>
+              <p className="text-xs text-foreground/50 mt-1">{LR.simulatorDesc}</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+              <div>
+                <label className="block text-xs text-foreground/50 mb-1">{LR.sourceLabel}</label>
+                <select className={`${SELECT_CLS} w-full`} value={simInput.source} onChange={(e) => setSimInput({ ...simInput, source: e.target.value })}>
+                  <option value="Website">Website</option>
+                  <option value="Open House">Open House</option>
+                  <option value="Zillow">Zillow</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs text-foreground/50 mb-1">{LR.cityLabel}</label>
+                <input className={`${INPUT_CLS} w-full`} value={simInput.city} onChange={(e) => setSimInput({ ...simInput, city: e.target.value })} />
+              </div>
+              <div>
+                <label className="block text-xs text-foreground/50 mb-1">Price ($)</label>
+                <input type="number" className={`${INPUT_CLS} w-full`} value={simInput.price} onChange={(e) => setSimInput({ ...simInput, price: e.target.value })} />
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-4">
+              <button type="button" onClick={handleSimulate} className="px-4 py-1.5 bg-background border border-primary text-primary rounded-lg text-xs font-semibold hover:bg-primary hover:text-background transition-colors">
+                {LR.runTestBtn}
+              </button>
+              {simResult && (
+                <div className="text-xs text-foreground">
+                  {LR.simResultPrefix} <strong className="text-primary">{simResult.agentName}</strong> ·{" "}
+                  {LR.simRuleMatched} <strong>{simResult.matchedRuleName || LR.simDefaultFallback}</strong>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   // ── Section router ────────────────────────────────────────────────────────────
   const renderSectionContent = () => {
     switch (activeSection) {
@@ -1238,6 +1604,7 @@ export default function SettingsPage() {
       case "org-settings":   return renderOrgSettings();
       case "access-control": return renderAccessControl();
       case "users":          return renderUsers();
+      case "lead-routing":   return renderLeadRouting();
       case "security":       return renderSecurity();
       case "appearance":     return renderAppearance();
       case "integrations":   return renderIntegrations();

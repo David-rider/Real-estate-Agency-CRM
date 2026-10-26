@@ -146,7 +146,7 @@ export default function TransactionsPage() {
       }
     } catch (error) {
       console.error(error);
-      toast.error(t.transactions.offers?.modal?.title ? "Failed to create deal" : "Failed to create deal");
+      toast.error(X.common.error);
     } finally {
       setIsSubmitting(false);
     }

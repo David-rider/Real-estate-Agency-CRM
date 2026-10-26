@@ -1,5 +1,45 @@
 import type { NextConfig } from "next";
 
+const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+let apiOrigin = "";
+try {
+  apiOrigin = new URL(apiUrl).origin;
+} catch {
+  apiOrigin = "";
+}
+
+const connectSrc = [
+  "'self'",
+  apiOrigin,
+  "https://*.onrender.com",
+  "https://*.sentry.io",
+  "https://*.ingest.sentry.io",
+  "https://*.ingest.us.sentry.io",
+]
+  .filter(Boolean)
+  .join(" ");
+
+const cspDirectives = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "img-src 'self' data: blob: https:",
+  "font-src 'self' data: https://fonts.gstatic.com",
+  `connect-src ${connectSrc}`,
+  "frame-src 'self' https://accounts.google.com https://js.stripe.com",
+  "frame-ancestors 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "object-src 'none'",
+].join("; ");
+
+// Default to Report-Only first so real traffic can be observed before enforcing;
+// set NEXT_PUBLIC_CSP_ENFORCE="true" to switch to enforced Content-Security-Policy.
+const cspHeaderKey =
+  process.env.NEXT_PUBLIC_CSP_ENFORCE === "true"
+    ? "Content-Security-Policy"
+    : "Content-Security-Policy-Report-Only";
+
 const nextConfig: NextConfig = {
   // Allow images from common real estate image sources
   images: {
@@ -23,6 +63,7 @@ const nextConfig: NextConfig = {
           { key: "Referrer-Policy",            value: "strict-origin-when-cross-origin" },
           { key: "Permissions-Policy",         value: "camera=(), microphone=(), geolocation=(self)" },
           { key: "Strict-Transport-Security",  value: "max-age=31536000; includeSubDomains" },
+          { key: cspHeaderKey,                 value: cspDirectives },
         ],
       },
       {

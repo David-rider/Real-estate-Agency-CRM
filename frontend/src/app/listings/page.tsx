@@ -3,8 +3,10 @@
 import React from "react";
 import { useI18n } from "@/lib/i18n/I18nContext";
 import { useToast } from "@/components/ui/Toast";
-import { useExtra } from "@/lib/i18n/extra";
+import { useExtra, fmt } from "@/lib/i18n/extra";
+import { parseCsv, mapPropertyCsvRows, downloadCsvTemplate } from "@/lib/csv";
 import { AI_ASSISTANT_ENABLED } from "@/lib/features";
+import { api, uploadFile } from "@/lib/api";
 
 export default function ListingsPage() {
   const { t } = useI18n();
@@ -16,6 +18,10 @@ export default function ListingsPage() {
   const [currentPage, setCurrentPage] = React.useState(1);
   const [loading, setLoading] = React.useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = React.useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = React.useState(false);
+  const [csvRows, setCsvRows] = React.useState<Record<string, string>[]>([]);
+  const [onDuplicate, setOnDuplicate] = React.useState<"skip" | "update">("skip");
+  const [isImporting, setIsImporting] = React.useState(false);
   const [formData, setFormData] = React.useState({
     address: "",
     city: "New York",
@@ -38,9 +44,11 @@ export default function ListingsPage() {
   >(null);
   const [mediaAssets, setMediaAssets] = React.useState<any[]>([]);
   const [isMediaSubmitting, setIsMediaSubmitting] = React.useState(false);
+  const [isUploadingFiles, setIsUploadingFiles] = React.useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
   const [mediaFormData, setMediaFormData] = React.useState({
     url: "",
-    type: "IMAGE",
+    type: "image",
   });
 
   const [searchQuery, setSearchQuery] = React.useState("");
@@ -106,7 +114,7 @@ export default function ListingsPage() {
   const closeMediaModal = () => {
     setIsMediaModalOpen(false);
     setSelectedPropertyId(null);
-    setMediaFormData({ url: "", type: "IMAGE" });
+    setMediaFormData({ url: "", type: "image" });
   };
 
   const filteredProperties = properties.filter((prop) => {
@@ -202,29 +210,83 @@ export default function ListingsPage() {
     e.preventDefault();
     if (!selectedPropertyId) return;
     setIsMediaSubmitting(true);
-    const token = localStorage.getItem("token");
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/media`, {
+      await api("/api/media", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
+        body: {
           ...mediaFormData,
           propertyId: selectedPropertyId,
-        }),
+        },
       });
 
-      if (!res.ok) throw new Error("Failed to add media");
-
-      openMediaModal(selectedPropertyId);
-      setMediaFormData({ url: "", type: "IMAGE" });
+      await openMediaModal(selectedPropertyId);
+      fetchProperties(currentPage);
+      setMediaFormData({ url: "", type: "image" });
     } catch (error) {
       console.error(error);
       toast.error("Failed to add media asset. Please check the URL and try again.");
     } finally {
       setIsMediaSubmitting(false);
+    }
+  };
+
+  const handleUploadPhotoFiles = async (files: FileList | null) => {
+    if (!files || files.length === 0 || !selectedPropertyId) return;
+    setIsUploadingFiles(true);
+    try {
+      for (const file of Array.from(files)) {
+        const uploaded = await uploadFile(file, "PUBLIC");
+        await api("/api/media", {
+          method: "POST",
+          body: {
+            url: uploaded.url,
+            storageKey: uploaded.storageKey,
+            sizeBytes: uploaded.sizeBytes,
+            mimeType: uploaded.mimeType,
+            type: "image",
+            propertyId: selectedPropertyId,
+          },
+        });
+      }
+      toast.success(X.listings.photoUploaded);
+      await openMediaModal(selectedPropertyId);
+      fetchProperties(currentPage);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : X.common.error);
+    } finally {
+      setIsUploadingFiles(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handleDeleteMedia = async (assetId: string) => {
+    if (!selectedPropertyId) return;
+    if (!window.confirm(X.common.confirmDelete)) return;
+    try {
+      await api(`/api/media/${assetId}`, { method: "DELETE" });
+      toast.success(X.listings.photoDeleted);
+      await openMediaModal(selectedPropertyId);
+      fetchProperties(currentPage);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : X.common.error);
+    }
+  };
+
+  const handleReorderMedia = async (newOrderedAssets: any[]) => {
+    if (!selectedPropertyId) return;
+    setMediaAssets(newOrderedAssets);
+    try {
+      const updated = await api("/api/media/reorder", {
+        method: "PATCH",
+        body: {
+          propertyId: selectedPropertyId,
+          orderedIds: newOrderedAssets.map((a) => a.id),
+        },
+      });
+      setMediaAssets(updated);
+      fetchProperties(currentPage);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : X.common.error);
     }
   };
 
@@ -271,6 +333,8 @@ export default function ListingsPage() {
             {t.listings.modal.statusInContract}
           </option>
           <option value="SOLD">{t.listings.modal.statusSold}</option>
+        </select><button type="button" onClick={() => { setCsvRows([]); setIsImportModalOpen(true); }} className="px-4 py-2.5 bg-surface border border-border rounded-xl text-sm font-semibold text-foreground hover:bg-background transition-colors whitespace-nowrap">{X.leadRouting.csvImportBtn}</button>
+        <select className="hidden">
         </select>
         <div className="flex gap-2 bg-background ring-1 ring-border/40 rounded-xl p-1 md:ml-auto w-full md:w-auto shadow-sm">
           <button className="flex-1 md:flex-none px-6 py-2 bg-surface rounded-lg text-foreground text-sm font-semibold shadow-sm ring-1 ring-border/50">
@@ -299,9 +363,9 @@ export default function ListingsPage() {
               className="bg-background ring-1 ring-border/50 rounded-2xl overflow-hidden hover:shadow-md transition-all duration-300 group flex flex-col"
             >
               <div className="h-64 relative overflow-hidden bg-surface flex items-center justify-center">
-                {prop.image ? (
+                {(prop.mediaAssets?.[0]?.url || prop.featuredImage || prop.image) ? (
                   <img
-                    src={prop.image}
+                    src={prop.mediaAssets?.[0]?.url || prop.featuredImage || prop.image}
                     alt={prop.address}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
                   />
@@ -659,6 +723,107 @@ export default function ListingsPage() {
       )}
 
       {/* Media Asset Modal */}
+      {isImportModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-surface border border-border rounded-2xl w-full max-w-2xl p-6 shadow-2xl relative space-y-5">
+            <div className="flex items-center justify-between border-b border-border pb-4">
+              <div>
+                <h2 className="text-xl font-bold text-foreground">{X.leadRouting.csvModalTitleListings}</h2>
+                <p className="text-xs text-foreground/50 mt-1">{X.leadRouting.csvModalDesc}</p>
+              </div>
+              <button onClick={() => setIsImportModalOpen(false)} className="text-foreground/40 hover:text-foreground">✕</button>
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <label className="px-4 py-2 bg-primary text-background rounded-lg text-sm font-semibold cursor-pointer hover:opacity-90">
+                {X.leadRouting.csvSelectFile}
+                <input
+                  type="file"
+                  accept=".csv,text/csv"
+                  className="hidden"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const text = await file.text();
+                    setCsvRows(mapPropertyCsvRows(parseCsv(text)));
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+              <button
+                type="button"
+                onClick={() => downloadCsvTemplate("listings-template.csv", "address,city,state,zip,price,beds,baths,sqft,status,propertyType,mlsNumber\n432 Park Ave Apt 82A,New York,NY,10022,4250000,3,3.5,2850,ACTIVE,CONDO,MLS-90012")}
+                className="px-3 py-1.5 bg-background border border-border rounded-lg text-xs text-foreground/70 hover:text-foreground"
+              >
+                {X.leadRouting.csvDownloadTemplate}
+              </button>
+            </div>
+            <div className="flex items-center gap-3 text-sm">
+              <span className="text-foreground/60 text-xs">{X.leadRouting.csvOnDuplicateLabel}</span>
+              <select value={onDuplicate} onChange={(e) => setOnDuplicate(e.target.value as any)} className="px-3 py-1.5 bg-background border border-border rounded-lg text-xs text-foreground">
+                <option value="skip">{X.leadRouting.csvSkipDuplicates}</option>
+                <option value="update">{X.leadRouting.csvUpdateDuplicates}</option>
+              </select>
+            </div>
+            {csvRows.length > 0 && (
+              <div className="border border-border rounded-lg overflow-hidden">
+                <div className="bg-background px-3 py-2 text-xs font-semibold text-foreground/60 border-b border-border">
+                  {fmt(X.leadRouting.csvPreviewTitle, { n: csvRows.length })}
+                </div>
+                <div className="max-h-48 overflow-auto">
+                  <table className="w-full text-xs text-left">
+                    <thead className="bg-surface border-b border-border text-foreground/50">
+                      <tr>
+                        <th className="p-2">Address</th>
+                        <th className="p-2">City</th>
+                        <th className="p-2">Price</th>
+                        <th className="p-2">Beds/Baths</th>
+                        <th className="p-2">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {csvRows.slice(0, 5).map((r, i) => (
+                        <tr key={i} className="border-b border-border/40 last:border-0">
+                          <td className="p-2 text-foreground">{r.address || "—"}</td>
+                          <td className="p-2 text-foreground/70">{r.city || "New York"}</td>
+                          <td className="p-2 text-foreground/70">{r.price || "—"}</td>
+                          <td className="p-2 text-foreground/70">{r.beds || 1} / {r.baths || 1}</td>
+                          <td className="p-2 text-foreground/70">{r.status || "ACTIVE"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+            <div className="flex justify-end gap-3 pt-3 border-t border-border">
+              <button type="button" onClick={() => setIsImportModalOpen(false)} className="px-4 py-2 bg-background border border-border rounded-lg text-sm text-foreground/70">
+                {t.listings.modal.cancel}
+              </button>
+              <button
+                type="button"
+                disabled={csvRows.length === 0 || isImporting}
+                onClick={async () => {
+                  setIsImporting(true);
+                  try {
+                    const res = await api("/api/properties/import", { method: "POST", body: { rows: csvRows, onDuplicate } });
+                    toast.success(fmt(X.leadRouting.csvResultSummary, { created: res.created, updated: res.updated, skipped: res.skipped }));
+                    setIsImportModalOpen(false);
+                    setCsvRows([]);
+                    fetchProperties(1);
+                  } catch (err: any) {
+                    toast.error(err?.message || X.common.error);
+                  } finally {
+                    setIsImporting(false);
+                  }
+                }}
+                className="px-4 py-2 bg-primary text-background rounded-lg text-sm font-semibold disabled:opacity-40"
+              >
+                {isImporting ? X.leadRouting.csvImporting : fmt(X.leadRouting.csvStartImportBtn, { n: csvRows.length })}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {isMediaModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/80 backdrop-blur-sm animate-in fade-in duration-300 p-4">
           <div className="bg-background ring-1 ring-border/50 shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[90vh] rounded-3xl">
@@ -680,6 +845,38 @@ export default function ListingsPage() {
             </div>
 
             <div className="flex-1 overflow-y-auto p-8 custom-scrollbar space-y-8">
+              {/* Direct Photo File Upload Dropzone */}
+              <div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => handleUploadPhotoFiles(e.target.files)}
+                />
+                <div
+                  onClick={() => !isUploadingFiles && fileInputRef.current?.click()}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (!isUploadingFiles) handleUploadPhotoFiles(e.dataTransfer.files);
+                  }}
+                  className="border-2 border-dashed border-primary/40 hover:border-primary bg-surface/40 hover:bg-surface/70 rounded-2xl p-6 text-center cursor-pointer transition-all"
+                >
+                  <p className="font-sans text-base font-semibold text-primary">
+                    {isUploadingFiles ? t.listings.media.uploading : `📷 ${X.listings.uploadPhotosBtn}`}
+                  </p>
+                  <p className="font-sans text-xs text-foreground/50 mt-1">
+                    {X.listings.dropPhotosHere}
+                  </p>
+                </div>
+              </div>
+
               {/* Existing Media Grid */}
               <div>
                 <h3 className="font-sans text-sm uppercase tracking-widest text-foreground/40 mb-4 border-b border-border pb-2">
@@ -691,28 +888,91 @@ export default function ListingsPage() {
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {mediaAssets.map((asset) => (
-                      <div
-                        key={asset.id}
-                        className="aspect-square relative group bg-surface border border-border overflow-hidden"
-                      >
-                        {asset.type === "IMAGE" ||
-                        asset.type === "FLOORPLAN" ? (
-                          <img
-                            src={asset.url}
-                            alt="Property Asset"
-                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-surface/50 font-sans text-sm uppercase tracking-widest text-foreground/50">
-                            {t.listings.media.videoTour}
+                    {mediaAssets.map((asset, idx) => {
+                      const lowerType = String(asset.type || "").toLowerCase();
+                      const isImg = lowerType === "image" || lowerType === "floorplan";
+                      return (
+                        <div
+                          key={asset.id}
+                          className="aspect-square relative group bg-surface border border-border rounded-xl overflow-hidden"
+                        >
+                          {isImg ? (
+                            <img
+                              src={asset.url}
+                              alt="Property Asset"
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-surface/50 font-sans text-sm uppercase tracking-widest text-foreground/50">
+                              {t.listings.media.videoTour}
+                            </div>
+                          )}
+                          <div className="absolute top-2 left-2 flex gap-1.5 items-center">
+                            {idx === 0 && (
+                              <span className="bg-primary text-background px-2 py-0.5 text-[11px] font-sans font-bold uppercase tracking-wider rounded">
+                                {X.listings.coverBadge}
+                              </span>
+                            )}
+                            <span className="bg-background/80 backdrop-blur-sm px-2 py-0.5 text-[11px] font-sans uppercase tracking-widest text-foreground rounded">
+                              {asset.type}
+                            </span>
                           </div>
-                        )}
-                        <div className="absolute top-2 left-2 bg-background/80 backdrop-blur-sm px-2 py-1 text-xs font-sans uppercase tracking-widest text-foreground">
-                          {asset.type}
+
+                          {/* Reorder & Delete Overlay */}
+                          <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/80 via-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-between gap-1">
+                            <div className="flex items-center gap-1">
+                              {idx > 0 && (
+                                <button
+                                  type="button"
+                                  title={X.listings.moveLeft}
+                                  onClick={() => {
+                                    const next = [...mediaAssets];
+                                    [next[idx - 1], next[idx]] = [next[idx], next[idx - 1]];
+                                    handleReorderMedia(next);
+                                  }}
+                                  className="px-2 py-1 bg-white/20 hover:bg-white/40 text-white rounded text-xs"
+                                >
+                                  ←
+                                </button>
+                              )}
+                              {idx < mediaAssets.length - 1 && (
+                                <button
+                                  type="button"
+                                  title={X.listings.moveRight}
+                                  onClick={() => {
+                                    const next = [...mediaAssets];
+                                    [next[idx], next[idx + 1]] = [next[idx + 1], next[idx]];
+                                    handleReorderMedia(next);
+                                  }}
+                                  className="px-2 py-1 bg-white/20 hover:bg-white/40 text-white rounded text-xs"
+                                >
+                                  →
+                                </button>
+                              )}
+                              {idx > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const next = [asset, ...mediaAssets.filter((_, i) => i !== idx)];
+                                    handleReorderMedia(next);
+                                  }}
+                                  className="px-2 py-1 bg-primary/90 hover:bg-primary text-background rounded text-[11px] font-semibold"
+                                >
+                                  {X.listings.setAsCover}
+                                </button>
+                              )}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteMedia(asset.id)}
+                              className="px-2 py-1 bg-red-600/90 hover:bg-red-600 text-white rounded text-xs font-semibold"
+                            >
+                              ✕
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -721,7 +981,7 @@ export default function ListingsPage() {
             {/* Add Media Form Footer */}
             <div className="p-8 border-t border-border/40 bg-background shrink-0">
               <h3 className="font-sans text-sm font-semibold text-foreground/60 mb-4">
-                {t.listings.media.addNew}
+                {X.listings.orAddByLink}
               </h3>
               <form
                 onSubmit={handleAddMedia}
@@ -737,7 +997,7 @@ export default function ListingsPage() {
                     value={mediaFormData.url}
                     onChange={handleMediaChange}
                     type="url"
-                    placeholder="https://example.com/image.jpg"
+                    placeholder="https://example.com/tour-or-image"
                     className="w-full px-4 py-2.5 bg-background border border-border/60 rounded-xl text-base text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all placeholder:text-foreground/30 shadow-sm"
                   />
                 </div>
@@ -751,9 +1011,9 @@ export default function ListingsPage() {
                     onChange={handleMediaChange}
                     className="w-full px-4 py-2.5 bg-background border border-border/60 rounded-xl text-base text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none cursor-pointer shadow-sm"
                   >
-                    <option value="IMAGE">{t.listings.media.typeImage}</option>
-                    <option value="VIDEO">{t.listings.media.typeVideo}</option>
-                    <option value="FLOORPLAN">
+                    <option value="image">{t.listings.media.typeImage}</option>
+                    <option value="video">{t.listings.media.typeVideo}</option>
+                    <option value="floorplan">
                       {t.listings.media.typeFloorplan}
                     </option>
                   </select>

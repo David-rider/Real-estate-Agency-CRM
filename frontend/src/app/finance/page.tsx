@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useI18n } from "@/lib/i18n/I18nContext";
+import { useExtra } from "@/lib/i18n/extra";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { useToast } from "@/components/ui/Toast";
 import {
@@ -16,6 +17,8 @@ import {
 
 export default function FinancePage() {
   const { t } = useI18n();
+  const X = useExtra();
+  const FX = X.financeExtra;
   const { token } = useAuth();
   const toast = useToast();
 
@@ -59,13 +62,13 @@ export default function FinancePage() {
       if (res.ok || res.status === 409) {
         // 409 = already processed by another reviewer; either way it leaves the queue
         setPayoutRequests((prev) => prev.filter((r) => r.id !== id));
-        if (res.ok) toast.success(decision === "approve" ? "Payout approved" : "Payout returned to agent");
-        else toast.info(d.error || "Already processed");
+        if (res.ok) toast.success(decision === "approve" ? FX.payoutApproved : FX.payoutReturned);
+        else toast.info(d.error || FX.alreadyProcessed);
       } else {
-        toast.error(d.error || "Failed to update payout request");
+        toast.error(d.error || FX.updateFailed);
       }
     } catch {
-      toast.error("Network error");
+      toast.error(t.login.serverError);
     } finally {
       setReviewingId(null);
     }
@@ -73,7 +76,7 @@ export default function FinancePage() {
 
   // Client-side CSV of the commissions currently loaded
   const exportCommissionsCsv = () => {
-    if (!commissions.length) { toast.info("No commission data to export"); return; }
+    if (!commissions.length) { toast.info(FX.noCommissionsExport); return; }
     const esc = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
     const header = ["Property", "Gross", "Firm Split %", "Override %", "Net Payout", "Status", "Paid At", "Created"];
     const rows = commissions.map((c) => [
@@ -173,11 +176,11 @@ export default function FinancePage() {
         );
       } else {
         const err = await res.json();
-        toast.error(err.error || (t.finance as any).payoutFail || "Failed to request payout");
+        toast.error(err.error || (t.finance as any).payoutFail);
       }
     } catch (error) {
       console.error("Request Payout Error", error);
-      toast.error((t.finance as any).payoutFail || "Failed to request payout");
+      toast.error((t.finance as any).payoutFail);
     } finally {
       setRequestingPayout(false);
     }
@@ -187,7 +190,7 @@ export default function FinancePage() {
     return (
       <div className="p-24 text-center font-sans text-sm uppercase tracking-widest text-foreground/50 bg-background h-screen flex flex-col items-center justify-center">
         <div className="w-8 h-8 border-2 border-primary/20 border-t-primary rounded-full animate-spin mb-6" />
-        Loading Finance Data...
+        {FX.loading}
       </div>
     );
   }
@@ -277,7 +280,7 @@ export default function FinancePage() {
                 {tierErrors.commissions}
               </p>
               <button className="px-6 py-2 bg-primary text-background rounded-xl text-base font-bold shadow-lg hover:scale-105 transition-transform">
-                Upgrade to PRO
+                {FX.upgradePro}
               </button>
             </div>
           )}
@@ -292,7 +295,7 @@ export default function FinancePage() {
                 >
                   {commissions.map((c, idx) => (
                     <option key={c.id} value={idx}>
-                      Deal: {c.transaction.property.address.split(',')[0]}
+                      {FX.dealPrefix}: {c.transaction.property.address.split(',')[0]}
                     </option>
                   ))}
                 </select>
@@ -302,7 +305,7 @@ export default function FinancePage() {
 
           {commissions.length === 0 ? (
             <div className="text-center py-16 text-foreground/50 font-sans text-base font-semibold">
-              {tierErrors.commissions ? "Detailed data locked." : "No commissions found."}
+              {tierErrors.commissions ? FX.lockedDesc : FX.noCommissions}
             </div>
           ) : (
             <div className="space-y-6 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-[1px] before:bg-border/50 pb-12">
@@ -418,7 +421,7 @@ export default function FinancePage() {
           <h2 className="font-sans text-2xl font-semibold text-foreground mb-8 pb-6 border-b border-border/40 flex items-center justify-between">
             {t.finance.performance}
             <span className="text-sm font-semibold text-foreground/70 ring-1 ring-border/50 px-3 py-1.5 bg-surface/50 rounded-md">
-              PRO Tier
+              {FX.proTier}
             </span>
           </h2>
 
@@ -455,7 +458,7 @@ export default function FinancePage() {
                     className={`font-sans text-base ${leader.name === metrics?.userRank?.name ? "text-primary font-bold" : "text-foreground font-medium"}`}
                   >
                     {leader.name === metrics?.userRank?.name
-                      ? "You"
+                      ? FX.you
                       : leader.name}
                   </span>
                 </div>
@@ -482,7 +485,7 @@ export default function FinancePage() {
               {tierErrors.projections}
             </p>
             <button className="px-6 py-2 bg-primary text-background rounded-xl text-base font-bold shadow-lg hover:scale-105 transition-transform">
-              Upgrade to ELITE
+              {FX.upgradeElite}
             </button>
           </div>
         )}

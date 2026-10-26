@@ -176,6 +176,78 @@ router.post('/', async (req: AuthRequest, res) => {
     res.status(201).json(client);
 });
 
+// POST /api/clients/import — bulk CSV import with duplicate handling ('skip' | 'update')
+router.post('/import', async (req: AuthRequest, res) => {
+    const user = req.user!;
+    if (!canWrite(user)) return res.status(403).json({ error: 'Your role cannot import clients' });
+
+    const rows = Array.isArray(req.body.rows) ? req.body.rows : [];
+    const onDuplicate = req.body.onDuplicate === 'update' ? 'update' : 'skip';
+    if (rows.length === 0) return res.status(400).json({ error: 'No rows provided' });
+    if (rows.length > 500) return res.status(400).json({ error: 'Maximum 500 rows per import batch' });
+
+    let created = 0;
+    let updated = 0;
+    let skipped = 0;
+    const errors: { row: number; reason: string }[] = [];
+
+    for (let i = 0; i < rows.length; i++) {
+        const raw = rows[i] || {};
+        const data = clientFields(raw);
+        if (!data.firstName && typeof raw.fullName === 'string' && raw.fullName.trim()) {
+            const parts = raw.fullName.trim().split(/\s+/);
+            data.firstName = parts[0];
+            if (!data.lastName) data.lastName = parts.slice(1).join(' ');
+        }
+        if (!data.firstName) {
+            errors.push({ row: i + 1, reason: 'First name is required' });
+            continue;
+        }
+        if (data.lastName === undefined) data.lastName = '';
+        if (data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(data.email))) {
+            errors.push({ row: i + 1, reason: `Invalid email: ${data.email}` });
+            continue;
+        }
+
+        const or: any[] = [];
+        if (data.email) or.push({ email: { equals: String(data.email), mode: 'insensitive' } });
+        if (data.phone) or.push({ phone: String(data.phone) });
+
+        if (or.length > 0) {
+            const existing = await prisma.client.findFirst({
+                where: { orgId: user.orgId, OR: or },
+                select: { id: true, agentId: true },
+            });
+            if (existing) {
+                if (onDuplicate === 'update' && (isManager(user) || existing.agentId === user.userId)) {
+                    await prisma.client.update({ where: { id: existing.id }, data: data as any });
+                    updated++;
+                } else {
+                    skipped++;
+                }
+                continue;
+            }
+        }
+
+        await prisma.client.create({
+            data: {
+                ...(data as any),
+                type: data.type ?? 'BUYER',
+                status: data.status ?? 'LEAD',
+                funnelStage: data.funnelStage ?? 'LEAD',
+                temperature: data.temperature ?? 'WARM',
+                source: data.source ?? 'CSV Import',
+                agentId: user.userId,
+                orgId: user.orgId,
+            },
+        });
+        created++;
+    }
+
+    await audit(req, 'BULK_IMPORT_CLIENTS', 'Client', user.orgId, null, { created, updated, skipped, errorCount: errors.length });
+    res.json({ created, updated, skipped, errors });
+});
+
 // GET /api/clients/:id
 router.get('/:id', async (req: AuthRequest, res) => {
     const user = req.user!;

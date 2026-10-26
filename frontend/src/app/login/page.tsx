@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { useI18n } from "@/lib/i18n/I18nContext";
+import { useExtra } from "@/lib/i18n/extra";
 import Link from "next/link";
 
 export default function LoginPage() {
@@ -16,6 +17,7 @@ export default function LoginPage() {
   const router = useRouter();
   const { login } = useAuth();
   const { t, language, setLanguage } = useI18n();
+  const X = useExtra();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,7 +27,8 @@ export default function LoginPage() {
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/auth/login`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        headers: { "Content-Type": "application/json", "X-CSRF-Protection": "1" },
         body: JSON.stringify({ email, password }),
       });
 
@@ -105,7 +108,7 @@ export default function LoginPage() {
                         setResent(true);
                       }}
                     >
-                      {resent ? "Verification email sent — check your inbox" : "Resend verification email"}
+                      {resent ? X.verifyEmail.resentNotice : X.verifyEmail.resendBtn}
                     </button>
                   )}
                 </div>

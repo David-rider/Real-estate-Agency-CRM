@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { useI18n } from "@/lib/i18n/I18nContext";
 import { useExtra } from "@/lib/i18n/extra";
 import { api } from "@/lib/api";
 
@@ -15,6 +16,8 @@ const INPUT = "w-full px-3 py-2.5 bg-background border border-border rounded-lg 
  */
 export default function PublicListingPage() {
   const { id } = useParams<{ id: string }>();
+  const { t } = useI18n();
+  void t;
   const X = useExtra();
   const P = X.publicListing;
 

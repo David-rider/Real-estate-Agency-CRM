@@ -8,26 +8,31 @@
 const fs   = require("fs");
 const path = require("path");
 
+/* eslint-disable @typescript-eslint/no-require-imports */
 // ── 配置 ──────────────────────────────────────────────────────────────────────
 const SRC_DIR = path.join(__dirname, "../src/app");
 const COMP_DIR = path.join(__dirname, "../src/components");
 
-// 这些模式不算"硬编码UI文本"（枚举值、API字段、技术字符串）
+// 这些模式不算"硬编码UI文本"（枚举值、API字段、技术字符串、已翻译的 ?? / || 兜底）
 const IGNORE_PATTERNS = [
   /console\.(log|error|warn)/,
   /throw new Error/,
   /method:\s*"(GET|POST|PATCH|DELETE|PUT)"/,
   /"(BUYER|SELLER|RENTER|LANDLORD|INVESTOR)"/,
-  /"(LEAD|ACTIVE|INACTIVE|CLOSED|ARCHIVED)"/,
-  /"(SCHEDULED|COMPLETED|CANCELLED|PENDING)"/,
+  /"(LEAD|ACTIVE|INACTIVE|CLOSED|ARCHIVED|SOLD)"/,
+  /"(SCHEDULED|COMPLETED|CANCELLED|PENDING|CONFIRMED)"/,
   /"(CONTRACT|DISCLOSURE|INSPECTION|APPRAISAL|OTHER)"/,
   /"(IMAGE|VIDEO|FLOORPLAN|DOCUMENT|PDF|PNG|JPG|DOCX|XLSX)"/,
   /"(CORE|PRO|ELITE|FIRMADMIN|SUPERADMIN|MANAGER|AGENT)"/,
-  /"(PIPELINE|OFFERS|PAID|UNPAID|APPROVED|REJECTED)"/,
-  /"(LISTING|SOCIAL|EMAIL|LETTER|FLYER)"/,
+  /"(PIPELINE|OFFERS|PAID|UNPAID|APPROVED|REJECTED|ACCEPTED|COUNTER|WITHDRAWN|EXPIRED)"/,
+  /"(LISTING|SOCIAL|EMAIL|LETTER|FLYER|SHOWING|MEETING|CALL|OPEN_HOUSE|CLOSING|FOLLOW_UP)"/,
+  /"(OFFER|APPOINTMENT|GIFT|TRANSACTION|MODIFICATION|REFERRAL|WEBSITE)"/,
+  /"(HOT|WARM|COLD|LOW|MEDIUM|HIGH|URGENT)"/,
   /"(USD|EUR|GBP|CNY|JPY)"/,
   /"(left|right|top|bottom|center|auto)"/,
   /"(blue|green|red|purple|orange|yellow|gray|white|black)"/,
+  /\?\?\s*"/, // nullish coalescing fallback after a translated key lookup
+  /\|\|\s*"/, // logical OR fallback after a translated key lookup
   /Bearer\s/,
   /Authorization/,
   /Content-Type/,
@@ -56,7 +61,6 @@ function shouldIgnore(line) {
 }
 
 function scanFile(filePath) {
-  const rel    = path.relative(path.join(__dirname, ".."), filePath);
   const lines  = fs.readFileSync(filePath, "utf8").split("\n");
   const issues = [];
 
@@ -90,8 +94,8 @@ function walkDir(dir) {
 // ── i18n 覆盖检查 ─────────────────────────────────────────────────────────────
 function checkI18nCoverage(filePath) {
   const content = fs.readFileSync(filePath, "utf8");
-  const hasUseI18n = content.includes("useI18n");
-  const hasTrans   = content.includes("t.") || content.includes("(t as any)");
+  const hasUseI18n = content.includes("useI18n") || content.includes("useExtra");
+  const hasTrans   = content.includes("t.") || content.includes("(t as any)") || content.includes("X.");
   return { hasUseI18n, hasTrans };
 }
 

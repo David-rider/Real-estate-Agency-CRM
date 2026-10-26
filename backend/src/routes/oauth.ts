@@ -4,6 +4,7 @@ import rateLimit from 'express-rate-limit';
 import { PrismaClient } from '@prisma/client';
 import { orgSlug } from '../lib/slug';
 import { OAuth2Client } from 'google-auth-library';
+import { setAuthCookie } from '../middleware/authMiddleware';
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -103,6 +104,7 @@ router.post('/google', async (req, res) => {
         }
 
         const token = generateToken(user);
+        setAuthCookie(res, token);
         res.json({ message: 'Google login successful', token, user: { id: user.id, name: user.name, email: user.email, role: user.role, orgId: user.orgId } });
     } catch (error) {
         console.error('Google OAuth error:', error);

@@ -68,25 +68,19 @@ export default function ReportsPage() {
 
     const monthlyChart = dashData?.monthlyData || MONTH_NAMES.slice(0, 6).map((m) => ({
         month: m,
-        deals: Math.floor(Math.random() * 5) + 1,
-        commission: (Math.random() * 80_000 + 20_000),
+        deals: 0,
+        commission: 0,
     }));
 
     const pipelineData = dashData?.pipeline || [
-        { stage: Tpipe.columns?.OFFER_REVIEW,    count: 4 },
-        { stage: Tpipe.columns?.IN_CONTRACT,     count: 7 },
-        { stage: Tpipe.columns?.BOARD_PACKAGE,   count: 3 },
-        { stage: Tpipe.columns?.CLEARED_TO_CLOSE, count: 5 },
-        { stage: Tpipe.columns?.CLOSED,          count: 12 },
+        { stage: Tpipe.columns?.OFFER_REVIEW,    count: 0 },
+        { stage: Tpipe.columns?.IN_CONTRACT,     count: 0 },
+        { stage: Tpipe.columns?.BOARD_PACKAGE,   count: 0 },
+        { stage: Tpipe.columns?.CLEARED_TO_CLOSE, count: 0 },
+        { stage: Tpipe.columns?.CLOSED,          count: 0 },
     ];
 
-    const leaderboard = finMetrics?.leaderboard || [
-        { agent: "Sarah Chen",     ytd: 420_000 },
-        { agent: "Michael Torres", ytd: 385_000 },
-        { agent: "Jennifer Park",  ytd: 310_000 },
-        { agent: "David Kim",      ytd: 275_000 },
-        { agent: "Lisa Johnson",   ytd: 248_000 },
-    ];
+    const leaderboard = finMetrics?.leaderboard || [];
 
     const exportCSV = () => {
         const agentLabel = T.leaderboard?.agent;
