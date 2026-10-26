@@ -16,6 +16,15 @@
 
 ---
 
+## [1.1.0.1] — 2026-10-26 · 清除全部 CPRE 品牌字样、恢复全端多语言与主题切换按钮
+
+#### 修复与优化
+- **移除全部 CPRE 相关内容**：清理 `frontend/src/app/page.tsx`、`frontend/src/app/layout.tsx`、`frontend/src/app/marketing/page.tsx`、`backend/docker-compose.yml` 与 `guides/roadmap.md` 中的所有 `CPRE` / `cpre` 品牌标识，统一替换为中立的 `Real Estate CRM` / `RE CRM`。
+- **首页（`/`）支持 4 语言与 5 套主题即时切换**：新增客户端落地页组件 `frontend/src/components/landing/LandingPageClient.tsx`，在首页顶部导航栏加入多语言切换器（English / 简体中文 / 繁體中文 / Español）与主题切换器，已登录用户可直接点击“进入工作台 →”（`/dashboard`）回到熟悉的 CRM 界面。
+- **修复小屏幕 / 移动端顶部栏隐藏多语言切换按钮的问题**：移除 `frontend/src/components/layout/Header.tsx` 中语言切换器和主题切换器上的 `hidden sm:block` 样式，确保在任何屏幕尺寸下都清晰可见。
+
+---
+
 ## [1.1.0.0] — 2026-10-26 · 核心痛点闭环（文件直传、线索自动分配、邮件提醒、品牌短链、CSV 批量导入）与安全加固
 
 #### 安全

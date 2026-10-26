@@ -3,12 +3,12 @@ version: '3.8'
 services:
   postgres:
     image: postgres:15-alpine
-    container_name: cpre-postgres
+    container_name: recrm-postgres
     restart: always
     environment:
-      POSTGRES_USER: cpre_admin
-      POSTGRES_PASSWORD: cpre_password123
-      POSTGRES_DB: cpre_crm
+      POSTGRES_USER: recrm_admin
+      POSTGRES_PASSWORD: recrm_password123
+      POSTGRES_DB: recrm_crm
     ports:
       - "5432:5432"
     volumes:

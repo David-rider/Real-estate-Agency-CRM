@@ -263,7 +263,7 @@ export default function Header({ onMenuToggle }: HeaderProps) {
             {/* Right: controls */}
             <div className="flex items-center gap-1.5 flex-shrink-0">
                 {/* Theme switcher */}
-                <div className="relative hidden sm:block" ref={themeRef}>
+                <div className="relative block" ref={themeRef}>
                     <button onClick={() => setIsThemeOpen(v => !v)}
                         className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-border bg-surface hover:bg-surface-hover text-sm font-medium text-foreground transition-colors focus:outline-none">
                         <span className="w-3 h-3 rounded-full" style={{ backgroundColor: themes.find(t => t.id === theme)?.color }} />
@@ -283,7 +283,7 @@ export default function Header({ onMenuToggle }: HeaderProps) {
                 </div>
 
                 {/* Language switcher */}
-                <div className="relative hidden sm:block" ref={langRef}>
+                <div className="relative block" ref={langRef}>
                     <button onClick={() => setIsLangOpen(v => !v)}
                         className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-border bg-surface hover:bg-surface-hover text-sm font-medium text-foreground transition-colors">
                         <svg className="w-3.5 h-3.5 text-foreground/50" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" /></svg>
