@@ -52,6 +52,8 @@ comments in English.
    - `authMiddleware.ts` accepts either `Authorization: Bearer <token>` OR the `crm_session` `httpOnly` cookie. When a state-changing request (`POST`/`PUT`/`PATCH`/`DELETE`) authenticates via cookie without a Bearer header, it MUST include `X-CSRF-Protection: 1` (automatically added by `frontend/src/lib/api.ts` and `uploadFile()`).
 7. **Updating `package-lock.json` Version Safely**:
    - Never run string replace on `"version": "X.Y.Z"` across the entire `package-lock.json` (which would corrupt third-party dependency versions). Only update the root `j.version` and `j.packages[""].version` fields.
+8. **Dependabot Grouping & Peer Dependency Lockstep (`react` / `react-dom`)**:
+   - Because `react` and `react-dom` are pinned to exact versions in `frontend/package.json`, `.github/dependabot.yml` MUST group `react`, `react-dom`, `@types/react`, and `@types/react-dom` together (`react-ecosystem`) and ignore `version-update:semver-major` so Dependabot never bumps `react-dom` alone and triggers an `npm install` `ERESOLVE` failure on Vercel.
 
 ## Checks before pushing
 
