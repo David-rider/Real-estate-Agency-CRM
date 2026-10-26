@@ -41,7 +41,7 @@
     "stripe": "^22.1.1"
   },
   "devDependencies": {
-    "@types/bcryptjs": "^2.4.6",
+    "@types/bcryptjs": "^3.0.0",
     "@types/cors": "^2.8.19",
     "@types/csv-parse": "^1.1.12",
     "@types/express": "^5.0.6",
