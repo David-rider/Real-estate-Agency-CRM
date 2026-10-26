@@ -82,7 +82,7 @@ const en = {
     loading: "Loading Finance Data...", payoutApproved: "Payout approved", payoutReturned: "Payout returned to agent",
     alreadyProcessed: "Already processed", updateFailed: "Failed to update payout request", noCommissionsExport: "No commission data to export",
     upgradePro: "Upgrade to PRO", upgradeElite: "Upgrade to ELITE", proTier: "PRO Tier", you: "You",
-    lockedDesc: "Detailed data locked.", noCommissions: "No commissions found.", dealPrefix: "Deal",
+    lockedDesc: "Detailed data locked.", noCommissions: "No commissions found.", dealPrefix: "Deal", approvalQueue: "Payout Approvals", pending: "pending", noPendingPayouts: "No payout requests awaiting review.", ownRequest: "Your own request — another reviewer must approve", reject: "Return", approve: "Approve",
   },
   upgradeExtra: {
     secureCheckout: "Secure Checkout", redirectNotice: "You will be redirected to Stripe to complete your payment securely.",
@@ -207,7 +207,7 @@ const zhCN: Dict = {
     loading: "正在加载财务数据...", payoutApproved: "佣金发放已批准", payoutReturned: "佣金申请已退回给经纪人",
     alreadyProcessed: "该申请已处理", updateFailed: "更新佣金申请失败", noCommissionsExport: "暂无可导出的佣金数据",
     upgradePro: "升级至 PRO", upgradeElite: "升级至 ELITE", proTier: "PRO 套餐", you: "您",
-    lockedDesc: "详细数据已锁定。", noCommissions: "暂无佣金记录。", dealPrefix: "交易",
+    lockedDesc: "详细数据已锁定。", noCommissions: "暂无佣金记录。", dealPrefix: "交易", approvalQueue: "佣金发放审批", pending: "待审批", noPendingPayouts: "暂无待审批的佣金提现申请。", ownRequest: "您本人的申请——需由其他审核人审批", reject: "退回", approve: "批准",
   },
   upgradeExtra: {
     secureCheckout: "安全结账", redirectNotice: "您将跳转至 Stripe 安全完成支付。",
@@ -330,7 +330,7 @@ const zhTW: Dict = {
     loading: "正在載入財務資料...", payoutApproved: "佣金發放已核准", payoutReturned: "佣金申請已退回給經紀人",
     alreadyProcessed: "此申請已處理", updateFailed: "更新佣金申請失敗", noCommissionsExport: "暫無可匯出的佣金資料",
     upgradePro: "升級至 PRO", upgradeElite: "升級至 ELITE", proTier: "PRO 方案", you: "您",
-    lockedDesc: "詳細資料已鎖定。", noCommissions: "暫無佣金紀錄。", dealPrefix: "交易",
+    lockedDesc: "詳細資料已鎖定。", noCommissions: "暫無佣金紀錄。", dealPrefix: "交易", approvalQueue: "佣金發放審批", pending: "待審批", noPendingPayouts: "暫無待審批的佣金提領申請。", ownRequest: "您本人的申請——需由其他審核人審批", reject: "退回", approve: "核准",
   },
   upgradeExtra: {
     secureCheckout: "安全結帳", redirectNotice: "您將跳轉至 Stripe 安全完成付款。",
@@ -453,7 +453,7 @@ const es: Dict = {
     loading: "Cargando datos financieros...", payoutApproved: "Pago aprobado", payoutReturned: "Solicitud devuelta al agente",
     alreadyProcessed: "Ya procesado", updateFailed: "No se pudo actualizar la solicitud de pago", noCommissionsExport: "No hay comisiones para exportar",
     upgradePro: "Mejorar a PRO", upgradeElite: "Mejorar a ELITE", proTier: "Plan PRO", you: "Tú",
-    lockedDesc: "Datos detallados bloqueados.", noCommissions: "No se encontraron comisiones.", dealPrefix: "Operación",
+    lockedDesc: "Datos detallados bloqueados.", noCommissions: "No se encontraron comisiones.", dealPrefix: "Operación", approvalQueue: "Aprobación de Pagos", pending: "pendientes", noPendingPayouts: "No hay solicitudes de pago pendientes de revisión.", ownRequest: "Tu propia solicitud — otro revisor debe aprobarla", reject: "Devolver", approve: "Aprobar",
   },
   upgradeExtra: {
     secureCheckout: "Pago seguro", redirectNotice: "Serás redirigido a Stripe para completar tu pago de forma segura.",

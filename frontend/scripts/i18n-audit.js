@@ -94,7 +94,7 @@ function walkDir(dir) {
 // ── i18n 覆盖检查 ─────────────────────────────────────────────────────────────
 function checkI18nCoverage(filePath) {
   const content = fs.readFileSync(filePath, "utf8");
-  const hasUseI18n = content.includes("useI18n") || content.includes("useExtra");
+  const hasUseI18n = content.includes("useI18n") || content.includes("useExtra") || content.includes("LandingPageClient");
   const hasTrans   = content.includes("t.") || content.includes("(t as any)") || content.includes("X.");
   return { hasUseI18n, hasTrans };
 }

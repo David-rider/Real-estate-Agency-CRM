@@ -198,7 +198,7 @@ function UpgradePageInner() {
           </ul>
           {user?.tier === "PRO" ? (
              <button disabled className="w-full py-3 rounded-xl bg-surface border border-primary/50 text-primary font-semibold">
-               Current Plan
+               {t.upgrade.core.btn}
              </button>
           ) : (
              <button onClick={() => handleSelectPlan("PRO")} className="w-full py-3 rounded-xl bg-primary text-background font-semibold hover:opacity-90 transition-opacity shadow-md hover:shadow-lg">
@@ -229,7 +229,7 @@ function UpgradePageInner() {
           </ul>
           {user?.tier === "ELITE" ? (
              <button disabled className="w-full py-3 rounded-xl bg-surface border border-primary/50 text-primary font-semibold">
-               Current Plan
+               {t.upgrade.core.btn}
              </button>
           ) : (
              <button onClick={() => handleSelectPlan("ELITE")} className="w-full py-3 rounded-xl bg-foreground text-background font-semibold hover:bg-foreground/80 transition-opacity shadow-md">

@@ -216,14 +216,14 @@ export default function FinancePage() {
         <div className="bg-background ring-1 ring-border/50 rounded-2xl shadow-sm p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-sans text-lg font-semibold text-foreground">
-              {(t.finance as any).approvalQueue || "Payout Approvals"}
+              {FX.approvalQueue}
             </h2>
             <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-primary/10 text-primary">
-              {payoutRequests.length} {(t.finance as any).pending || "pending"}
+              {payoutRequests.length} {FX.pending}
             </span>
           </div>
           {payoutRequests.length === 0 ? (
-            <p className="text-sm text-foreground/50">{(t.finance as any).noPendingPayouts || "No payout requests awaiting review."}</p>
+            <p className="text-sm text-foreground/50">{FX.noPendingPayouts}</p>
           ) : (
             <div className="divide-y divide-border/50">
               {payoutRequests.map((r) => {
@@ -240,7 +240,7 @@ export default function FinancePage() {
                       </div>
                     </div>
                     {isOwn ? (
-                      <span className="text-xs text-foreground/40 italic">{(t.finance as any).ownRequest || "Your own request — another reviewer must approve"}</span>
+                      <span className="text-xs text-foreground/40 italic">{FX.ownRequest}</span>
                     ) : (
                       <div className="flex gap-2 shrink-0">
                         <button
@@ -248,14 +248,14 @@ export default function FinancePage() {
                           onClick={() => reviewPayout(r.id, "reject")}
                           className="px-3 py-1.5 rounded-lg text-xs font-semibold ring-1 ring-border text-foreground/70 hover:bg-surface disabled:opacity-50"
                         >
-                          {(t.finance as any).reject || "Return"}
+                          {FX.reject}
                         </button>
                         <button
                           disabled={reviewingId === r.id}
                           onClick={() => reviewPayout(r.id, "approve")}
                           className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-primary text-background hover:opacity-90 disabled:opacity-50"
                         >
-                          {reviewingId === r.id ? "…" : ((t.finance as any).approve || "Approve")}
+                          {reviewingId === r.id ? "…" : FX.approve}
                         </button>
                       </div>
                     )}

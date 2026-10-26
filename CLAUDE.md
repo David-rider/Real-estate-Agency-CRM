@@ -54,11 +54,15 @@ comments in English.
    - Never run string replace on `"version": "X.Y.Z"` across the entire `package-lock.json` (which would corrupt third-party dependency versions). Only update the root `j.version` and `j.packages[""].version` fields.
 8. **Dependabot Grouping & Peer Dependency Lockstep (`react` / `react-dom`)**:
    - Because `react` and `react-dom` are pinned to exact versions in `frontend/package.json`, `.github/dependabot.yml` MUST group `react`, `react-dom`, `@types/react`, and `@types/react-dom` together (`react-ecosystem`) and ignore `version-update:semver-major` so Dependabot never bumps `react-dom` alone and triggers an `npm install` `ERESOLVE` failure on Vercel.
+9. **Single Source of Truth & Proactive Full-Site Audit (Zero Drift Policy)**:
+   - **Never duplicate business data**: Pricing (`Core $0` / `Pro $39 mo, $390 yr` / `Elite $79 mo, $790 yr`), plan features, brand names (`Real Estate CRM`), and theme definitions (`luxury`, `modern`, `youth`, `chinese`, `cyberpunk`) MUST always be read from `frontend/src/lib/i18n/translations.ts` / `extra.ts` and `ThemeContext.tsx` — never hardcoded separately in landing or marketing pages.
+   - **Mandatory language switcher on every public & internal route**: Every public route (`/`, `/login`, `/signup`, `/forgot-password`, `/reset-password`, `/verify-email`, `/public-listings`, `/public-listings/[id]`) and the internal `Header.tsx` must keep the 4-language switcher (`en`, `zh-CN`, `zh-TW`, `es`) visible at all screen sizes (never hide with `hidden sm:block`).
+   - **Proactive pre-commit audit**: Before committing any UI/branding/copy change, always run `cd frontend && npm run audit:i18n` (must stay at 100% page coverage) and `git grep` to verify zero legacy brand/pricing drift across all pages.
 
 ## Checks before pushing
 
 ```bash
 cd backend && npx tsc --skipLibCheck --noEmit
 API_URL=http://localhost:4000 npm run test:smoke   # API running on a disposable DB
-cd ../frontend && npx tsc --noEmit -p . && npx next build
+cd ../frontend && npm run audit:i18n && npx tsc --noEmit -p . && npx eslint . --quiet && npx next build
 ```
