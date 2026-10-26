@@ -30,6 +30,28 @@ comments in English.
 - Feature switches: `frontend/src/lib/features.ts` + backend env vars. The AI
   assistant is intentionally off ("in development") until roadmap stage 4.
 - Never ship fake/sample data to real users, hard-coded passwords, or secrets.
+- Always respond to the user in **Chinese and English bilingual format (中英文双语)**.
+- Prioritize features that solve concrete user (brokerage/agent) pain points without unnecessary bloat.
+
+## Lessons Learned & Operational Guardrails (from `v1.1.0.0`)
+
+1. **4-Segment Version (`X.Y.Z.W`) & Prisma CLI Semver Constraint**:
+   - Prisma 4.16.2 (`npx prisma generate`) parses `package.json`'s `"version"` field using a strict 3-segment SemVer parser and throws `Error: Invalid version: "1.1.0.0"` if `"version"` has 4 segments.
+   - **Rule**: Always store the 4-segment version in `"appVersion"` (e.g. `"appVersion": "1.1.0.0"`) and keep `"version"` as the first 3 segments (`"version": "1.1.0"`) in both `backend/package.json` and `frontend/package.json`. `backend/src/server.ts` reads `pkg.appVersion || pkg.version` for `/api/health`.
+2. **Prisma 4 `Bytes` Field Type in TypeScript**:
+   - Prisma 4 expects Node.js `Buffer` (not `Uint8Array`) for `Bytes` columns (`UploadedFile.data`). Always pass `Buffer` directly when creating binary records.
+3. **Express Static vs. Parameterized Route Ordering**:
+   - In Express routers (`clients.ts`, `properties.ts`), static sub-paths like `POST /import` MUST be registered **before** parameterized routes like `/:id`, or Express may match `"import"` as `:id`.
+4. **TypeScript Checking `backend/tests/smoke.ts`**:
+   - Running `npx tsc --noEmit tests/smoke.ts` with a file argument causes `tsc` to ignore `tsconfig.json` and fail on `import assert from 'node:assert/strict'`.
+   - **Rule**: Always check `smoke.ts` with `npx tsc --esModuleInterop --skipLibCheck --noEmit tests/smoke.ts`.
+5. **Hybrid File Storage (Cloudflare R2 + PostgreSQL `UploadedFile` Fallback)**:
+   - Render's local disk is ephemeral. `backend/src/lib/storage.ts` automatically uses Cloudflare R2 when `R2_*` env vars are configured, and falls back to PostgreSQL `UploadedFile` (`bytea`) when R2 is not configured so uploads never vanish across container restarts.
+   - Public listing photos use `/api/uploads/public/:id`; private contract documents use 10-minute HMAC-SHA256 signed URLs via `GET /api/documents/:id/view-url` → `/api/uploads/private/:id?token=...&exp=...`.
+6. **Cookie + CSRF Dual-Mode Authentication**:
+   - `authMiddleware.ts` accepts either `Authorization: Bearer <token>` OR the `crm_session` `httpOnly` cookie. When a state-changing request (`POST`/`PUT`/`PATCH`/`DELETE`) authenticates via cookie without a Bearer header, it MUST include `X-CSRF-Protection: 1` (automatically added by `frontend/src/lib/api.ts` and `uploadFile()`).
+7. **Updating `package-lock.json` Version Safely**:
+   - Never run string replace on `"version": "X.Y.Z"` across the entire `package-lock.json` (which would corrupt third-party dependency versions). Only update the root `j.version` and `j.packages[""].version` fields.
 
 ## Checks before pushing
 
