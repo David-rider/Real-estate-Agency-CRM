@@ -30,6 +30,13 @@
 | 1.2.0.0 | S4 Prisma 4 → 当前版本 | ⬜ | 需要单独回归测试 |
 | 1.1.0.0 | 0.4 Sentry 错误监控 | ✅ | `backend/src/lib/sentry.ts` + `frontend/src/lib/sentry.ts`（零外部依赖，按需启用） |
 | 1.1.0.0 | 0.5 遗留 lint 错误 / 硬编码文案 | ✅ | ESLint 0 errors；公开房源页/验证页/财务/设置/升级页四语种补全 |
+| 1.1.0.x | 0.6 `SECURITY.md`（说明如何私下报告漏洞）<br>*`SECURITY.md` (how to report a vulnerability privately)* | ⬜ | 仓库里还没有这个文件<br>*The file does not exist in the repo yet* |
+| 1.1.0.x | 0.7 GitHub 仓库设置补全：Secret scanning、Push protection、私下报告漏洞、`main` 分支保护（Dependabot 已开）<br>*Finish the GitHub repo settings: secret scanning, push protection, private vulnerability reporting, `main` branch protection (Dependabot is already on)* | ⬜ | 需仓库管理员在 GitHub 设置里操作<br>*The repo admin must do this in GitHub settings* |
+| 1.2.0.0 | 0.8 订阅档位门槛：按 `USER_GUIDE.md` 的承诺落地，或调整文案与定价，两者保持一致<br>*Plan-tier gating: deliver what `USER_GUIDE.md` promises, or change the copy and pricing, so the two agree* | ⬜ | 目前代码里只强制了收益预测（ELITE）；需先确定各档位包含什么<br>*Today only revenue projections (ELITE) are enforced in code; first decide what each tier includes* |
+| 1.2.0.0 | 0.9 审计日志补到房源、报价、预约、文档的增删改（客户与交易已覆盖）<br>*Extend the audit log to listing, offer, appointment and document writes (clients and transactions are already covered)* | ⬜ | |
+| 1.2.0.0 | 0.10 设置页「即将推出」栏目逐项落地（通知偏好已随 1.3 完成）<br>*Ship the Settings sections still labelled "Coming soon", one by one (notification preferences already shipped with 1.3)* | ⬜ | 见下方 0.10<br>*See 0.10 below* |
+| 1.2.0.0 | 0.11 部署平台升级：收费前升级前端套餐（Hobby 不允许商业使用）、后端换付费实例（免费实例会休眠）<br>*Hosting upgrade: before charging, upgrade the frontend plan (Hobby prohibits commercial use) and move the backend to a paid instance (free instances sleep)* | ⬜ | 收费或接真实客户前必须完成<br>*Must be done before charging or onboarding real customers* |
+| 1.2.0.0 | 0.12 冒烟测试补「权限矩阵」：低权限角色、低订阅档位账号的 401 / 403 行为<br>*Add a "permission matrix" to the smoke test: 401 / 403 behaviour for low-privilege roles and low-tier accounts* | ⬜ | CI 已有，补用例即可<br>*CI already exists; only test cases are missing* |
 | 1.2.0.0 | 1.1 文件上传（R2 + 数据库自动降级） | ✅ | 支持照片直传/排序/设为封面、私密合同 10 分钟签名预览与自动清理 |
 | 1.2.0.0 | 1.2 线索自动分配 | ✅ | 支持轮询/最低负载/指定人/挂牌经纪人规则、接单开关与干跑模拟器 |
 | 1.2.0.0 | 1.3 邮件提醒 | ✅ | 支持新线索/报价/预约前24h/任务逾期邮件提醒与个人通知偏好持久化 |
@@ -59,6 +66,13 @@
 | 0.3 | 自动化测试接入 CI：GitHub Actions 中启动 Postgres，运行迁移和冒烟测试，并执行前端 `tsc` 和 `next build`，每个 PR 自动跑 | 1 |
 | 0.4 | 错误监控：接入 Sentry（`.env.example` 里已预留 `SENTRY_DSN`），前后端都上报 | 0.5 |
 | 0.5 | 修复遗留的 lint 错误（`marketing/page.tsx`、`reports/page.tsx`）和 i18n 扫描出的约 280 处硬编码文案 | 2 |
+| 0.6 | 新增 `SECURITY.md`，说明如何私下报告漏洞（与仓库的 Private vulnerability reporting 配合）<br>*Add `SECURITY.md` explaining how to report a vulnerability privately (works with the repo's private vulnerability reporting)* | 0.2 |
+| 0.7 | GitHub 仓库设置补全：Secret scanning、Push protection、私下报告漏洞、`main` 分支保护（要求 PR，不勾“不允许绕过”）、合并后自动删除分支、Actions 权限设为只读<br>*Finish the GitHub repo settings: secret scanning, push protection, private vulnerability reporting, `main` branch protection (require PRs, do not tick "do not allow bypassing"), auto-delete head branches, Actions permissions set to read-only* | 0.2（业主操作 / owner） |
+| 0.8 | 订阅档位门槛：目前代码里只强制了收益预测（ELITE）；`USER_GUIDE.md` 承诺的营销 AI、MLS、自定义品牌没有强制，佣金列表对所有档位开放。先确定各档位的内容，再让代码与文档一致<br>*Plan-tier gating: today only revenue projections (ELITE) are enforced; the marketing AI, MLS and custom branding promised in `USER_GUIDE.md` are not, and the commission list is open to every tier. First decide what each tier includes, then make code and docs agree* | 1–2（决定后 / after the decision） |
+| 0.9 | 审计日志（`backend/src/lib/audit.ts` 的 `audit()`）补到房源、报价、预约、文档的增删改，记录前后快照（客户与交易已覆盖）<br>*Extend the audit log (`audit()` in `backend/src/lib/audit.ts`) to listing, offer, appointment and document writes with before/after snapshots (clients and transactions are already covered)* | 1 |
+| 0.10 | 设置页「即将推出」栏目逐项落地（页面 `frontend/src/app/settings/page.tsx` 的 `COMING_SOON`）：①安全：会话超时、密码过期，在登录与鉴权里强制执行；②业务模块策略（CRM 必填字段与自动归档、房源审核与照片数量）逐项落库并在路由里强制；③外观的侧栏位置 / 密度 / 日期 / 数字格式，先做全局偏好存储；④访问控制矩阵要么真正驱动鉴权，要么移除栏目；集成随各集成落地。**只有“后端保存 + 后端执行”都做完，才能从 `COMING_SOON` 移除**<br>*Ship the Settings sections still in `COMING_SOON` (`frontend/src/app/settings/page.tsx`) one by one: (1) security: session timeout and password expiry, enforced in login and auth; (2) module policies (CRM required fields and auto-archive, listing approval and photo counts), each persisted and enforced in the routes; (3) the Appearance sidebar position / density / date / number format, starting with a global preference store; (4) the access-control matrix must either truly drive authorization or be removed; integrations ship with each integration. **A section may leave `COMING_SOON` only once both backend saving and backend enforcement are done*** | 约 7–9 / about 7–9 |
+| 0.11 | 部署平台升级：前端套餐升级（Hobby 仅限个人非商业用途）、后端换付费实例（免费实例闲置 15 分钟休眠，唤醒约 1 分钟）；迁移到其他平台作为上线稳定后的独立项目评估<br>*Hosting upgrade: upgrade the frontend plan (Hobby is for personal, non-commercial use only) and move the backend to a paid instance (free instances sleep after 15 minutes idle and take about 1 minute to wake); evaluate moving to another platform as a separate project once launch has stabilised* | 配置级 / configuration |
+| 0.12 | 冒烟测试补权限矩阵：用经纪人、经理、低订阅档位账号验证 401 与 403 不混用、不越权可见、不被误登出<br>*Add the permission matrix to the smoke test: with agent, manager and low-tier accounts, verify that 401 and 403 are not mixed up, nothing is over-visible, and nobody is wrongly logged out* | 1 |
 
 **验收**：PR 上能看到 CI 测试结果；线上报错能在 Sentry 里看到。
 
