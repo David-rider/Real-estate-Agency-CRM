@@ -5,7 +5,7 @@ import crypto from 'crypto';
 import { PrismaClient } from '@prisma/client';
 import rateLimit from 'express-rate-limit';
 import { sendEmail, passwordResetEmail, welcomeEmail } from '../lib/email';
-import { authenticateToken, AuthRequest } from '../middleware/authMiddleware';
+import { authenticateToken, AuthRequest, setAuthCookie, clearAuthCookie } from '../middleware/authMiddleware';
 import { getSeatUsage } from '../lib/seats';
 import { orgSlug } from '../lib/slug';
 
@@ -80,6 +80,8 @@ router.post('/login', authLimiter, async (req, res) => {
             JWT_SECRET,
             { expiresIn: '24h' }
         );
+
+        setAuthCookie(res, token);
 
         res.json({
             message: 'Login successful',
@@ -163,6 +165,8 @@ router.post('/register', authLimiter, async (req, res) => {
             JWT_SECRET,
             { expiresIn: '24h' }
         );
+
+        setAuthCookie(res, token);
 
         res.status(201).json({
             message: 'Registration successful',
@@ -321,6 +325,8 @@ router.post('/accept-invite', authLimiter, async (req, res) => {
             { expiresIn: '24h' }
         );
 
+        setAuthCookie(res, token);
+
         res.status(201).json({
             message: 'Account created successfully. Welcome to the team!',
             token,
@@ -384,6 +390,8 @@ router.post('/refresh', authenticateToken, async (req: AuthRequest, res) => {
             { expiresIn: '24h' }
         );
 
+        setAuthCookie(res, token);
+
         res.json({
             token,
             user: {
@@ -423,6 +431,12 @@ router.post('/verify-email', async (req, res) => {
         console.error('Verify email error:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
+});
+
+// POST /api/auth/logout
+router.post('/logout', (_req, res) => {
+    clearAuthCookie(res);
+    res.json({ message: 'Logged out successfully' });
 });
 
 export default router;

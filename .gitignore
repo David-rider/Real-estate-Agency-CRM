@@ -36,3 +36,4 @@ tsc_errors*
 # Local agent tooling
 .agents/
 .claude/worktrees/
+.codex/

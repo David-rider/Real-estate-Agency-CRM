@@ -37,10 +37,6 @@ export default function MarketingPage() {
   const canSocialEmail = !isCore;
   const canTone = isElite;
 
-  useEffect(() => {
-    fetchTasks();
-  }, []);
-
   const fetchTasks = async () => {
     const token = localStorage.getItem("token");
     if (!token) return;
@@ -56,6 +52,10 @@ export default function MarketingPage() {
       console.error("Failed to fetch tasks", error);
     }
   };
+
+  useEffect(() => {
+    fetchTasks();
+  }, []);
 
   // Typewriter effect
   useEffect(() => {
@@ -315,7 +315,7 @@ export default function MarketingPage() {
                   <div className="flex items-center gap-4">
                     <button
                       onClick={() => {
-                        const link = `https://cpre.app/share/listing-${Date.now().toString().slice(-6)}`;
+                        const link = `/public-listings#listing-${Date.now().toString().slice(-6)}`;
                         navigator.clipboard.writeText(`${link}\n\n${fullContent}`);
                       }}
                       className="text-sm uppercase tracking-widest text-primary hover:text-primary-hover font-bold transition-colors disabled:opacity-50 ring-1 ring-primary/30 px-3 py-1.5 rounded-md bg-primary/5"

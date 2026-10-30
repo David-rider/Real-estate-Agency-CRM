@@ -4,6 +4,7 @@ import rateLimit from 'express-rate-limit';
 import { authenticateToken, AuthRequest } from '../middleware/authMiddleware';
 import { optDate, optNumber } from '../lib/access';
 import { createNotification } from './notifications';
+import { resolveLeadAssignee } from '../lib/routing';
 
 const router = Router();
 
@@ -24,7 +25,7 @@ const PUBLIC_SELECT = {
     virtualTourUrl: true,
     mediaAssets: { orderBy: { sortOrder: 'asc' as const }, select: { url: true, type: true, caption: true } },
     agent: { select: { name: true, phone: true, email: true, title: true } },
-    organization: { select: { name: true, phone: true, slug: true } },
+    organization: { select: { name: true, phone: true, slug: true, logoUrl: true, brandColor: true } },
 };
 
 // GET /api/properties/public?b=<brokerage-slug> — one brokerage's public listings page.
@@ -33,10 +34,21 @@ router.get('/public', async (req, res) => {
     const slug = typeof req.query.b === 'string' ? req.query.b.trim().toLowerCase() : '';
     if (!slug) return res.status(400).json({ error: 'Brokerage not specified' });
 
-    const organization = await prisma.organization.findUnique({
+    let organization = await prisma.organization.findUnique({
         where: { slug },
-        select: { id: true, name: true, slug: true, phone: true, website: true, logoUrl: true },
+        select: { id: true, name: true, slug: true, phone: true, website: true, logoUrl: true, brandColor: true },
     });
+    let redirectedFrom: string | null = null;
+    if (!organization) {
+        const historical = await prisma.orgSlugHistory.findUnique({
+            where: { oldSlug: slug },
+            include: { organization: { select: { id: true, name: true, slug: true, phone: true, website: true, logoUrl: true, brandColor: true } } },
+        });
+        if (historical?.organization) {
+            organization = historical.organization;
+            redirectedFrom = slug;
+        }
+    }
     if (!organization) return res.status(404).json({ error: 'Brokerage not found' });
 
     const properties = await prisma.property.findMany({
@@ -53,6 +65,7 @@ router.get('/public', async (req, res) => {
     const { id: _orgId, ...org } = organization;
     res.json({
         organization: org,
+        ...(redirectedFrom ? { redirectedFrom, canonicalSlug: org.slug } : {}),
         listings: properties.map(({ mediaAssets, ...p }) => ({ ...p, imageUrl: mediaAssets[0]?.url ?? null })),
     });
 });
@@ -89,6 +102,16 @@ router.post('/public/:id/inquiry', inquiryLimiter, async (req, res) => {
     });
     if (!property) return res.status(404).json({ error: 'Listing not found' });
 
+    const routingDecision = await resolveLeadAssignee({
+        orgId: property.orgId,
+        source,
+        city: property.city,
+        propertyType: property.propertyType,
+        price: property.price,
+        listingAgentId: property.agentId,
+    });
+    const assignedAgentId = routingDecision.agentId;
+
     const [firstName, ...rest] = name.split(/\s+/);
     const or: any[] = [];
     if (email) or.push({ email: { equals: email, mode: 'insensitive' } });
@@ -101,19 +124,21 @@ router.post('/public/:id/inquiry', inquiryLimiter, async (req, res) => {
                 firstName, lastName: rest.join(' '),
                 email: email || null, phone: phone || null,
                 type: 'BUYER', status: 'LEAD', funnelStage: 'LEAD', temperature: 'HOT',
-                source, agentId: property.agentId, orgId: property.orgId,
+                source, agentId: assignedAgentId, orgId: property.orgId,
             },
         });
     } else {
         await prisma.client.update({ where: { id: client.id }, data: { temperature: 'HOT' } });
     }
 
+    const targetAgentId = isNew ? assignedAgentId : client.agentId;
+
     await prisma.note.create({
         data: {
             type: 'NOTE',
             content: `${source} inquiry about ${property.address}${message ? `:\n${message}` : ''}`,
             clientId: client.id, propertyId: property.id,
-            authorId: property.agentId, orgId: property.orgId,
+            authorId: targetAgentId, orgId: property.orgId,
         },
     });
     await prisma.task.create({
@@ -121,11 +146,11 @@ router.post('/public/:id/inquiry', inquiryLimiter, async (req, res) => {
             title: `Call back ${name} about ${property.address}`,
             priority: 'URGENT', dueDate: new Date(Date.now() + 15 * 60 * 1000),
             linkedClientId: client.id, linkedPropertyId: property.id,
-            agentId: property.agentId, orgId: property.orgId,
+            agentId: targetAgentId, orgId: property.orgId,
         },
     });
     await createNotification(
-        property.agentId, property.orgId, 'NEW_CLIENT',
+        targetAgentId, property.orgId, 'NEW_CLIENT',
         isNew ? `New ${source.toLowerCase()} lead` : `Returning lead: ${name}`,
         `${name} asked about ${property.address}. Reach out within 5 minutes.`,
         `/crm/${client.id}`,
@@ -182,6 +207,96 @@ router.get('/', async (req: AuthRequest, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Failed to fetch properties' });
+    }
+});
+
+// POST /api/properties/import — bulk CSV import for listings
+router.post('/import', async (req: AuthRequest, res) => {
+    try {
+        if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+        if (!['SUPERADMIN', 'FIRMADMIN', 'MANAGER', 'AGENT'].includes(req.user.role)) {
+            return res.status(403).json({ error: 'Your role cannot import listings' });
+        }
+
+        const rows = Array.isArray(req.body.rows) ? req.body.rows : [];
+        const onDuplicate = req.body.onDuplicate === 'update' ? 'update' : 'skip';
+        if (rows.length === 0) return res.status(400).json({ error: 'No rows provided' });
+        if (rows.length > 500) return res.status(400).json({ error: 'Maximum 500 rows per import batch' });
+
+        let created = 0;
+        let updated = 0;
+        let skipped = 0;
+        const errors: { row: number; reason: string }[] = [];
+
+        for (let i = 0; i < rows.length; i++) {
+            const raw = rows[i] || {};
+            const address = typeof raw.address === 'string' ? raw.address.trim() : '';
+            const city    = typeof raw.city === 'string' && raw.city.trim() ? raw.city.trim() : 'New York';
+            const state   = typeof raw.state === 'string' && raw.state.trim() ? raw.state.trim() : 'NY';
+            const zip     = typeof raw.zip === 'string' && raw.zip.trim() ? raw.zip.trim() : '10001';
+            if (!address) {
+                errors.push({ row: i + 1, reason: 'Address is required' });
+                continue;
+            }
+
+            const nPrice = optNumber(String(raw.price ?? '').replace(/[$,\s]/g, ''));
+            const nBeds  = optNumber(raw.beds ?? 1);
+            const nBaths = optNumber(raw.baths ?? 1);
+            if (nPrice === undefined || nPrice < 0) {
+                errors.push({ row: i + 1, reason: 'Valid price is required' });
+                continue;
+            }
+
+            const mlsNumber = typeof raw.mlsNumber === 'string' && raw.mlsNumber.trim() ? raw.mlsNumber.trim() : null;
+            const statusRaw = typeof raw.status === 'string' ? raw.status.trim().toUpperCase().replace(/\s+/g, '_') : 'ACTIVE';
+            const status = PROP_STATUSES.includes(statusRaw) ? statusRaw : 'ACTIVE';
+
+            const orCond: any[] = [{ address: { equals: address, mode: 'insensitive' }, zip }];
+            if (mlsNumber) orCond.unshift({ mlsNumber: { equals: mlsNumber, mode: 'insensitive' } });
+
+            const existing = await prisma.property.findFirst({
+                where: { orgId: req.user.orgId, OR: orCond },
+                select: { id: true, agentId: true },
+            });
+
+            const propData: any = {
+                address, city, state, zip,
+                price: nPrice,
+                beds: nBeds ?? 1,
+                baths: nBaths ?? 1,
+                sqft: optNumber(String(raw.sqft ?? '').replace(/,/g, '')) ? Math.round(optNumber(String(raw.sqft ?? '').replace(/,/g, ''))!) : null,
+                status,
+                propertyType: typeof raw.propertyType === 'string' && raw.propertyType.trim() ? raw.propertyType.trim().toUpperCase() : 'CONDO',
+                neighborhood: typeof raw.neighborhood === 'string' && raw.neighborhood.trim() ? raw.neighborhood.trim() : null,
+                mlsNumber,
+                description: typeof raw.description === 'string' && raw.description.trim() ? raw.description.trim() : null,
+            };
+
+            if (existing) {
+                const canEdit = existing.agentId === req.user.userId || ['FIRMADMIN', 'SUPERADMIN', 'MANAGER'].includes(req.user.role);
+                if (onDuplicate === 'update' && canEdit) {
+                    await prisma.property.update({ where: { id: existing.id }, data: propData });
+                    updated++;
+                } else {
+                    skipped++;
+                }
+                continue;
+            }
+
+            await prisma.property.create({
+                data: {
+                    ...propData,
+                    agentId: req.user.userId,
+                    orgId: req.user.orgId,
+                },
+            });
+            created++;
+        }
+
+        res.json({ created, updated, skipped, errors });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Failed to import properties' });
     }
 });
 

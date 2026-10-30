@@ -48,7 +48,8 @@ function SignupForm() {
         // Join an existing org via invite link
         res = await fetch(`${API}/api/auth/accept-invite`, {
           method:  "POST",
-          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          headers: { "Content-Type": "application/json", "X-CSRF-Protection": "1" },
           body:    JSON.stringify({
             name:        formData.name,
             email:       formData.email || inviteEmail,
@@ -60,7 +61,8 @@ function SignupForm() {
         // Create a new org + become FIRMADMIN
         res = await fetch(`${API}/api/auth/register`, {
           method:  "POST",
-          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          headers: { "Content-Type": "application/json", "X-CSRF-Protection": "1" },
           body:    JSON.stringify(formData),
         });
       }

@@ -11,6 +11,54 @@ if (!JWT_SECRET) {
     process.exit(1);
 }
 
+export const AUTH_COOKIE_NAME = 'crm_session';
+const SESSION_MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+/**
+ * Sets an httpOnly cookie containing the JWT.
+ * In production (Render + Vercel cross-origin over HTTPS), SameSite=None; Secure is used
+ * so credentialed fetch requests can send the cookie. In development over HTTP, SameSite=Lax is used.
+ */
+export function setAuthCookie(res: Response, token: string) {
+    const isProd = process.env.NODE_ENV === 'production';
+    res.cookie(AUTH_COOKIE_NAME, token, {
+        httpOnly: true,
+        secure: isProd,
+        sameSite: isProd ? 'none' : 'lax',
+        maxAge: SESSION_MAX_AGE_MS,
+        path: '/',
+    });
+}
+
+export function clearAuthCookie(res: Response) {
+    const isProd = process.env.NODE_ENV === 'production';
+    res.clearCookie(AUTH_COOKIE_NAME, {
+        httpOnly: true,
+        secure: isProd,
+        sameSite: isProd ? 'none' : 'lax',
+        path: '/',
+    });
+}
+
+function parseCookieHeader(cookieHeader?: string): Record<string, string> {
+    if (!cookieHeader) return {};
+    const out: Record<string, string> = {};
+    for (const part of cookieHeader.split(';')) {
+        const idx = part.indexOf('=');
+        if (idx === -1) continue;
+        const key = part.slice(0, idx).trim();
+        const val = part.slice(idx + 1).trim();
+        if (key) {
+            try {
+                out[key] = decodeURIComponent(val);
+            } catch {
+                out[key] = val;
+            }
+        }
+    }
+    return out;
+}
+
 
 // Extend Express Request interface to include user
 export interface AuthRequest extends Request {
@@ -38,10 +86,25 @@ async function currentAccount(userId: string) {
 
 export const authenticateToken = async (req: AuthRequest, res: Response, next: NextFunction) => {
     const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+    const bearerToken = authHeader && authHeader.split(' ')[1];
+    const cookies = parseCookieHeader(req.headers.cookie);
+    const cookieToken = cookies[AUTH_COOKIE_NAME];
+    const token = bearerToken || cookieToken;
+    const usingCookieOnly = !bearerToken && !!cookieToken;
 
     if (!token) {
         return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    // CSRF protection for cookie-authenticated state-changing requests:
+    // Standard HTML forms cannot set custom headers like X-CSRF-Protection: 1,
+    // and cross-origin scripts cannot set custom headers unless allowed by CORS.
+    const safeMethods = ['GET', 'HEAD', 'OPTIONS'];
+    if (usingCookieOnly && !safeMethods.includes(req.method.toUpperCase())) {
+        const csrfHeader = req.headers['x-csrf-protection'] || req.headers['x-requested-with'];
+        if (!csrfHeader) {
+            return res.status(403).json({ error: 'CSRF validation failed: missing X-CSRF-Protection header' });
+        }
     }
 
     let decoded: AuthRequest['user'];

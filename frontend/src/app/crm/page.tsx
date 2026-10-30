@@ -6,6 +6,7 @@ import { useToast } from "@/components/ui/Toast";
 import Link from "next/link";
 import { useExtra, fmt } from "@/lib/i18n/extra";
 import { api, ApiError } from "@/lib/api";
+import { parseCsv, mapClientCsvRows, downloadCsvTemplate } from "@/lib/csv";
 
 const TEMP_STYLES: Record<string, string> = {
   HOT: "bg-red-500/10 text-red-500 border-red-500/30",
@@ -29,6 +30,10 @@ export default function CRMPage() {
   const [loading, setLoading] = React.useState(true);
   const [accessDenied, setAccessDenied] = React.useState<string | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = React.useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = React.useState(false);
+  const [csvRows, setCsvRows] = React.useState<Record<string, string>[]>([]);
+  const [onDuplicate, setOnDuplicate] = React.useState<"skip" | "update">("skip");
+  const [isImporting, setIsImporting] = React.useState(false);
   const [formData, setFormData] = React.useState({
     firstName: "",
     lastName: "",
@@ -177,7 +182,7 @@ export default function CRMPage() {
           </select>
           <label className="flex items-center gap-2 px-3 text-sm text-foreground/70 cursor-pointer whitespace-nowrap">
             <input type="checkbox" checked={staleOnly} onChange={(e) => setStaleOnly(e.target.checked)} className="accent-primary" />
-            {X.crm.needsFollowUp}
+            {X.crm.needsFollowUp}<button type="button" onClick={(e) => { e.preventDefault(); setCsvRows([]); setIsImportModalOpen(true); }} className="ml-2 px-3 py-1.5 bg-surface border border-border rounded-lg text-xs font-semibold text-foreground hover:bg-background transition-colors">{X.leadRouting.csvImportBtn}</button>
           </label>
           <select
             value={filterStatus}
@@ -537,6 +542,109 @@ export default function CRMPage() {
                   className="px-6 py-2.5 bg-primary text-background rounded-xl text-base font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 shadow-md"
                 >
                   {isSubmitting ? t.crm.modal.saving : t.crm.modal.save}
+                </button></div></form></div></div>)}
+      {isImportModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-surface border border-border rounded-2xl w-full max-w-2xl p-6 shadow-2xl relative space-y-5">
+            <div className="flex items-center justify-between border-b border-border pb-4">
+              <div>
+                <h2 className="text-xl font-bold text-foreground">{X.leadRouting.csvModalTitleClients}</h2>
+                <p className="text-xs text-foreground/50 mt-1">{X.leadRouting.csvModalDesc}</p>
+              </div>
+              <button onClick={() => setIsImportModalOpen(false)} className="text-foreground/40 hover:text-foreground">✕</button>
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <label className="px-4 py-2 bg-primary text-background rounded-lg text-sm font-semibold cursor-pointer hover:opacity-90">
+                {X.leadRouting.csvSelectFile}
+                <input
+                  type="file"
+                  accept=".csv,text/csv"
+                  className="hidden"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const text = await file.text();
+                    setCsvRows(mapClientCsvRows(parseCsv(text)));
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+              <button
+                type="button"
+                onClick={() => downloadCsvTemplate("clients-template.csv", "firstName,lastName,email,phone,type,temperature,budget,source,tags\nAlex,Rivera,alex@example.com,+1-212-555-0142,BUYER,HOT,$1.5M,Open House,Pre-approved")}
+                className="px-3 py-1.5 bg-background border border-border rounded-lg text-xs text-foreground/70 hover:text-foreground"
+              >
+                {X.leadRouting.csvDownloadTemplate}
+              </button>
+            </div>
+            <div className="flex items-center gap-3 text-sm">
+              <span className="text-foreground/60 text-xs">{X.leadRouting.csvOnDuplicateLabel}</span>
+              <select value={onDuplicate} onChange={(e) => setOnDuplicate(e.target.value as any)} className="px-3 py-1.5 bg-background border border-border rounded-lg text-xs text-foreground">
+                <option value="skip">{X.leadRouting.csvSkipDuplicates}</option>
+                <option value="update">{X.leadRouting.csvUpdateDuplicates}</option>
+              </select>
+            </div>
+            {csvRows.length > 0 && (
+              <div className="border border-border rounded-lg overflow-hidden">
+                <div className="bg-background px-3 py-2 text-xs font-semibold text-foreground/60 border-b border-border">
+                  {fmt(X.leadRouting.csvPreviewTitle, { n: csvRows.length })}
+                </div>
+                <div className="max-h-48 overflow-auto">
+                  <table className="w-full text-xs text-left">
+                    <thead className="bg-surface border-b border-border text-foreground/50">
+                      <tr>
+                        <th className="p-2">Name</th>
+                        <th className="p-2">Email</th>
+                        <th className="p-2">Phone</th>
+                        <th className="p-2">Type</th>
+                        <th className="p-2">Budget</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {csvRows.slice(0, 5).map((r, i) => (
+                        <tr key={i} className="border-b border-border/40 last:border-0">
+                          <td className="p-2 text-foreground">{r.fullName || `${r.firstName || ""} ${r.lastName || ""}`.trim()}</td>
+                          <td className="p-2 text-foreground/70">{r.email || "—"}</td>
+                          <td className="p-2 text-foreground/70">{r.phone || "—"}</td>
+                          <td className="p-2 text-foreground/70">{r.type || "BUYER"}</td>
+                          <td className="p-2 text-foreground/70">{r.budget || "—"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+            <div className="flex justify-end gap-3 pt-3 border-t border-border">
+              <button type="button" onClick={() => setIsImportModalOpen(false)} className="px-4 py-2 bg-background border border-border rounded-lg text-sm text-foreground/70">
+                {t.crm.modal.cancel}
+              </button>
+              <button
+                type="button"
+                disabled={csvRows.length === 0 || isImporting}
+                onClick={async () => {
+                  setIsImporting(true);
+                  try {
+                    const res = await api("/api/clients/import", { method: "POST", body: { rows: csvRows, onDuplicate } });
+                    toast.success(fmt(X.leadRouting.csvResultSummary, { created: res.created, updated: res.updated, skipped: res.skipped }));
+                    setIsImportModalOpen(false);
+                    setCsvRows([]);
+                    fetchClients(1);
+                  } catch (err: any) {
+                    toast.error(err?.message || X.common.error);
+                  } finally {
+                    setIsImporting(false);
+                  }
+                }}
+                className="px-4 py-2 bg-primary text-background rounded-lg text-sm font-semibold disabled:opacity-40"
+              >
+                {isImporting ? X.leadRouting.csvImporting : fmt(X.leadRouting.csvStartImportBtn, { n: csvRows.length })}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {false && (<div><div><form><div><button>
                 </button>
               </div>
             </form>

@@ -1,6 +1,8 @@
 "use client";
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useI18n } from '@/lib/i18n/I18nContext';
+import { useExtra, fmt } from '@/lib/i18n/extra';
 
 interface Property {
   id: string;
@@ -16,35 +18,11 @@ interface Property {
   imageUrl?: string;
 }
 
-
-
-const STATUS_LABELS: Record<string, string> = {
-  ACTIVE: 'For Sale',
-  IN_CONTRACT: 'In Contract',
-  SOLD: 'Sold',
-};
-
 const STATUS_COLORS: Record<string, string> = {
   ACTIVE: 'bg-green-500/15 text-green-400 border-green-500/20',
   IN_CONTRACT: 'bg-yellow-500/15 text-yellow-400 border-yellow-500/20',
   SOLD: 'bg-foreground/10 text-foreground/40 border-border',
 };
-
-const MIN_PRICES = [
-  { label: 'No Min', value: '' },
-  { label: '$500K', value: '500000' },
-  { label: '$1M', value: '1000000' },
-  { label: '$2M', value: '2000000' },
-  { label: '$5M', value: '5000000' },
-];
-
-const MAX_PRICES = [
-  { label: 'No Max', value: '' },
-  { label: '$1M', value: '1000000' },
-  { label: '$2M', value: '2000000' },
-  { label: '$5M', value: '5000000' },
-  { label: '$10M', value: '10000000' },
-];
 
 const BEDS_OPTIONS = ['Any', '1+', '2+', '3+', '4+'];
 const BATHS_OPTIONS = ['Any', '1+', '2+', '3+'];
@@ -55,10 +33,10 @@ function formatPrice(price: number) {
   return `$${price.toLocaleString()}`;
 }
 
-function PropertyCard({ property, onContact }: { property: Property; index: number; onContact: () => void }) {
+function PropertyCard({ property, onContact, P }: { property: Property; index: number; onContact: () => void; P: ReturnType<typeof useExtra>['publicListing'] }) {
   const imgSrc = property.imageUrl;
   const statusColor = STATUS_COLORS[property.status] || STATUS_COLORS.SOLD;
-  const statusLabel = STATUS_LABELS[property.status] || property.status;
+  const statusLabel = property.status === 'ACTIVE' ? P.forSale : property.status === 'IN_CONTRACT' ? P.inContract : property.status === 'SOLD' ? P.sold : property.status;
 
   return (
     <div className="group bg-surface border border-border rounded-xl overflow-hidden hover:border-primary/40 transition-all duration-300 hover:shadow-lg hover:shadow-primary/5 flex flex-col">
@@ -96,19 +74,19 @@ function PropertyCard({ property, onContact }: { property: Property; index: numb
             <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
             </svg>
-            {property.beds} {property.beds === 1 ? 'bed' : 'beds'}
+            {property.beds} {P.beds}
           </span>
           <span className="w-px h-3 bg-border" />
           <span className="flex items-center gap-1.5">
             <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
-            {property.baths} {property.baths === 1 ? 'bath' : 'baths'}
+            {property.baths} {P.baths}
           </span>
           {property.sqft && (
             <>
               <span className="w-px h-3 bg-border" />
-              <span>{property.sqft.toLocaleString()} sqft</span>
+              <span>{property.sqft.toLocaleString()} {P.sqft}</span>
             </>
           )}
         </div>
@@ -119,7 +97,7 @@ function PropertyCard({ property, onContact }: { property: Property; index: numb
             disabled={property.status === 'SOLD'}
             className="w-full py-2 bg-primary text-background text-xs uppercase tracking-widest font-semibold rounded-lg hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
           >
-            {property.status === 'IN_CONTRACT' ? 'In Contract — View Details →' : property.status === 'SOLD' ? 'Sold' : 'Request Showing →'}
+            {property.status === 'IN_CONTRACT' ? P.inContractView : property.status === 'SOLD' ? P.sold : P.requestShowing}
           </button>
         </div>
       </div>
@@ -128,6 +106,10 @@ function PropertyCard({ property, onContact }: { property: Property; index: numb
 }
 
 export default function PublicListingsPage() {
+  const { t, language, setLanguage } = useI18n();
+  void t;
+  const X = useExtra();
+  const P = X.publicListing;
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
   const [keyword, setKeyword] = useState('');
@@ -136,9 +118,25 @@ export default function PublicListingsPage() {
   const [maxPrice, setMaxPrice] = useState('');
   const [minBeds, setMinBeds] = useState('Any');
   const [minBaths, setMinBaths] = useState('Any');
-  const [brokerage, setBrokerage] = useState<{ name: string; slug: string; phone?: string | null; website?: string | null; logoUrl?: string | null } | null>(null);
+  const [brokerage, setBrokerage] = useState<{ name: string; slug: string; phone?: string | null; website?: string | null; logoUrl?: string | null; brandColor?: string | null } | null>(null);
   const [problem, setProblem] = useState<'none' | 'missing' | 'notFound' | 'error'>('none');
   const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+
+  const minPriceOptions = [
+    { label: P.noMin, value: '' },
+    { label: '$500K', value: '500000' },
+    { label: '$1M', value: '1000000' },
+    { label: '$2M', value: '2000000' },
+    { label: '$5M', value: '5000000' },
+  ];
+
+  const maxPriceOptions = [
+    { label: P.noMax, value: '' },
+    { label: '$1M', value: '1000000' },
+    { label: '$2M', value: '2000000' },
+    { label: '$5M', value: '5000000' },
+    { label: '$10M', value: '10000000' },
+  ];
 
   // Each brokerage has its own page: /public-listings?b=<brokerage-slug>
   useEffect(() => {
@@ -150,6 +148,7 @@ export default function PublicListingsPage() {
         if (!r.ok) throw new Error(String(r.status));
         const data = await r.json();
         setBrokerage(data.organization);
+        if (data.organization?.slug && data.organization.slug !== slug.toLowerCase()) { window.history.replaceState(null, '', `/public-listings?b=${encodeURIComponent(data.organization.slug)}`); }
         setProperties(Array.isArray(data.listings) ? data.listings : []);
       })
       .catch(() => setProblem('error'))
@@ -188,10 +187,20 @@ export default function PublicListingsPage() {
               <div className="w-8 h-8 bg-surface border border-border flex items-center justify-center font-serif text-lg text-primary">{(brokerage?.name || 'L').charAt(0)}</div>
             )}
             <span className="text-primary font-bold text-base tracking-tight hidden sm:block">{brokerage?.name || ''}</span>
-            <span className="text-foreground/40 text-sm hidden sm:block">Listings</span>
+            <span className="text-foreground/40 text-sm hidden sm:block">{P.listingsLabel}</span>
           </Link>
           <div className="flex items-center gap-3">
-            <Link href="/login" className="text-xs text-foreground/50 hover:text-primary uppercase tracking-widest transition-colors hidden sm:block">Agent Login</Link>
+            <select
+              value={language}
+              onChange={e => setLanguage(e.target.value as any)}
+              className="bg-surface border border-border text-foreground text-xs rounded-lg px-2.5 py-1 outline-none focus:border-primary cursor-pointer"
+            >
+              <option value="en">EN</option>
+              <option value="zh-CN">简体</option>
+              <option value="zh-TW">繁體</option>
+              <option value="es">ES</option>
+            </select>
+            <Link href="/login" className="text-xs text-foreground/50 hover:text-primary uppercase tracking-widest transition-colors hidden sm:block">{P.agentLogin}</Link>
           </div>
         </div>
       </header>
@@ -201,11 +210,11 @@ export default function PublicListingsPage() {
         <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1486325212027-8081e485255e?w=1600&q=60&auto=format')] bg-cover bg-center opacity-10 grayscale" />
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
           <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-2">
-            Find Your <span className="text-primary italic">Next Home</span>
+            {P.heroTitle1} <span className="text-primary italic">{P.heroTitle2}</span>
           </h1>
-          <div className="w-16 h-px bg-primary mb-6" />
+          <div className="w-16 h-px bg-primary mb-6" style={brokerage?.brandColor ? { backgroundColor: brokerage.brandColor } : undefined} />
           <p className="text-foreground/50 text-sm mb-8 max-w-xl">
-            Browse our curated selection of New York&apos;s finest properties. Luxury living awaits.
+            {P.heroSub}
           </p>
 
           {/* Search bar */}
@@ -218,7 +227,7 @@ export default function PublicListingsPage() {
                 type="text"
                 value={keyword}
                 onChange={e => setKeyword(e.target.value)}
-                placeholder="Search by address, city, or ZIP..."
+                placeholder={P.searchPlaceholder}
                 className="bg-transparent outline-none text-sm text-foreground placeholder:text-foreground/30 w-full"
               />
               {keyword && (
@@ -244,7 +253,7 @@ export default function PublicListingsPage() {
                     : 'text-foreground/50 hover:text-foreground'
                 }`}
               >
-                {s === 'ALL' ? 'All' : s === 'ACTIVE' ? 'For Sale' : 'In Contract'}
+                {s === 'ALL' ? P.all : s === 'ACTIVE' ? P.forSale : P.inContract}
               </button>
             ))}
           </div>
@@ -258,7 +267,7 @@ export default function PublicListingsPage() {
               onChange={e => setMinPrice(e.target.value)}
               className="bg-surface border border-border text-foreground text-xs rounded-lg px-3 py-1.5 outline-none focus:border-primary transition-colors cursor-pointer"
             >
-              {MIN_PRICES.map(o => <option key={o.value} value={o.value} className="bg-surface">{o.label}</option>)}
+              {minPriceOptions.map(o => <option key={o.value} value={o.value} className="bg-surface">{o.label}</option>)}
             </select>
             <span className="text-foreground/30 text-xs">–</span>
             <select
@@ -266,7 +275,7 @@ export default function PublicListingsPage() {
               onChange={e => setMaxPrice(e.target.value)}
               className="bg-surface border border-border text-foreground text-xs rounded-lg px-3 py-1.5 outline-none focus:border-primary transition-colors cursor-pointer"
             >
-              {MAX_PRICES.map(o => <option key={o.value} value={o.value} className="bg-surface">{o.label}</option>)}
+              {maxPriceOptions.map(o => <option key={o.value} value={o.value} className="bg-surface">{o.label}</option>)}
             </select>
           </div>
 
@@ -279,19 +288,19 @@ export default function PublicListingsPage() {
               onChange={e => setMinBeds(e.target.value)}
               className="bg-surface border border-border text-foreground text-xs rounded-lg px-3 py-1.5 outline-none focus:border-primary transition-colors cursor-pointer"
             >
-              {BEDS_OPTIONS.map(o => <option key={o} value={o} className="bg-surface">{o === 'Any' ? 'Any Beds' : `${o} Beds`}</option>)}
+              {BEDS_OPTIONS.map(o => <option key={o} value={o} className="bg-surface">{o === 'Any' ? P.anyBeds : `${o} ${P.beds}`}</option>)}
             </select>
             <select
               value={minBaths}
               onChange={e => setMinBaths(e.target.value)}
               className="bg-surface border border-border text-foreground text-xs rounded-lg px-3 py-1.5 outline-none focus:border-primary transition-colors cursor-pointer"
             >
-              {BATHS_OPTIONS.map(o => <option key={o} value={o} className="bg-surface">{o === 'Any' ? 'Any Baths' : `${o} Baths`}</option>)}
+              {BATHS_OPTIONS.map(o => <option key={o} value={o} className="bg-surface">{o === 'Any' ? P.anyBaths : `${o} ${P.baths}`}</option>)}
             </select>
           </div>
 
           <div className="ml-auto text-xs text-foreground/40 font-medium">
-            {loading ? 'Loading...' : `${filtered.length} ${filtered.length === 1 ? 'property' : 'properties'}`}
+            {loading ? X.common.loading : fmt(P.propertiesCount, { n: filtered.length })}
           </div>
         </div>
       </div>
@@ -301,12 +310,12 @@ export default function PublicListingsPage() {
         {problem !== 'none' ? (
           <div className="text-center py-20 max-w-md mx-auto">
             <h3 className="text-foreground/70 font-semibold mb-2">
-              {problem === 'missing' ? 'Listings are published by each brokerage'
-                : problem === 'notFound' ? 'This brokerage page was not found'
-                : 'Listings could not be loaded'}
+              {problem === 'missing' ? P.missingSlug
+                : problem === 'notFound' ? P.brokerageNotFound
+                : P.loadFailed}
             </h3>
             <p className="text-foreground/40 text-sm">
-              {problem === 'error' ? 'Please try again in a moment.' : 'Ask your agent for their brokerage\'s listings link.'}
+              {problem === 'error' ? P.tryAgain : P.askAgentLink}
             </p>
           </div>
         ) : loading ? (
@@ -329,19 +338,19 @@ export default function PublicListingsPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
               </svg>
             </div>
-            <h3 className="text-foreground/60 font-semibold mb-2">{properties.length === 0 ? 'No listings right now' : 'No properties found'}</h3>
-            <p className="text-foreground/30 text-sm mb-6">Try adjusting your search filters.</p>
+            <h3 className="text-foreground/60 font-semibold mb-2">{properties.length === 0 ? P.noListingsNow : P.noPropsFound}</h3>
+            <p className="text-foreground/30 text-sm mb-6">{P.adjustFilters}</p>
             <button
               onClick={() => { setKeyword(''); setStatusFilter('ALL'); setMinPrice(''); setMaxPrice(''); setMinBeds('Any'); setMinBaths('Any'); }}
               className="px-4 py-2 bg-surface border border-border text-foreground/60 hover:text-foreground text-xs uppercase tracking-widest rounded-lg transition-colors"
             >
-              Clear Filters
+              {P.clearFilters}
             </button>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {filtered.map((p, i) => (
-              <PropertyCard key={p.id} property={p} index={i} onContact={() => { window.location.href = `/public-listings/${p.id}`; }} />
+              <PropertyCard key={p.id} property={p} index={i} P={P} onContact={() => { window.location.href = `/public-listings/${p.id}`; }} />
             ))}
           </div>
         )}
@@ -353,8 +362,8 @@ export default function PublicListingsPage() {
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-8 h-8 rounded-full bg-primary/15 ring-1 ring-primary/20 flex items-center justify-center text-primary font-bold text-sm flex-shrink-0">{(brokerage?.name || 'A').charAt(0)}</div>
             <div className="min-w-0 hidden sm:block">
-              <p className="text-foreground text-xs font-semibold truncate">Speak with an Agent</p>
-              <p className="text-foreground/40 text-xs truncate">Pick a home and send a request — the listing agent replies directly.</p>
+              <p className="text-foreground text-xs font-semibold truncate">{P.speakWithAgent}</p>
+              <p className="text-foreground/40 text-xs truncate">{P.speakDesc}</p>
             </div>
           </div>
           {brokerage?.phone && (
@@ -362,7 +371,7 @@ export default function PublicListingsPage() {
               href={`tel:${brokerage.phone}`}
               className="flex items-center gap-2 px-4 py-2 bg-primary text-background text-xs uppercase tracking-widest font-semibold rounded-lg hover:opacity-90 transition-all"
             >
-              Call {brokerage.phone}
+              {P.callPrefix} {brokerage.phone}
             </a>
           )}
         </div>

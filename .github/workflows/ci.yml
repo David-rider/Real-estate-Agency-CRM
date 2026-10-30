@@ -1,0 +1,108 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+jobs:
+  backend-and-smoke:
+    name: Backend Typecheck, Migrations & Smoke Tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres_ci_password
+          POSTGRES_DB: crm_ci_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres_ci_password@localhost:5432/crm_ci_test?schema=public
+      JWT_SECRET: ci-test-jwt-secret-minimum-32-chars-long-for-hs256
+      PORT: 4000
+      NODE_ENV: development
+      DISABLE_JOBS: "true"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci
+
+      - name: Backend TypeScript typecheck
+        working-directory: backend
+        run: npm run typecheck
+
+      - name: Apply database migrations (release script)
+        working-directory: backend
+        run: npm run release
+
+      - name: Start API server & run smoke tests
+        working-directory: backend
+        run: |
+          npm start &
+          SERVER_PID=$!
+          echo "Waiting for API server on http://localhost:4000/api/health..."
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:4000/api/health >/dev/null 2>&1; then
+              echo "API server is ready."
+              break
+            fi
+            sleep 1
+          done
+          API_URL=http://localhost:4000 npm run test:smoke
+          kill $SERVER_PID || true
+
+  frontend:
+    name: Frontend Typecheck, i18n Audit & Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Frontend TypeScript typecheck
+        working-directory: frontend
+        run: npx tsc --noEmit -p .
+
+      - name: Frontend ESLint check (zero errors)
+        working-directory: frontend
+        run: npx eslint . --quiet
+
+      - name: Frontend production build
+        working-directory: frontend
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:4000/api
+        run: npm run build

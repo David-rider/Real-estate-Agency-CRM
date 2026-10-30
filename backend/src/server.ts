@@ -16,7 +16,8 @@ if (missingEnvVars.length > 0) {
 // Version from package.json (works from src/ and dist/), shown by /api/health
 let APP_VERSION = 'unknown';
 try {
-    APP_VERSION = JSON.parse(require('fs').readFileSync(require('path').join(__dirname, '..', 'package.json'), 'utf8')).version;
+    const pkg = JSON.parse(require('fs').readFileSync(require('path').join(__dirname, '..', 'package.json'), 'utf8'));
+    APP_VERSION = pkg.appVersion || pkg.version || 'unknown';
 } catch { /* keep 'unknown' */ }
 
 const app = express();
@@ -48,10 +49,12 @@ import integrationsRoutes from './routes/integrations';
 import tasksRoutes from './routes/tasks';
 import notificationsRoutes from './routes/notifications';
 import searchRoutes from './routes/search';
+import uploadsRoutes from './routes/uploads';
 
-import { authenticateToken } from './middleware/authMiddleware';
+import { authenticateToken, AuthRequest } from './middleware/authMiddleware';
 import { startReminderLoop } from './lib/reminders';
 import { runRelease } from './release';
+import { captureBackendException } from './lib/sentry';
 
 // Middleware
 // In production an explicit FRONTEND_URL allowlist is mandatory: falling back to
@@ -107,6 +110,7 @@ app.use('/api/tasks',         tasksRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/search',        searchRoutes);
 app.use('/api/payments',      paymentRoutes);
+app.use('/api/uploads',       uploadsRoutes);
 
 // Basic Health Check Route
 app.get('/api/health', async (req, res) => {
@@ -141,7 +145,19 @@ app.use((err: any, req: express.Request, res: express.Response, _next: express.N
         return res.status(403).json({ error: 'Origin not allowed' });
     }
 
-    res.status(err?.status || 500).json({ error: 'Internal server error' });
+    const status = err?.status || 500;
+    if (status >= 500) {
+        const authReq = req as AuthRequest;
+        void captureBackendException(err, {
+            path: req.path,
+            method: req.method,
+            userId: authReq.user?.userId,
+            orgId: authReq.user?.orgId,
+            release: APP_VERSION,
+        });
+    }
+
+    res.status(status).json({ error: 'Internal server error' });
 });
 
 // Start Server

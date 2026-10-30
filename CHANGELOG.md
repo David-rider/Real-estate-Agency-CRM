@@ -1,9 +1,10 @@
 # 变更记录（Changelog）
 
-本项目使用[语义化版本](https://semver.org/lang/zh-CN/)：`主版本.次版本.修订号`。
-- **修订号**（1.0.**1**）：只修 bug，不加功能，不改数据库。
-- **次版本**（1.**1**.0）：新增功能；数据库只增不减，旧数据不受影响。
-- **主版本**（**2**.0.0）：不兼容的改动，例如删字段、改接口、需要人工迁移数据。
+本项目使用**四段式版本号**：`主版本.次版本.修订号.构建号`（`X.Y.Z.W`，如 `1.0.1.0`）。
+- **构建/微调号**（1.0.1.**1**）：日常小修补、文案/样式微调、CI 或配置调整，不改功能与数据库。
+- **修订号**（1.0.**1**.0）：只修 bug 或安全加固，不加功能，不改数据库。
+- **次版本**（1.**1**.0.0）：新增功能；数据库只增不减，旧数据不受影响。
+- **主版本**（**2**.0.0.0）：不兼容的改动，例如删字段、改接口、需要人工迁移数据。
 
 每次改动先记在 **[未发布]**，发版时再改成版本号和日期。发版流程见 [`guides/release-process.md`](guides/release-process.md)；
 线上运行的版本可以通过 `GET /api/health` 返回的 `version` 字段确认。
@@ -13,7 +14,51 @@
 
 ## [未发布]
 
+---
+
+## [1.1.0.1] — 2026-10-26 · 清除全部 旧第三方 品牌字样、恢复全端多语言与主题切换按钮
+
+#### 修复与优化
+- **移除全部 旧第三方 相关内容**：清理 `frontend/src/app/page.tsx`、`frontend/src/app/layout.tsx`、`frontend/src/app/marketing/page.tsx`、`backend/docker-compose.yml` 与 `guides/roadmap.md` 中的所有 `旧第三方` / `旧第三方` 品牌标识，统一替换为中立的 `Real Estate CRM` / `RE CRM`。
+- **首页（`/`）支持 4 语言与 5 套主题即时切换**：新增客户端落地页组件 `frontend/src/components/landing/LandingPageClient.tsx`，在首页顶部导航栏加入多语言切换器（English / 简体中文 / 繁體中文 / Español）与主题切换器，已登录用户可直接点击“进入工作台 →”（`/dashboard`）回到熟悉的 CRM 界面。
+- **修复小屏幕 / 移动端顶部栏隐藏多语言切换按钮的问题**：移除 `frontend/src/components/layout/Header.tsx` 中语言切换器和主题切换器上的 `hidden sm:block` 样式，确保在任何屏幕尺寸下都清晰可见。
+
+---
+
+## [1.1.0.0] — 2026-10-26 · 核心痛点闭环（文件直传、线索自动分配、邮件提醒、品牌短链、CSV 批量导入）与安全加固
+
+#### 安全
+- 升级 `body-parser` 至 `2.2.2`（`npm audit` 生产与开发依赖 0 漏洞）。
+- 开启 GitHub Dependabot 自动依赖巡检（`.github/dependabot.yml`），每周定期扫描前后端 npm 依赖与 GitHub Actions 安全更新。
+- 登录态支持 `httpOnly` Cookie（`crm_session`）与 CSRF 防护：登录、注册、接受邀请、令牌刷新与 Google 登录时自动下发 `HttpOnly` Cookie，退出登录（`POST /api/auth/logout`）时清除；对基于 Cookie 的写请求强制校验 `X-CSRF-Protection` 自定义请求头，阻止跨站请求伪造（CSRF）。
+- 前端增加 `Content-Security-Policy-Report-Only` 响应头（可通过 `NEXT_PUBLIC_CSP_ENFORCE=true` 切换为强制模式），限制脚本、连接和内嵌来源，防止恶意脚本注入。
+
+#### 新增
+- 客户与房源 CSV 批量导入（`3.3a`）：
+  - 后端新增 `POST /api/clients/import` 与 `POST /api/properties/import` 接口，单次支持最多 500 行批量导入，支持按邮箱 / 电话（客户）或 `mlsNumber` / `地址+邮编`（房源）自动防重，并提供“跳过已有记录（`skip`）”或“更新已有记录（`update`）”两种策略及行级错误明细。
+  - 前端新增 `frontend/src/lib/csv.ts`（支持 RFC 4180 引号转义解析与中 / 英 / 西文常见表头自动映射），并在客户页（`/crm`）与房源页（`/listings`）工具栏上线“导入 CSV”弹窗（含标准 CSV 模板下载、前 5 行实时预览与导入结果汇总）。
+- 公开房源页自定义网址标识（Slug）、旧链接永久跳转与品牌定制（`1.4`）：
+  - 新增 `OrgSlugHistory` 表与 `Organization.brandColor` 字段（幂等迁移 `20261026000300_org_slug_history`）。
+  - 公司管理员可在“设置 → 组织设置（Org Settings）”中直接上传公司 Logo、配置品牌主题色（`brandColor`），并自定义公开页短链标识（`slug`）；修改后旧 `slug` 自动写入 `OrgSlugHistory` 并自动跳转至最新地址，防止已印制的传单和门口二维码失效。
+- 线索 / 预约 / 任务逾期的邮件提醒与个人通知偏好（`1.3`）：
+  - 新增 `User.notificationPrefs`（`JSONB`）与 `Task.overdueNotified` 字段（幂等迁移 `20261026000200_notification_prefs`），并提供 `GET/PATCH /api/settings/notifications` 接口。
+  - 当产生新线索分配、收到报价、交易状态变更、佣金发放、预约前 24 小时提醒或跟进任务逾期（`backend/src/lib/reminders.ts`）时，系统在生成站内通知的同时自动根据收件人的 `notificationPrefs` 发送包含直达链接的邮件提醒（支持 Resend / SendGrid，未配置密钥时在开发日志输出预览）。
+  - 前端“设置 → 通知（Notifications）”正式解除“即将推出”只读锁定，与后端数据库实时同步。
+- 线索自动分配（`1.2`）：支持将公开房源网站咨询与开放日签到线索按优先级规则自动分配给团队经纪人。
+  - 新增 `LeadRoutingRule` 表与 `User.acceptingLeads` / `User.maxActiveLeads` 字段（幂等迁移 `20261026000100_lead_routing`），分配引擎（`backend/src/lib/routing.ts`）支持按来源、城市、价格区间匹配，并提供轮询分配（`ROUND_ROBIN`）、最低负载（`LEAST_LOADED`）、指定经纪人（`SPECIFIC_AGENT`）与挂牌经纪人优先（`LISTING_AGENT`）四种策略；暂停接单或达到跟进上限的经纪人自动跳过，无规则命中时自动兜底给挂牌经纪人或公司管理员。
+  - 设置页新增“线索分配（Lead Routing）”面板与干跑模拟器（Dry-Run Simulator），并在“团队与角色”列表中支持一键切换成员是否接单及最大活跃客户上限。
+- 真实文件上传（`1.1`）：支持直接从手机或电脑上传房源照片与私密合同文档，告别手动粘贴外部链接。
+  - 后端新增 `POST /api/uploads`、`GET /api/uploads/public/:id`、`GET /api/uploads/private/:id`、`PATCH /api/media/reorder` 及 `GET /api/documents/:id/view-url`：支持 Cloudflare R2 对象存储（配置 `R2_*` 环境变量时启用）与 PostgreSQL `UploadedFile` 持久化存储自动降级（未配置 R2 时开箱即用，Render 重启不丢文件）。
+  - 房源照片公开访问，支持多图拖拽上传、一键设为封面、左右排序及删除联动清理底层文件；合同文档仅限同公司授权人员通过 10 分钟临时签名链接预览与下载。
+- 接入 GitHub Actions CI 自动测试（`.github/workflows/ci.yml`）：每次提交或 PR 自动启动 PostgreSQL 16 容器，执行后端类型检查、幂等数据库迁移与端到端冒烟测试，并执行前端 TypeScript 检查与生产构建。
+- 前后端接入轻量级 Sentry 错误监控（`backend/src/lib/sentry.ts`、`frontend/src/lib/sentry.ts`）：配置 `SENTRY_DSN` / `NEXT_PUBLIC_SENTRY_DSN` 后自动捕获并上报未处理的 500 异常与前端崩溃，未配置时静默跳过。
+
+#### 变更
+- 版本号编码规则由 3 段式（`X.Y.Z`）升级为 4 段式（`X.Y.Z.W`），当前基线版本更新为 `1.0.1.0`，冒烟测试同步校验 4 段式版本号格式。
+
 #### 修复
+- 修复前端遗留的 ESLint 报错（`marketing/page.tsx` 变量声明顺序、`reports/page.tsx` 渲染函数内调用随机函数及硬编码假排行榜数据），并在 CI 中增加 `eslint --quiet` 零错误门禁。
+- 补全公开房源列表页（`/public-listings`）、邮箱验证页（`/verify-email`）、财务页、升级结账弹窗及设置页提示信息的四语言（英 / 简 / 繁 / 西）国际化支持，消除切换语言后残留英文提示的体验割裂问题。
 - 财务页的“佣金审批”队列：一人公司的老板（公司里没有第二位审批人）现在可以在页面上批准或退回自己的佣金申请。
   以前后端已经允许，但页面会一律隐藏自己申请的按钮，导致单人经纪公司在界面上无法放款。
   公司里有其他审批人时规则不变：不能审批自己的申请，页面显示“需由其他审批人处理”。
@@ -21,7 +66,7 @@
 
 ---
 
-## [1.0.1] — 2026-10-22 · 安全加固与版本管理
+## [1.0.1.0] — 2026-10-22 · 安全加固与版本管理（原 1.0.1）
 
 - 已合并：[PR #2](https://github.com/David-rider/Real-estate-Agency-CRM/pull/2)
 - 数据库：无变更，没有新的迁移。
@@ -170,6 +215,9 @@
 | 后端 | `SEED_PASSWORD` / `ALLOW_SEED` | 仅种子脚本使用 |
 | 前端 | `NEXT_PUBLIC_AI_ASSISTANT_ENABLED` | AI 助手开关，默认 `false` |
 | 前端 | `NEXT_PUBLIC_FEATURED_BROKERAGE_SLUG` | 可选：首页 “Browse Listings” 链接到哪家公司 |
+| 后端 | `SENTRY_DSN` | 可选：后端 Sentry 错误上报 DSN，未填时静默不启用 |
+| 前端 | `NEXT_PUBLIC_SENTRY_DSN` | 可选：前端 Sentry 错误上报 DSN，未填时静默不启用 |
+| 前端 | `NEXT_PUBLIC_CSP_ENFORCE` | 可选：设为 `true` 时前端 CSP 从仅报告切换为强制拦截，默认 `false` |
 
 ## 待确认
 
