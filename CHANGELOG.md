@@ -24,6 +24,8 @@
 #### 变更 / Changed
 - 文档补充英文：`CHANGELOG.md`、`guides/roadmap.md`、`guides/release-process.md`、`guides/security-audit-2026-10.md`、`guides/competitive-research.md` 现在是中英双语（中文在前、英文紧随），内容不变。
   *Docs gain English: `CHANGELOG.md`, `guides/roadmap.md`, `guides/release-process.md`, `guides/security-audit-2026-10.md` and `guides/competitive-research.md` are now bilingual (Chinese first, English right after); content unchanged.*
+- 依赖更新（Dependabot 5 个 PR 逐个测试后合并）：后端 Express 相关依赖（`body-parser`、`qs`、`type-is` 等）、前端 Next.js 16.4.3、React 19.3.1、Tailwind 4.3、`recharts` 3.10、`date-fns`、`react-big-calendar`，以及 CI 使用的 GitHub Actions（`checkout`、`setup-node` v7）。用户界面和功能没有变化；生产依赖 `npm audit` 前后端均为 0 漏洞，23 项冒烟测试全部通过。
+  *Dependency updates (5 Dependabot PRs, each tested before merging): backend Express-related packages (`body-parser`, `qs`, `type-is`, etc.), frontend Next.js 16.4.3, React 19.3.1, Tailwind 4.3, `recharts` 3.10, `date-fns`, `react-big-calendar`, and the GitHub Actions used by CI (`checkout`, `setup-node` v7). No UI or feature change; `npm audit` shows 0 production vulnerabilities on both sides and all 23 smoke checks pass.*
 
 ---
 
