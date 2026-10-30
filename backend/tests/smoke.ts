@@ -52,6 +52,7 @@ async function main() {
     await step('health check', async () => {
         const r = await call('GET', '/api/health');
         assert.equal(r.status, 200);
+        assert.match(String(r.body?.version || ''), /^\d+\.\d+\.\d+\.\d+$/, `expected 4-segment version X.Y.Z.W, got ${r.body?.version}`);
     });
 
     const a = await register('alpha');
@@ -239,7 +240,7 @@ async function main() {
         }
     });
 
-    await step('security basics: password policy, safe links, headers', async () => {
+    await step('security basics: password policy, safe links, headers, httpOnly cookie + CSRF', async () => {
         const weak = await call('POST', '/api/auth/register', undefined, { name: 'W', email: `weak-${run}@smoke.test`, password: '123', orgName: 'Weak' });
         assert.equal(weak.status, 400);
         const js = await call('POST', '/api/properties', a, { address: '3 Bad Ln', city: 'NY', state: 'NY', zip: '10003', price: 1, beds: 1, baths: 1, virtualTourUrl: 'javascript:alert(1)' });
@@ -249,6 +250,277 @@ async function main() {
         assert.equal(res.headers.get('x-powered-by'), null);
         const forged = await call('GET', '/api/clients', 'eyJhbGciOiJub25lIn0.eyJ1c2VySWQiOiJ4In0.');
         assert.equal(forged.status, 401, 'unsigned tokens are rejected');
+
+        // Verify httpOnly cookie is issued on login and enforces CSRF header on state-changing requests
+        const loginRes = await fetch(`${API}/api/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: `alpha-${run}@smoke.test`, password: 'SmokeTest123!' }),
+        });
+        assert.equal(loginRes.status, 200);
+        const setCookie = loginRes.headers.get('set-cookie') || '';
+        assert.ok(setCookie.includes('crm_session=') && setCookie.includes('HttpOnly'), 'login sets httpOnly crm_session cookie');
+        const cookiePair = setCookie.split(';')[0];
+
+        // Cookie-only GET works
+        const cookieGet = await fetch(`${API}/api/clients`, { headers: { Cookie: cookiePair } });
+        assert.equal(cookieGet.status, 200);
+
+        // Cookie-only POST without X-CSRF-Protection is blocked (403)
+        const csrfBlocked = await fetch(`${API}/api/clients`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Cookie: cookiePair },
+            body: JSON.stringify({ firstName: 'Csrf', lastName: 'Test', email: `csrf-${run}@example.com` }),
+        });
+        assert.equal(csrfBlocked.status, 403, 'cookie-only POST without CSRF header is rejected');
+
+        // Cookie-only POST with X-CSRF-Protection succeeds (201)
+        const csrfAllowed = await fetch(`${API}/api/clients`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Cookie: cookiePair, 'X-CSRF-Protection': '1' },
+            body: JSON.stringify({ firstName: 'Csrf', lastName: 'Allowed', email: `csrf-ok-${run}@example.com` }),
+        });
+        assert.equal(csrfAllowed.status, 201, 'cookie-only POST with X-CSRF-Protection header succeeds');
+
+        // Logout clears the cookie
+        const logoutRes = await fetch(`${API}/api/auth/logout`, { method: 'POST', headers: { Cookie: cookiePair, 'X-CSRF-Protection': '1' } });
+        assert.equal(logoutRes.status, 200);
+        assert.ok((logoutRes.headers.get('set-cookie') || '').includes('crm_session=;'), 'logout clears crm_session cookie');
+    });
+
+    await step('real file upload: public listing photos, reordering, private documents & cleanup', async () => {
+        // 1x1 transparent PNG
+        const pngBytes = Buffer.from(
+            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=',
+            'base64',
+        );
+        const form = new FormData();
+        form.append('file', new Blob([pngBytes], { type: 'image/png' }), 'photo1.png');
+        form.append('visibility', 'PUBLIC');
+
+        const up1 = await fetch(`${API}/api/uploads`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${a}` },
+            body: form,
+        });
+        assert.equal(up1.status, 201);
+        const up1Body = await up1.json();
+        assert.ok(up1Body.storageKey && up1Body.url.includes('/api/uploads/public/'));
+
+        // Public image is directly fetchable without auth
+        const pubFetch = await fetch(up1Body.url);
+        assert.equal(pubFetch.status, 200);
+        assert.equal(pubFetch.headers.get('content-type'), 'image/png');
+
+        // Attach photo 1 & photo 2 to listing and test reorder
+        const m1 = await call('POST', '/api/media', a, {
+            url: up1Body.url,
+            storageKey: up1Body.storageKey,
+            sizeBytes: up1Body.sizeBytes,
+            mimeType: up1Body.mimeType,
+            type: 'image',
+            propertyId,
+        });
+        assert.equal(m1.status, 201);
+
+        const m2 = await call('POST', '/api/media', a, {
+            url: 'https://example.com/second.jpg',
+            type: 'image',
+            propertyId,
+        });
+        assert.equal(m2.status, 201);
+
+        const reordered = await call('PATCH', '/api/media/reorder', a, {
+            propertyId,
+            orderedIds: [m2.body.id, m1.body.id],
+        });
+        assert.equal(reordered.status, 200);
+        assert.equal(reordered.body[0].id, m2.body.id);
+
+        // Delete media 1 and verify underlying public file is cleaned up
+        const delMedia = await call('DELETE', `/api/media/${m1.body.id}`, a);
+        assert.equal(delMedia.status, 200);
+        const pubAfterDel = await fetch(up1Body.url);
+        assert.equal(pubAfterDel.status, 404, 'deleted media cleans up underlying stored file');
+
+        // Private PDF document upload
+        const pdfBytes = Buffer.from('%PDF-1.4\n1 0 obj\n<<>>\nendobj\ntrailer\n<<>>\n%%EOF\n', 'utf8');
+        const docForm = new FormData();
+        docForm.append('file', new Blob([pdfBytes], { type: 'application/pdf' }), 'contract.pdf');
+        docForm.append('visibility', 'PRIVATE');
+
+        const upDoc = await fetch(`${API}/api/uploads`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${a}` },
+            body: docForm,
+        });
+        assert.equal(upDoc.status, 201);
+        const upDocBody = await upDoc.json();
+
+        // Raw private URL without signature is rejected (403)
+        const rawPriv = await fetch(upDocBody.url);
+        assert.equal(rawPriv.status, 403, 'unsigned private file access is rejected');
+
+        const docRec = await call('POST', '/api/documents', a, {
+            name: 'Signed Contract.pdf',
+            url: upDocBody.url,
+            storageKey: upDocBody.storageKey,
+            sizeBytes: upDocBody.sizeBytes,
+            mimeType: upDocBody.mimeType,
+            type: 'CONTRACT',
+            transactionId: txId,
+        });
+        assert.equal(docRec.status, 201);
+
+        // Other brokerage cannot request view-url
+        const crossOrgView = await call('GET', `/api/documents/${docRec.body.id}/view-url`, b);
+        assert.equal(crossOrgView.status, 404);
+
+        // Authorized agent gets a signed 10-minute URL that serves the PDF
+        const viewUrlRes = await call('GET', `/api/documents/${docRec.body.id}/view-url`, a);
+        assert.equal(viewUrlRes.status, 200);
+        const signedFetch = await fetch(viewUrlRes.body.url);
+        assert.equal(signedFetch.status, 200);
+        assert.equal(signedFetch.headers.get('content-type'), 'application/pdf');
+
+        // Deleting the document removes the underlying stored file
+        const delDoc = await call('DELETE', `/api/documents/${docRec.body.id}`, a);
+        assert.equal(delDoc.status, 200);
+        const signedAfterDel = await fetch(viewUrlRes.body.url);
+        assert.equal(signedAfterDel.status, 404, 'deleted document cleans up underlying stored file');
+    });
+
+    await step('automated lead routing: round-robin rule, simulator, and agent availability', async () => {
+        // Create a ROUND_ROBIN rule for Open House inquiries
+        const ruleRes = await call('POST', '/api/settings/lead-routing', a, {
+            name: 'Open House Round Robin',
+            source: 'Open House',
+            strategy: 'ROUND_ROBIN',
+        });
+        assert.equal(ruleRes.status, 201);
+        const ruleId = ruleRes.body.id;
+
+        // List rules
+        const listRes = await call('GET', '/api/settings/lead-routing', a);
+        assert.equal(listRes.status, 200);
+        assert.equal(listRes.body.length, 1);
+
+        // Dry-run simulator matches our rule
+        const simRes = await call('POST', '/api/settings/lead-routing/test', a, {
+            source: 'Open House',
+            city: 'New York',
+            price: 1000000,
+        });
+        assert.equal(simRes.status, 200);
+        assert.equal(simRes.body.matchedRuleId, ruleId);
+        assert.equal(simRes.body.strategyUsed, 'ROUND_ROBIN');
+
+        // Cross-org isolation on routing rule
+        const crossDel = await call('DELETE', `/api/settings/lead-routing/${ruleId}`, b);
+        assert.equal(crossDel.status, 404);
+
+        // Delete rule
+        const delRule = await call('DELETE', `/api/settings/lead-routing/${ruleId}`, a);
+        assert.equal(delRule.status, 200);
+    });
+
+    await step('email notification preferences persistence', async () => {
+        const getPrefs = await call('GET', '/api/settings/notifications', a);
+        assert.equal(getPrefs.status, 200);
+        assert.equal(getPrefs.body.emailNewClient, true);
+        assert.equal(getPrefs.body.emailTaskOverdue, true);
+
+        const patchPrefs = await call('PATCH', '/api/settings/notifications', a, {
+            emailNewClient: false,
+            emailTaskOverdue: false,
+            digestFrequency: 'realtime',
+        });
+        assert.equal(patchPrefs.status, 200);
+        assert.equal(patchPrefs.body.emailNewClient, false);
+        assert.equal(patchPrefs.body.emailTaskOverdue, false);
+        assert.equal(patchPrefs.body.digestFrequency, 'realtime');
+
+        const verifyPrefs = await call('GET', '/api/settings/notifications', a);
+        assert.equal(verifyPrefs.status, 200);
+        assert.equal(verifyPrefs.body.emailNewClient, false);
+    });
+
+    await step('custom public page slug, redirect history, and brand color', async () => {
+        const orgRes = await call('GET', '/api/settings/organization', a);
+        assert.equal(orgRes.status, 200);
+        const oldSlug = orgRes.body.slug;
+        assert.ok(oldSlug, 'organization has initial slug');
+
+        const newSlug = `alpha-custom-${run}`;
+        const patchOrg = await call('PATCH', '/api/settings/organization', a, {
+            slug: newSlug,
+            brandColor: '#C5A059',
+        });
+        assert.equal(patchOrg.status, 200);
+        assert.equal(patchOrg.body.slug, newSlug);
+        assert.equal(patchOrg.body.brandColor, '#C5A059');
+
+        // Old slug still resolves via OrgSlugHistory and returns canonicalSlug
+        const oldFetch = await call('GET', `/api/properties/public?b=${encodeURIComponent(oldSlug)}`);
+        assert.equal(oldFetch.status, 200);
+        assert.equal(oldFetch.body.organization.slug, newSlug);
+        assert.equal(oldFetch.body.redirectedFrom, oldSlug);
+        assert.equal(oldFetch.body.canonicalSlug, newSlug);
+
+        // Another brokerage cannot claim the active or historical slug
+        const stealActive = await call('PATCH', '/api/settings/organization', b, { slug: newSlug });
+        assert.equal(stealActive.status, 409, 'cannot claim active slug of another brokerage');
+        const stealHistory = await call('PATCH', '/api/settings/organization', b, { slug: oldSlug });
+        assert.equal(stealHistory.status, 409, 'cannot claim historical slug of another brokerage');
+    });
+
+    await step('CSV bulk import for clients and properties (create, skip duplicate, update duplicate)', async () => {
+        const cImport1 = await call('POST', '/api/clients/import', a, {
+            onDuplicate: 'skip',
+            rows: [
+                { fullName: 'Jordan Taylor', email: `jordan-${run}@example.com`, phone: '212-555-0191', type: 'BUYER', budget: '$1.8M' },
+                { firstName: 'Casey', lastName: 'Morgan', email: `casey-${run}@example.com`, type: 'SELLER' },
+            ],
+        });
+        assert.equal(cImport1.status, 200);
+        assert.equal(cImport1.body.created, 2);
+        assert.equal(cImport1.body.skipped, 0);
+
+        // Re-importing with onDuplicate='skip' skips both
+        const cImportSkip = await call('POST', '/api/clients/import', a, {
+            onDuplicate: 'skip',
+            rows: [{ fullName: 'Jordan Taylor', email: `jordan-${run}@example.com`, budget: '$2.2M' }],
+        });
+        assert.equal(cImportSkip.status, 200);
+        assert.equal(cImportSkip.body.created, 0);
+        assert.equal(cImportSkip.body.skipped, 1);
+
+        // Re-importing with onDuplicate='update' updates existing
+        const cImportUpdate = await call('POST', '/api/clients/import', a, {
+            onDuplicate: 'update',
+            rows: [{ fullName: 'Jordan Taylor', email: `jordan-${run}@example.com`, budget: '$2.2M' }],
+        });
+        assert.equal(cImportUpdate.status, 200);
+        assert.equal(cImportUpdate.body.updated, 1);
+
+        // Property bulk import
+        const pImport1 = await call('POST', '/api/properties/import', a, {
+            onDuplicate: 'skip',
+            rows: [
+                { address: '15 Central Park West Apt 18B', city: 'New York', state: 'NY', zip: '10023', price: '$6,500,000', beds: 3, baths: 3.5, sqft: '2,900', mlsNumber: `MLS-${run}-1` },
+            ],
+        });
+        assert.equal(pImport1.status, 200);
+        assert.equal(pImport1.body.created, 1);
+
+        const pImportDup = await call('POST', '/api/properties/import', a, {
+            onDuplicate: 'skip',
+            rows: [
+                { address: '15 Central Park West Apt 18B', city: 'New York', state: 'NY', zip: '10023', price: '6700000', mlsNumber: `MLS-${run}-1` },
+            ],
+        });
+        assert.equal(pImportDup.status, 200);
+        assert.equal(pImportDup.body.skipped, 1);
     });
 
     await step('archive client hides it from the list', async () => {

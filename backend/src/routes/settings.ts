@@ -5,6 +5,8 @@ import crypto from 'crypto';
 import { sendEmail } from '../lib/email';
 import { getSeatUsage } from '../lib/seats';
 import { audit } from '../lib/audit';
+import { resolveLeadAssignee } from '../lib/routing';
+import { normalizeNotificationPrefs } from './notifications';
 
 const router = Router();
 router.use(authenticateToken);
@@ -25,6 +27,7 @@ const PROFILE_SELECT = {
     id: true, name: true, email: true, role: true, tier: true,
     title: true, phone: true, licenseNumber: true, linkedIn: true,
     bio: true, timezone: true, avatarUrl: true,
+    acceptingLeads: true, maxActiveLeads: true, notificationPrefs: true,
 } as const;
 
 // GET /api/settings/team — colleague directory (any member): names and roles only,
@@ -56,7 +59,7 @@ router.get('/profile', async (req: AuthRequest, res) => {
 router.patch('/profile', async (req: AuthRequest, res) => {
     try {
         if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
-        const { name, title, phone, licenseNumber, linkedIn, bio, timezone } = req.body;
+        const { name, title, phone, licenseNumber, linkedIn, bio, timezone, acceptingLeads, maxActiveLeads } = req.body;
 
         if (name !== undefined && !String(name).trim()) {
             return res.status(400).json({ error: 'Name cannot be empty' });
@@ -72,6 +75,8 @@ router.patch('/profile', async (req: AuthRequest, res) => {
                 linkedIn:      clean(linkedIn, 300),
                 bio:           clean(bio, 2000),
                 ...(timezone ? { timezone: String(timezone).slice(0, 60) } : {}),
+                ...(typeof acceptingLeads === 'boolean' ? { acceptingLeads } : {}),
+                ...(maxActiveLeads !== undefined ? { maxActiveLeads: maxActiveLeads === null || maxActiveLeads === '' ? null : Math.max(0, Math.round(Number(maxActiveLeads))) } : {}),
             },
             select: PROFILE_SELECT,
         });
@@ -90,7 +95,7 @@ router.get('/organization', async (req: AuthRequest, res) => {
         if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
         const org = await prisma.organization.findUnique({
             where:  { id: req.user.orgId },
-            select: { id: true, name: true, website: true, address: true, phone: true, licenseNumber: true, logoUrl: true, subscription: true, defaultCommissionRate: true, defaultFirmSplit: true, slug: true },
+            select: { id: true, name: true, website: true, address: true, phone: true, licenseNumber: true, logoUrl: true, brandColor: true, subscription: true, defaultCommissionRate: true, defaultFirmSplit: true, slug: true },
         });
         if (!org) return res.status(404).json({ error: 'Organization not found' });
         const seats = await getSeatUsage(req.user.orgId);
@@ -105,7 +110,7 @@ router.get('/organization', async (req: AuthRequest, res) => {
 router.patch('/organization', authorizeRole(ADMIN_ROLES), async (req: AuthRequest, res) => {
     try {
         if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
-        const { name, website, address, phone, licenseNumber, logoUrl } = req.body;
+        const { name, website, address, phone, licenseNumber, logoUrl, slug, brandColor } = req.body;
 
         // Commission defaults (percent). Applied when a deal closes without its own rate.
         const pct: Record<string, number> = {};
@@ -126,11 +131,47 @@ router.patch('/organization', authorizeRole(ADMIN_ROLES), async (req: AuthReques
                 return res.status(400).json({ error: `${field} must start with http:// or https://` });
             }
         }
+        if (brandColor !== undefined && brandColor !== null && brandColor !== '') {
+            if (!/^#[0-9a-fA-F]{6}$/.test(String(brandColor).trim())) {
+                return res.status(400).json({ error: 'brandColor must be a 6-digit hex color (e.g. #B8977E)' });
+            }
+        }
 
         const before = await prisma.organization.findUnique({
             where:  { id: req.user.orgId },
-            select: { name: true, website: true, address: true, phone: true, licenseNumber: true, logoUrl: true },
+            select: { name: true, website: true, address: true, phone: true, licenseNumber: true, logoUrl: true, slug: true, brandColor: true },
         });
+
+        let nextSlug: string | undefined;
+        if (slug !== undefined && slug !== null && String(slug).trim() !== '') {
+            const candidate = String(slug).trim().toLowerCase();
+            if (!/^[a-z0-9](?:[a-z0-9-]{1,46}[a-z0-9])$/.test(candidate)) {
+                return res.status(400).json({ error: 'Public page slug must be 3–48 lowercase letters, numbers, or hyphens' });
+            }
+            if (candidate !== before?.slug) {
+                const takenOrg = await prisma.organization.findUnique({ where: { slug: candidate }, select: { id: true } });
+                if (takenOrg && takenOrg.id !== req.user.orgId) {
+                    return res.status(409).json({ error: 'This public page address is already taken' });
+                }
+                const takenHistory = await prisma.orgSlugHistory.findUnique({ where: { oldSlug: candidate } });
+                if (takenHistory && takenHistory.orgId !== req.user.orgId) {
+                    return res.status(409).json({ error: 'This public page address is already reserved' });
+                }
+                // If the org is reverting to one of its own previous slugs, remove it from history
+                if (takenHistory && takenHistory.orgId === req.user.orgId) {
+                    await prisma.orgSlugHistory.delete({ where: { id: takenHistory.id } });
+                }
+                if (before?.slug) {
+                    await prisma.orgSlugHistory.upsert({
+                        where: { oldSlug: before.slug },
+                        update: { orgId: req.user.orgId },
+                        create: { oldSlug: before.slug, orgId: req.user.orgId },
+                    });
+                }
+                nextSlug = candidate;
+            }
+        }
+
         const updated = await prisma.organization.update({
             where: { id: req.user.orgId },
             data: {
@@ -140,11 +181,13 @@ router.patch('/organization', authorizeRole(ADMIN_ROLES), async (req: AuthReques
                 phone:         clean(phone, 40),
                 licenseNumber: clean(licenseNumber, 60),
                 logoUrl:       clean(logoUrl, 500),
+                ...(brandColor !== undefined ? { brandColor: clean(brandColor, 20) } : {}),
+                ...(nextSlug !== undefined ? { slug: nextSlug } : {}),
                 ...pct,
             },
             select: {
                 id: true, name: true, website: true, address: true, phone: true, licenseNumber: true, logoUrl: true,
-                subscription: true, defaultCommissionRate: true, defaultFirmSplit: true,
+                slug: true, brandColor: true, subscription: true, defaultCommissionRate: true, defaultFirmSplit: true,
             },
         });
         await audit(req, 'UPDATE_ORGANIZATION', 'Organization', updated.id, before, {
@@ -232,7 +275,8 @@ router.get('/users', authorizeRole(['SUPERADMIN', 'FIRMADMIN', 'MANAGER']), asyn
             select: {
                 id: true, name: true, email: true, role: true, tier: true,
                 phone: true, title: true, licenseNumber: true, avatarUrl: true,
-                emailVerified: true, isActive: true, lastLoginAt: true, createdAt: true,
+                emailVerified: true, isActive: true, acceptingLeads: true, maxActiveLeads: true,
+                lastLoginAt: true, createdAt: true,
             },
             orderBy: { createdAt: 'desc' },
         });
@@ -455,6 +499,150 @@ router.post('/invite', authorizeRole(['SUPERADMIN', 'FIRMADMIN', 'MANAGER']), as
         console.error(error);
         res.status(500).json({ error: 'Failed to send invitation' });
     }
+});
+
+// ─── Lead Routing Rules & Agent Availability (1.2) ───────────────────────────
+
+const VALID_STRATEGIES = ['LISTING_AGENT', 'SPECIFIC_AGENT', 'ROUND_ROBIN', 'LEAST_LOADED'];
+
+// PATCH /api/settings/users/:id/lead-availability — update acceptingLeads / maxActiveLeads
+router.patch('/users/:id/lead-availability', authorizeRole(['SUPERADMIN', 'FIRMADMIN', 'MANAGER']), async (req: AuthRequest, res) => {
+    const user = req.user!;
+    const target = await prisma.user.findFirst({ where: { id: String(req.params.id), orgId: user.orgId } });
+    if (!target) return res.status(404).json({ error: 'User not found' });
+
+    const data: any = {};
+    if (typeof req.body.acceptingLeads === 'boolean') data.acceptingLeads = req.body.acceptingLeads;
+    if (req.body.maxActiveLeads !== undefined) {
+        const v = req.body.maxActiveLeads;
+        data.maxActiveLeads = v === null || v === '' ? null : Math.max(0, Math.round(Number(v)));
+    }
+
+    const updated = await prisma.user.update({
+        where: { id: target.id },
+        data,
+        select: { id: true, name: true, acceptingLeads: true, maxActiveLeads: true },
+    });
+    res.json(updated);
+});
+
+// GET /api/settings/lead-routing — list all lead routing rules for the organization
+router.get('/lead-routing', authorizeRole(['SUPERADMIN', 'FIRMADMIN', 'MANAGER']), async (req: AuthRequest, res) => {
+    const rules = await prisma.leadRoutingRule.findMany({
+        where: { orgId: req.user!.orgId },
+        orderBy: [{ priority: 'asc' }, { createdAt: 'asc' }],
+    });
+    res.json(rules);
+});
+
+// POST /api/settings/lead-routing — create a new lead routing rule
+router.post('/lead-routing', authorizeRole(['SUPERADMIN', 'FIRMADMIN', 'MANAGER']), async (req: AuthRequest, res) => {
+    const user = req.user!;
+    const name = typeof req.body.name === 'string' ? req.body.name.trim().slice(0, 120) : '';
+    if (!name) return res.status(400).json({ error: 'Rule name is required' });
+
+    const strategy = VALID_STRATEGIES.includes(req.body.strategy) ? req.body.strategy : 'ROUND_ROBIN';
+    const targetAgentId = typeof req.body.targetAgentId === 'string' && req.body.targetAgentId.trim() ? req.body.targetAgentId.trim() : null;
+    if (strategy === 'SPECIFIC_AGENT') {
+        if (!targetAgentId) return res.status(400).json({ error: 'targetAgentId is required for SPECIFIC_AGENT strategy' });
+        const agent = await prisma.user.findFirst({ where: { id: targetAgentId, orgId: user.orgId, isActive: true } });
+        if (!agent) return res.status(400).json({ error: 'Target agent not found in your organization' });
+    }
+
+    const count = await prisma.leadRoutingRule.count({ where: { orgId: user.orgId } });
+    const minPrice = req.body.minPrice !== undefined && req.body.minPrice !== null && req.body.minPrice !== '' ? Number(req.body.minPrice) : null;
+    const maxPrice = req.body.maxPrice !== undefined && req.body.maxPrice !== null && req.body.maxPrice !== '' ? Number(req.body.maxPrice) : null;
+
+    const rule = await prisma.leadRoutingRule.create({
+        data: {
+            orgId: user.orgId,
+            name,
+            priority: typeof req.body.priority === 'number' && Number.isFinite(req.body.priority) ? Math.round(req.body.priority) : count,
+            enabled: req.body.enabled !== false,
+            source: clean(req.body.source, 80) ?? null,
+            city: clean(req.body.city, 80) ?? null,
+            propertyType: clean(req.body.propertyType, 60) ?? null,
+            minPrice: Number.isFinite(minPrice) ? minPrice : null,
+            maxPrice: Number.isFinite(maxPrice) ? maxPrice : null,
+            strategy,
+            targetAgentId: strategy === 'SPECIFIC_AGENT' ? targetAgentId : null,
+        },
+    });
+    res.status(201).json(rule);
+});
+
+// PATCH /api/settings/lead-routing/:id — update a routing rule (enable/disable, priority, conditions)
+router.patch('/lead-routing/:id', authorizeRole(['SUPERADMIN', 'FIRMADMIN', 'MANAGER']), async (req: AuthRequest, res) => {
+    const user = req.user!;
+    const existing = await prisma.leadRoutingRule.findFirst({ where: { id: String(req.params.id), orgId: user.orgId } });
+    if (!existing) return res.status(404).json({ error: 'Routing rule not found' });
+
+    const data: any = {};
+    if (typeof req.body.name === 'string' && req.body.name.trim()) data.name = req.body.name.trim().slice(0, 120);
+    if (typeof req.body.enabled === 'boolean') data.enabled = req.body.enabled;
+    if (typeof req.body.priority === 'number' && Number.isFinite(req.body.priority)) data.priority = Math.round(req.body.priority);
+    if (req.body.source !== undefined) data.source = clean(req.body.source, 80) ?? null;
+    if (req.body.city !== undefined) data.city = clean(req.body.city, 80) ?? null;
+    if (req.body.propertyType !== undefined) data.propertyType = clean(req.body.propertyType, 60) ?? null;
+    if (req.body.minPrice !== undefined) data.minPrice = req.body.minPrice === null || req.body.minPrice === '' ? null : Number(req.body.minPrice);
+    if (req.body.maxPrice !== undefined) data.maxPrice = req.body.maxPrice === null || req.body.maxPrice === '' ? null : Number(req.body.maxPrice);
+    if (req.body.strategy !== undefined && VALID_STRATEGIES.includes(req.body.strategy)) data.strategy = req.body.strategy;
+    if (req.body.targetAgentId !== undefined) data.targetAgentId = req.body.targetAgentId || null;
+
+    const updated = await prisma.leadRoutingRule.update({ where: { id: existing.id }, data });
+    res.json(updated);
+});
+
+// DELETE /api/settings/lead-routing/:id
+router.delete('/lead-routing/:id', authorizeRole(['SUPERADMIN', 'FIRMADMIN', 'MANAGER']), async (req: AuthRequest, res) => {
+    const user = req.user!;
+    const existing = await prisma.leadRoutingRule.findFirst({ where: { id: String(req.params.id), orgId: user.orgId } });
+    if (!existing) return res.status(404).json({ error: 'Routing rule not found' });
+    await prisma.leadRoutingRule.delete({ where: { id: existing.id } });
+    res.json({ message: 'Routing rule deleted' });
+});
+
+// POST /api/settings/lead-routing/test — dry-run simulator to preview which agent receives a lead
+router.post('/lead-routing/test', authorizeRole(['SUPERADMIN', 'FIRMADMIN', 'MANAGER']), async (req: AuthRequest, res) => {
+    const user = req.user!;
+    const decision = await resolveLeadAssignee(
+        {
+            orgId: user.orgId,
+            source: req.body.source || null,
+            city: req.body.city || null,
+            propertyType: req.body.propertyType || null,
+            price: req.body.price !== undefined && req.body.price !== '' ? Number(req.body.price) : null,
+            listingAgentId: req.body.listingAgentId || null,
+        },
+        { dryRun: true },
+    );
+    res.json(decision);
+});
+
+// GET /api/settings/notifications — caller's email & in-app notification preferences
+router.get('/notifications', async (req: AuthRequest, res) => {
+    const me = await prisma.user.findUnique({
+        where: { id: req.user!.userId },
+        select: { notificationPrefs: true },
+    });
+    if (!me) return res.status(404).json({ error: 'User not found' });
+    res.json(normalizeNotificationPrefs(me.notificationPrefs));
+});
+
+// PATCH /api/settings/notifications — update caller's email & in-app notification preferences
+router.patch('/notifications', async (req: AuthRequest, res) => {
+    const me = await prisma.user.findUnique({
+        where: { id: req.user!.userId },
+        select: { notificationPrefs: true },
+    });
+    if (!me) return res.status(404).json({ error: 'User not found' });
+    const current = normalizeNotificationPrefs(me.notificationPrefs);
+    const nextPrefs = normalizeNotificationPrefs({ ...current, ...req.body });
+    await prisma.user.update({
+        where: { id: req.user!.userId },
+        data: { notificationPrefs: nextPrefs as any },
+    });
+    res.json(nextPrefs);
 });
 
 export default router;

@@ -4,8 +4,8 @@ import { createNotification } from '../routes/notifications';
 const HOUR = 60 * 60 * 1000;
 
 /**
- * Sends each agent an in-app reminder ~24h before their appointments.
- * Runs on an interval inside the API process; `reminderSent` makes it idempotent.
+ * Sends each agent an in-app + email reminder ~24h before their appointments,
+ * and alerts agents when a task becomes overdue (`overdueNotified` makes it idempotent).
  */
 export async function sendAppointmentReminders() {
     const now = new Date();
@@ -28,7 +28,28 @@ export async function sendAppointmentReminders() {
             `"${a.title}"${who}${where} — ${a.date.toISOString().replace('T', ' ').slice(0, 16)} UTC`, '/appointments');
         await prisma.appointment.update({ where: { id: a.id }, data: { reminderSent: true } });
     }
-    return due.length;
+
+    const overdueTasks = await prisma.task.findMany({
+        where: {
+            overdueNotified: false,
+            status: { in: ['PENDING', 'IN_PROGRESS'] },
+            dueDate: { lt: now },
+        },
+        take: 200,
+    });
+    for (const t of overdueTasks) {
+        await createNotification(
+            t.agentId,
+            t.orgId,
+            'TASK_DUE',
+            `Task overdue: ${t.title}`,
+            `"${t.title}" is past its due time (${t.dueDate?.toISOString().replace('T', ' ').slice(0, 16)} UTC).`,
+            t.linkedClientId ? `/crm/${t.linkedClientId}` : '/tasks',
+        );
+        await prisma.task.update({ where: { id: t.id }, data: { overdueNotified: true } });
+    }
+
+    return due.length + overdueTasks.length;
 }
 
 export function startReminderLoop(intervalMs = 10 * 60 * 1000) {

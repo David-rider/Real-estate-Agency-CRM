@@ -77,6 +77,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setUser(null);
         localStorage.removeItem('token');
         localStorage.removeItem('user');
+        fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/auth/logout`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'X-CSRF-Protection': '1' },
+        }).catch(() => {});
         router.push('/login');
     };
 

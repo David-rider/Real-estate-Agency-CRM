@@ -4,7 +4,7 @@ import React from "react";
 import { useI18n } from "@/lib/i18n/I18nContext";
 import { useToast } from "@/components/ui/Toast";
 import { useExtra } from "@/lib/i18n/extra";
-import { api } from "@/lib/api";
+import { api, uploadFile } from "@/lib/api";
 
 export default function DocumentsPage() {
   const { t } = useI18n();
@@ -16,6 +16,8 @@ export default function DocumentsPage() {
   const [isAddModalOpen, setIsAddModalOpen] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [previewDoc, setPreviewDoc] = React.useState<any>(null);
+  const [selectedFile, setSelectedFile] = React.useState<File | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
 
   // Filter
   const [searchQuery, setSearchQuery] = React.useState("");
@@ -68,29 +70,71 @@ export default function DocumentsPage() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const handleFileSelect = (file: File | null) => {
+    setSelectedFile(file);
+    if (file && !formData.name.trim()) {
+      setFormData((prev) => ({ ...prev, name: file.name }));
+    }
+  };
+
+  const handleOpenPreview = async (doc: any) => {
+    try {
+      const res = await api<{ url: string; downloadUrl: string }>(`/api/documents/${doc.id}/view-url`);
+      setPreviewDoc({
+        ...doc,
+        resolvedUrl: res.url || doc.url,
+        downloadUrl: res.downloadUrl || res.url || doc.url,
+      });
+    } catch {
+      setPreviewDoc({
+        ...doc,
+        resolvedUrl: doc.url,
+        downloadUrl: doc.url,
+      });
+    }
+  };
+
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!selectedFile && !formData.url.trim()) {
+      toast.error(X.common.error);
+      return;
+    }
     setIsSubmitting(true);
     try {
-      const token = localStorage.getItem("token");
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/documents`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(formData),
-      });
-      if (res.ok) {
-        setIsAddModalOpen(false);
-        setFormData({ name: "", url: "", type: "CONTRACT", transactionId: "" });
-        fetchDocuments();
-      } else {
-        const err = await res.json().catch(() => ({}));
-        toast.error(err.error || "Failed to upload document. Please try again.");
+      let url = formData.url.trim();
+      let storageKey: string | undefined;
+      let sizeBytes: number | undefined;
+      let mimeType: string | undefined;
+
+      if (selectedFile) {
+        const uploaded = await uploadFile(selectedFile, "PRIVATE");
+        url = uploaded.url;
+        storageKey = uploaded.storageKey;
+        sizeBytes = uploaded.sizeBytes;
+        mimeType = uploaded.mimeType;
       }
+
+      await api("/api/documents", {
+        method: "POST",
+        body: {
+          name: formData.name.trim() || selectedFile?.name || "Document",
+          url,
+          storageKey,
+          sizeBytes,
+          mimeType,
+          type: formData.type,
+          transactionId: formData.transactionId || null,
+        },
+      });
+
+      setIsAddModalOpen(false);
+      setSelectedFile(null);
+      setFormData({ name: "", url: "", type: "CONTRACT", transactionId: "" });
+      fetchDocuments();
     } catch (error) {
       console.error(error);
+      toast.error(error instanceof Error ? error.message : "Failed to upload document. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -212,7 +256,7 @@ export default function DocumentsPage() {
                     <td className="p-6">
                       {doc.transaction ? (
                         <span className="font-sans text-base text-foreground/70">
-                          {doc.transaction.property?.address || "Deal"}
+                          {doc.transaction.property?.address || X.financeExtra.dealPrefix}
                         </span>
                       ) : (
                         <span className="text-foreground/30 text-sm italic">
@@ -226,7 +270,7 @@ export default function DocumentsPage() {
                     <td className="p-6 text-right">
                       <div className="flex gap-4 justify-end">
                         <button
-                          onClick={() => setPreviewDoc(doc)}
+                          onClick={() => handleOpenPreview(doc)}
                           className="text-sm font-sans uppercase tracking-widest text-primary hover:text-primary-hover transition-colors"
                         >
                           {t.documents.table.view}
@@ -272,8 +316,55 @@ export default function DocumentsPage() {
             </div>
             <form
               onSubmit={handleUpload}
-              className="p-8 overflow-y-auto space-y-8"
+              className="p-8 overflow-y-auto space-y-6"
             >
+              {/* Direct File Dropzone */}
+              <div>
+                <label className="block font-sans text-sm uppercase tracking-widest text-foreground/50 mb-2">
+                  {X.documentsExtra.chooseFile}
+                </label>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".pdf,.doc,.docx,image/jpeg,image/png,image/webp,image/gif"
+                  className="hidden"
+                  onChange={(e) => handleFileSelect(e.target.files?.[0] || null)}
+                />
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleFileSelect(e.dataTransfer.files?.[0] || null);
+                  }}
+                  className="border-2 border-dashed border-primary/40 hover:border-primary bg-surface/50 hover:bg-surface p-6 text-center cursor-pointer transition-colors"
+                >
+                  {selectedFile ? (
+                    <div className="space-y-1">
+                      <p className="font-sans text-base font-medium text-primary">
+                        📄 {selectedFile.name}
+                      </p>
+                      <p className="font-sans text-xs text-foreground/50">
+                        {(selectedFile.size / 1024).toFixed(1)} KB
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-1">
+                      <p className="font-sans text-base font-medium text-primary">
+                        📁 {X.documentsExtra.chooseFile}
+                      </p>
+                      <p className="font-sans text-xs text-foreground/50">
+                        {X.documentsExtra.dropFileHere}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
               <div>
                 <label className="block font-sans text-sm uppercase tracking-widest text-foreground/50 mb-2">
                   {t.documents.modal.name}
@@ -291,10 +382,10 @@ export default function DocumentsPage() {
 
               <div>
                 <label className="block font-sans text-sm uppercase tracking-widest text-foreground/50 mb-2">
-                  {t.documents.modal.url}
+                  {X.documentsExtra.orExternalLink}
                 </label>
                 <input
-                  required
+                  required={!selectedFile}
                   name="url"
                   value={formData.url}
                   onChange={handleChange}
@@ -332,18 +423,17 @@ export default function DocumentsPage() {
                     {t.documents.modal.selectTransaction}
                   </label>
                   <select
-                    required
                     name="transactionId"
                     value={formData.transactionId}
                     onChange={handleChange}
                     className="w-full px-4 py-3 bg-surface border border-border rounded-none text-base text-foreground focus:border-primary outline-none transition-colors appearance-none cursor-pointer"
                   >
-                    <option value="" disabled>
-                      -- Select a Deal --
+                    <option value="">
+                      {X.documentsExtra.unlinkedOption}
                     </option>
                     {transactions.map((tpt) => (
                       <option key={tpt.id} value={tpt.id}>
-                        Deal ID: {tpt.id.substring(0, 8)}
+                        {tpt.property?.address || `${X.financeExtra.dealPrefix} #${tpt.id.substring(0, 8)}`}
                       </option>
                     ))}
                   </select>
@@ -388,7 +478,7 @@ export default function DocumentsPage() {
               </div>
               <div className="flex items-center gap-6">
                 <a
-                  href={previewDoc.url}
+                  href={previewDoc.downloadUrl || previewDoc.resolvedUrl || previewDoc.url}
                   target="_blank"
                   rel="noreferrer"
                   className="hidden sm:inline-block text-sm uppercase tracking-widest text-primary hover:text-primary-hover transition-colors"
@@ -411,15 +501,16 @@ export default function DocumentsPage() {
                 <div className="w-full h-full bg-[linear-gradient(transparent_0%,rgba(197,160,89,0.1)_50%,transparent_100%)] bg-[length:100%_4px] animate-[scan_3s_ease-in-out_infinite]" />
               </div>
 
-              {previewDoc.url.match(/\.(jpeg|jpg|gif|png)$/i) ? (
+              {String(previewDoc.mimeType || "").startsWith("image/") ||
+              String(previewDoc.name || previewDoc.url || "").match(/\.(jpeg|jpg|gif|png|webp)$/i) ? (
                 <img
-                  src={previewDoc.url}
+                  src={previewDoc.resolvedUrl || previewDoc.url}
                   alt={previewDoc.name}
                   className="max-w-full max-h-full object-contain shadow-2xl border border-border"
                 />
               ) : (
                 <iframe
-                  src={previewDoc.url}
+                  src={previewDoc.resolvedUrl || previewDoc.url}
                   className="w-full h-full bg-white shadow-2xl border border-border"
                   title={previewDoc.name}
                 />

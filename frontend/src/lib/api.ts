@@ -16,7 +16,9 @@ export async function api<T = any>(path: string, options: { method?: string; bod
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
   const res = await fetch(`${API_URL}${path}`, {
     method: options.method || "GET",
+    credentials: "include",
     headers: {
+      "X-CSRF-Protection": "1",
       ...(options.body !== undefined ? { "Content-Type": "application/json" } : {}),
       ...(options.auth !== false && token ? { Authorization: `Bearer ${token}` } : {}),
     },
@@ -33,6 +35,44 @@ export async function api<T = any>(path: string, options: { method?: string; bod
   }
   if (!res.ok) throw new ApiError(res.status, data);
   return data as T;
+}
+
+export interface UploadedFileResponse {
+  id: string;
+  storageKey: string;
+  url: string;
+  filename: string;
+  mimeType: string;
+  sizeBytes: number;
+  visibility: "PUBLIC" | "PRIVATE";
+}
+
+export async function uploadFile(file: File, visibility: "PUBLIC" | "PRIVATE" = "PUBLIC"): Promise<UploadedFileResponse> {
+  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("visibility", visibility);
+
+  const res = await fetch(`${API_URL}/api/uploads`, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "X-CSRF-Protection": "1",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: formData,
+  });
+  const text = await res.text();
+  let data: any = null;
+  try { data = text ? JSON.parse(text) : null; } catch { data = { error: text }; }
+
+  if (res.status === 401 && typeof window !== "undefined") {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    window.location.href = "/login";
+  }
+  if (!res.ok) throw new ApiError(res.status, data);
+  return data as UploadedFileResponse;
 }
 
 // <input type="date"> / "datetime-local" values carry no time zone. Convert them in

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, Suspense } from "react";
 import { useI18n } from "@/lib/i18n/I18nContext";
+import { useExtra } from "@/lib/i18n/extra";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { useToast } from "@/components/ui/Toast";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -10,6 +11,8 @@ const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
 function UpgradePageInner() {
   const { t } = useI18n();
+  const X = useExtra();
+  const UX = X.upgradeExtra;
   const { user, login } = useAuth();
   const router = useRouter();
   const toast = useToast();
@@ -195,7 +198,7 @@ function UpgradePageInner() {
           </ul>
           {user?.tier === "PRO" ? (
              <button disabled className="w-full py-3 rounded-xl bg-surface border border-primary/50 text-primary font-semibold">
-               Current Plan
+               {t.upgrade.core.btn}
              </button>
           ) : (
              <button onClick={() => handleSelectPlan("PRO")} className="w-full py-3 rounded-xl bg-primary text-background font-semibold hover:opacity-90 transition-opacity shadow-md hover:shadow-lg">
@@ -226,7 +229,7 @@ function UpgradePageInner() {
           </ul>
           {user?.tier === "ELITE" ? (
              <button disabled className="w-full py-3 rounded-xl bg-surface border border-primary/50 text-primary font-semibold">
-               Current Plan
+               {t.upgrade.core.btn}
              </button>
           ) : (
              <button onClick={() => handleSelectPlan("ELITE")} className="w-full py-3 rounded-xl bg-foreground text-background font-semibold hover:bg-foreground/80 transition-opacity shadow-md">
@@ -266,12 +269,12 @@ function UpgradePageInner() {
                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                        </svg>
                      </div>
-                     <h4 className="font-sans font-bold text-xl mb-3">Secure Checkout</h4>
+                     <h4 className="font-sans font-bold text-xl mb-3">{UX.secureCheckout}</h4>
                      <p className="text-foreground/60 text-base font-medium leading-relaxed max-w-xs mx-auto mb-2">
-                       You will be redirected to <span className="font-semibold text-foreground">Stripe</span> to complete your payment securely.
+                       {UX.redirectNotice}
                      </p>
                      <p className="text-foreground/40 text-sm">
-                       We never see or store your card details.
+                       {UX.noCardStored}
                      </p>
                    </div>
 
@@ -282,7 +285,7 @@ function UpgradePageInner() {
                       <button type="submit" disabled={isProcessing} className="flex-[2] py-3.5 rounded-xl bg-primary text-background font-semibold hover:opacity-90 transition-opacity shadow-md disabled:opacity-50 flex items-center justify-center">
                         {isProcessing ? (
                            <div className="w-5 h-5 border-2 border-background/30 border-t-background rounded-full animate-spin" />
-                        ) : (t.upgrade.checkout.payWith || "Continue to Payment")}
+                        ) : t.upgrade.checkout.payWith}
                       </button>
                    </div>
                  </form>

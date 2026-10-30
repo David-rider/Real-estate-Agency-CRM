@@ -7,6 +7,8 @@ happen; note anything that doesn't.
 - [ ] Sign up a brokerage, log in, open **Settings → Organization**, fill in details.
 - [ ] Set **Commission defaults** (e.g. 3% rate, 30% firm split) and save.
 - [ ] Invite an agent from **Settings → Team**; the agent accepts and logs in.
+- [ ] In **Settings → Org Settings** (`1.4`), upload a **Company Logo** from device, set a **Brand Accent Color**, and change the **Custom Public URL Slug** — verify the old slug redirects to the new slug.
+- [ ] In **Settings → Lead Routing** (`1.2`), create a Round-Robin rule and test it with the **Simulator (Dry-Run)**; in **Settings → Notifications** (`1.3`), save email alert preferences and verify they persist.
 
 ## 2. Clients (agent)
 - [ ] **CRM → Add Client** with source and priority. Adding the same email again warns about a duplicate.
@@ -15,9 +17,11 @@ happen; note anything that doesn't.
 - [ ] Open a client → **Log Activity** (call/email/text…) with a follow-up date →
       the timeline updates, "Last contact" shows today, a task appears in **Tasks**.
 - [ ] **Edit Profile** → change priority/tags → saved.
+- [ ] **CRM → Import CSV** (`3.3a`) → download the sample template, upload a CSV file, verify the 5-row preview, and import with **Skip existing records** or **Update existing records**.
 
 ## 3. Listings & website leads
-- [ ] **Listings → Add property**, add a photo link.
+- [ ] **Listings → Add property**, upload multiple photos directly from device (`1.1`), reorder them, and set a cover photo; also test **Listings → Import CSV** (`3.3a`).
+- [ ] **Documents → Upload Document** (`1.1`), upload a private PDF contract from device, click **View**, and verify it opens via a 10-minute signed preview URL.
 - [ ] Click **Public page** — the listing opens without logging in.
 - [ ] **Settings → Org Settings** shows your brokerage's public listings link; it lists only your brokerage's homes.
 - [ ] Submit the inquiry form from a private/incognito window →
