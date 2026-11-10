@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useI18n } from "@/lib/i18n/I18nContext";
 import { useExtra } from "@/lib/i18n/extra";
+import { useSettings } from "@/lib/settings/useSettings";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { useToast } from "@/components/ui/Toast";
 import {
@@ -18,6 +19,7 @@ import {
 export default function FinancePage() {
   const { t } = useI18n();
   const X = useExtra();
+  const { preferences } = useSettings();
   const FX = X.financeExtra;
   const { token } = useAuth();
   const toast = useToast();
@@ -440,7 +442,7 @@ export default function FinancePage() {
           </div>
 
           <div className="space-y-3 flex-1">
-            {metrics?.leaderboard?.map((leader: any) => (
+            {preferences.finance.showLeaderboard && metrics?.leaderboard?.map((leader: any) => (
               <div
                 key={leader.name}
                 className={`w-full ${leader.name === metrics?.userRank?.name ? "bg-primary/5 ring-2 ring-primary/50 shadow-md transform scale-[1.02]" : "bg-surface/30 ring-1 ring-border/40 hover:shadow-sm hover:ring-border/80"} p-5 rounded-xl flex justify-between items-center transition-all duration-300`}
@@ -465,7 +467,7 @@ export default function FinancePage() {
                 <span
                   className={`font-sans text-xl font-semibold ${leader.name === metrics?.userRank?.name ? "text-primary" : "text-foreground/80"}`}
                 >
-                  ${leader.gross.toLocaleString()}
+                  {leader.gross == null ? "—" : `$${leader.gross.toLocaleString()}`}
                 </span>
               </div>
             ))}

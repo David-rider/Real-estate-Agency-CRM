@@ -7,11 +7,19 @@ import { useExtra, fmt } from "@/lib/i18n/extra";
 import { parseCsv, mapPropertyCsvRows, downloadCsvTemplate } from "@/lib/csv";
 import { AI_ASSISTANT_ENABLED } from "@/lib/features";
 import { api, uploadFile } from "@/lib/api";
+import { useSettings } from "@/lib/settings/useSettings";
 
 export default function ListingsPage() {
   const { t } = useI18n();
   const X = useExtra();
   const toast = useToast();
+  // Brokerage rules (Settings > Properties) and this person's preferences
+  const { policies, preferences } = useSettings();
+  const lp = policies.properties;
+  const PX = X.policy.properties;
+  const isReq = (field: string) => lp.requiredFields.includes(field);
+  const star = (field: string) => (isReq(field) ? " *" : "");
+  const photoRuleActive = lp.photosRequiredToActivate > 0;
 
   const [properties, setProperties] = React.useState<any[]>([]);
   const [totalProperties, setTotalProperties] = React.useState(0);
@@ -32,6 +40,10 @@ export default function ListingsPage() {
     baths: "",
     sqft: "",
     status: "COMING_SOON",
+    propertyType: "",
+    neighborhood: "",
+    yearBuilt: "",
+    description: "",
   });
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [zillowId, setZillowId] = React.useState("");
@@ -78,7 +90,7 @@ export default function ListingsPage() {
   }, []);
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
   ) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -126,6 +138,24 @@ export default function ListingsPage() {
     return matchesSearch && matchesStatus;
   });
 
+  // A blank form. New listings start Coming Soon when the brokerage wants photos before a listing goes Active.
+  const blankForm = () => ({
+    address: "", city: "New York", state: "NY", zip: "", price: "", beds: "", baths: "", sqft: "",
+    status: photoRuleActive ? "COMING_SOON" : preferences.properties.defaultStatus,
+    propertyType: "", neighborhood: "", yearBuilt: "", description: "",
+  });
+  const openAddModal = () => { setFormData(blankForm()); setIsAddModalOpen(true); };
+
+  // Coming Soon -> Active (the server checks the photo rule and tells us what is missing)
+  const goActive = async (id: string) => {
+    try {
+      await api(`/api/properties/${id}`, { method: "PATCH", body: { status: "ACTIVE" } });
+      fetchProperties(currentPage);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : X.common.error);
+    }
+  };
+
   const handleAddProperty = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -141,17 +171,7 @@ export default function ListingsPage() {
       });
       if (res.ok) {
         setIsAddModalOpen(false);
-        setFormData({
-          address: "",
-          city: "New York",
-          state: "NY",
-          zip: "",
-          price: "",
-          beds: "",
-          baths: "",
-          sqft: "",
-          status: "COMING_SOON",
-        });
+        setFormData(blankForm());
         fetchProperties();
       } else if (res.status === 401) {
         localStorage.removeItem("token");
@@ -209,6 +229,10 @@ export default function ListingsPage() {
   const handleAddMedia = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedPropertyId) return;
+    if (mediaFormData.type === "image" && photoRoom === 0) {
+      toast.error(fmt(PX.photoLimitReached, { n: lp.maxPhotosPerListing }));
+      return;
+    }
     setIsMediaSubmitting(true);
     try {
       await api("/api/media", {
@@ -230,11 +254,21 @@ export default function ListingsPage() {
     }
   };
 
+  // Photo cap from the brokerage's Properties rules (floor plans and videos don't count)
+  const photoCount = mediaAssets.filter((a) => String(a.type || "").toLowerCase() === "image").length;
+  const photoRoom = lp.maxPhotosPerListing > 0 ? Math.max(0, lp.maxPhotosPerListing - photoCount) : Infinity;
+
   const handleUploadPhotoFiles = async (files: FileList | null) => {
     if (!files || files.length === 0 || !selectedPropertyId) return;
+    let chosen = Array.from(files);
+    if (chosen.length > photoRoom) {
+      toast.error(fmt(PX.photoLimitReached, { n: lp.maxPhotosPerListing }));
+      chosen = chosen.slice(0, photoRoom);
+      if (chosen.length === 0) { if (fileInputRef.current) fileInputRef.current.value = ""; return; }
+    }
     setIsUploadingFiles(true);
     try {
-      for (const file of Array.from(files)) {
+      for (const file of chosen) {
         const uploaded = await uploadFile(file, "PUBLIC");
         await api("/api/media", {
           method: "POST",
@@ -303,7 +337,7 @@ export default function ListingsPage() {
           </p>
         </div>
         <button
-          onClick={() => setIsAddModalOpen(true)}
+          onClick={openAddModal}
           className="px-6 py-2.5 bg-primary text-background hover:opacity-90 transition-opacity duration-300 rounded-xl text-base font-semibold shadow-md w-full md:w-auto text-center"
         >
           {t.listings.addListing}
@@ -445,6 +479,14 @@ export default function ListingsPage() {
                     >
                       {t.listings.media.photos}
                     </button>
+                    {prop.status === "COMING_SOON" && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); goActive(prop.id); }}
+                        className="font-sans text-sm font-medium text-primary hover:text-primary-hover transition-colors duration-300"
+                      >
+                        {PX.goActive}
+                      </button>
+                    )}
                     {AI_ASSISTANT_ENABLED && <a
                       href={`/marketing?skill=listing_description&propertyId=${prop.id}`}
                       className="font-sans text-sm font-medium text-foreground/60 hover:text-foreground transition-colors duration-300"
@@ -628,9 +670,10 @@ export default function ListingsPage() {
                 </div>
                 <div>
                   <label className="block font-sans text-sm font-semibold text-foreground/60 mb-2">
-                    {t.listings.modal.sqft}
+                    {t.listings.modal.sqft}{star("sqft")}
                   </label>
                   <input
+                    required={isReq("sqft")}
                     name="sqft"
                     value={formData.sqft}
                     onChange={handleChange}
@@ -683,7 +726,8 @@ export default function ListingsPage() {
                     name="status"
                     value={formData.status}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 bg-background border border-border/60 rounded-xl text-base text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none cursor-pointer shadow-sm"
+                    disabled={photoRuleActive}
+                    className="w-full px-4 py-3 bg-background border border-border/60 rounded-xl text-base text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none cursor-pointer shadow-sm disabled:opacity-60"
                   >
                     <option value="COMING_SOON">
                       {t.listings.modal.statusComingSoon}
@@ -697,6 +741,75 @@ export default function ListingsPage() {
                     <option value="SOLD">{t.listings.modal.statusSold}</option>
                   </select>
                 </div>
+              </div>
+
+              {photoRuleActive && (
+                <p className="text-sm text-foreground/60 -mt-2">{fmt(PX.photoRuleHint, { n: lp.photosRequiredToActivate })}</p>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                  <label className="block font-sans text-sm font-semibold text-foreground/60 mb-2">
+                    {PX.field.propertyType}{star("propertyType")}
+                  </label>
+                  <select
+                    name="propertyType"
+                    value={formData.propertyType}
+                    onChange={handleChange}
+                    required={isReq("propertyType")}
+                    className="w-full px-4 py-3 bg-background border border-border/60 rounded-xl text-base text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none cursor-pointer shadow-sm"
+                  >
+                    <option value="">—</option>
+                    {["CONDO", "COOP", "TOWNHOUSE", "SINGLE_FAMILY", "MULTI_FAMILY", "COMMERCIAL", "LAND"].map((v) => (
+                      <option key={v} value={v}>{v.replace("_", " ")}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-sans text-sm font-semibold text-foreground/60 mb-2">
+                    {PX.field.neighborhood}{star("neighborhood")}
+                  </label>
+                  <input
+                    name="neighborhood"
+                    value={formData.neighborhood}
+                    onChange={handleChange}
+                    required={isReq("neighborhood")}
+                    className="w-full px-4 py-3 bg-background border border-border/60 rounded-xl text-base text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-sans shadow-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block font-sans text-sm font-semibold text-foreground/60 mb-2">
+                    {PX.field.yearBuilt}{star("yearBuilt")}
+                  </label>
+                  <input
+                    name="yearBuilt"
+                    value={formData.yearBuilt}
+                    onChange={handleChange}
+                    required={isReq("yearBuilt")}
+                    type="number"
+                    min="1600"
+                    max="2100"
+                    className="w-full px-4 py-3 bg-background border border-border/60 rounded-xl text-base text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-sans shadow-sm"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-sans text-sm font-semibold text-foreground/60 mb-2">
+                  {PX.field.description}{star("description")}
+                  {lp.descriptionMaxChars > 0 && (
+                    <span className="font-normal text-foreground/40"> ({formData.description.length}/{lp.descriptionMaxChars})</span>
+                  )}
+                </label>
+                <textarea
+                  name="description"
+                  value={formData.description}
+                  onChange={handleChange}
+                  required={isReq("description")}
+                  maxLength={lp.descriptionMaxChars > 0 ? lp.descriptionMaxChars : undefined}
+                  rows={4}
+                  className="w-full px-4 py-3 bg-background border border-border/60 rounded-xl text-base text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-sans shadow-sm resize-none"
+                />
               </div>
 
               <div className="pt-6 flex justify-end gap-3 mt-8 border-t border-border/40">
@@ -873,6 +986,7 @@ export default function ListingsPage() {
                   </p>
                   <p className="font-sans text-xs text-foreground/50 mt-1">
                     {X.listings.dropPhotosHere}
+                    {lp.maxPhotosPerListing > 0 && ` · ${photoCount}/${lp.maxPhotosPerListing}`}
                   </p>
                 </div>
               </div>

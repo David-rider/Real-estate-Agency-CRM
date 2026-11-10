@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useExtra, fmt } from "@/lib/i18n/extra";
 import { api, ApiError } from "@/lib/api";
 import { parseCsv, mapClientCsvRows, downloadCsvTemplate } from "@/lib/csv";
+import { useSettings } from "@/lib/settings/useSettings";
 
 const TEMP_STYLES: Record<string, string> = {
   HOT: "bg-red-500/10 text-red-500 border-red-500/30",
@@ -23,6 +24,13 @@ export default function CRMPage() {
   const { t } = useI18n();
   const X = useExtra();
   const toast = useToast();
+  // Brokerage rules (Settings > CRM) and this person's preferences
+  const { policies, preferences } = useSettings();
+  const requiredFields = policies.crm.requiredFields;
+  const isRequired = (field: string) => requiredFields.includes(field);
+  const star = (field: string) => (isRequired(field) ? " *" : "");
+  const showBudget = preferences.crm.showBudget;
+  const cellPad = preferences.crm.compactList ? "px-6 py-2" : "px-6 py-4";
 
   const [clients, setClients] = React.useState<any[]>([]);
   const [totalClients, setTotalClients] = React.useState(0);
@@ -42,6 +50,7 @@ export default function CRMPage() {
     type: "BUYER",
     budget: "",
     status: "LEAD",
+    funnelStage: "LEAD",
     source: "",
     temperature: "WARM",
     tags: "",
@@ -91,7 +100,12 @@ export default function CRMPage() {
   // Filtering happens on the server, across every page
   const filteredClients = clients;
 
-  const emptyForm = { firstName: "", lastName: "", email: "", phone: "", type: "BUYER", budget: "", status: "LEAD", source: "", temperature: "WARM", tags: "" };
+  // A blank form that starts from this person's preferred client type and stage
+  const blankForm = () => ({
+    firstName: "", lastName: "", email: "", phone: "", budget: "", status: "LEAD", source: "", temperature: "WARM", tags: "",
+    type: preferences.crm.defaultClientType, funnelStage: preferences.crm.defaultFunnelStage,
+  });
+  const openAddModal = () => { setFormData(blankForm()); setIsAddModalOpen(true); };
 
   const handleAddClient = async (e: React.FormEvent, force = false) => {
     e.preventDefault();
@@ -99,7 +113,7 @@ export default function CRMPage() {
     try {
       await api("/api/clients", { method: "POST", body: { ...formData, force } });
       setIsAddModalOpen(false);
-      setFormData(emptyForm);
+      setFormData(blankForm());
       fetchClients(1);
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) {
@@ -141,7 +155,7 @@ export default function CRMPage() {
           </p>
         </div>
         <button
-          onClick={() => setIsAddModalOpen(true)}
+          onClick={openAddModal}
           className="px-4 py-2 bg-primary text-background hover:opacity-90 transition-opacity rounded-lg text-sm font-semibold shadow-sm w-full md:w-auto text-center"
         >
           {t.crm.addClient}
@@ -207,9 +221,11 @@ export default function CRMPage() {
                 </th>
                 <th className="px-6 py-4 font-semibold">{t.crm.table.type}</th>
                 <th className="px-6 py-4 font-semibold">{t.crm.table.contact}</th>
-                <th className="px-6 py-4 font-semibold">
-                  {t.crm.table.searchBudget}
-                </th>
+                {showBudget && (
+                  <th className="px-6 py-4 font-semibold">
+                    {t.crm.table.searchBudget}
+                  </th>
+                )}
                 <th className="px-6 py-4 font-semibold">{t.crm.table.status}</th>
                 <th className="px-6 py-4 font-semibold">{X.crm.lastContact}</th>
                 <th className="px-6 py-4 font-semibold text-right">
@@ -221,7 +237,7 @@ export default function CRMPage() {
               {loading ? (
                 <tr>
                   <td
-                    colSpan={7}
+                    colSpan={showBudget ? 7 : 6}
                     className="px-6 py-12 text-center text-foreground/50 tracking-widest text-xs font-medium"
                   >
                     {t.crm.table.loading}
@@ -230,7 +246,7 @@ export default function CRMPage() {
               ) : filteredClients.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={7}
+                    colSpan={showBudget ? 7 : 6}
                     className="px-6 py-12 text-center text-foreground/50 tracking-widest text-xs font-medium"
                   >
                     {t.crm.table.noClients}
@@ -242,7 +258,7 @@ export default function CRMPage() {
                     key={client.id}
                     className="hover:bg-surface/40 transition-colors duration-200 group"
                   >
-                    <td className="px-6 py-4 font-medium text-foreground flex items-center gap-4">
+                    <td className={`${cellPad} font-medium text-foreground flex items-center gap-4`}>
                       <div className="w-10 h-10 rounded-full border border-border/60 bg-surface flex items-center justify-center text-primary text-sm font-semibold tracking-wide">
                         {client.firstName.charAt(0)}
                         {client.lastName.charAt(0)}
@@ -256,7 +272,7 @@ export default function CRMPage() {
                         </span>
                       )}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className={`${cellPad}`}>
                       <span className="text-sm font-semibold px-2.5 py-1 rounded-md bg-surface border border-border/40 text-foreground/70">
                         {client.type === "BUYER"
                           ? t.crm.modal.typeBuyer
@@ -269,13 +285,15 @@ export default function CRMPage() {
                                 : t.crm.modal.typeReferral}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-foreground/60 tracking-wide font-medium">
+                    <td className={`${cellPad} text-foreground/60 tracking-wide font-medium`}>
                       {client.phone || "-"}
                     </td>
-                    <td className="px-6 py-4 text-foreground/80 font-medium tracking-wide">
-                      {client.budget || "-"}
-                    </td>
-                    <td className="px-6 py-4">
+                    {showBudget && (
+                      <td className={`${cellPad} text-foreground/80 font-medium tracking-wide`}>
+                        {client.budget || "-"}
+                      </td>
+                    )}
+                    <td className={`${cellPad}`}>
                       <span
                         className={`text-sm font-semibold flex items-center gap-2
                                                 ${client.status === "ACTIVE" ? "text-primary" : ""}
@@ -299,7 +317,7 @@ export default function CRMPage() {
                               : t.crm.modal.statusClosed}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-sm">
+                    <td className={`${cellPad} text-sm`}>
                       {(() => {
                         const d = daysSince(client.lastContactedAt);
                         const stale = d === null || d >= 14;
@@ -310,7 +328,7 @@ export default function CRMPage() {
                         );
                       })()}
                     </td>
-                    <td className="px-6 py-4 text-right">
+                    <td className={`${cellPad} text-right`}>
                       <Link
                         href={`/crm/${client.id}`}
                         className="text-primary hover:text-primary-hover font-sans text-base font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300"
@@ -407,9 +425,10 @@ export default function CRMPage() {
 
               <div>
                 <label className="block font-sans text-sm font-semibold text-foreground/60 mb-2">
-                  {t.crm.modal.email}
+                  {t.crm.modal.email}{star("email")}
                 </label>
                 <input
+                  required={isRequired("email")}
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
@@ -421,9 +440,10 @@ export default function CRMPage() {
 
               <div>
                 <label className="block font-sans text-sm font-semibold text-foreground/60 mb-2">
-                  {t.crm.modal.phone}
+                  {t.crm.modal.phone}{star("phone")}
                 </label>
                 <input
+                  required={isRequired("phone")}
                   name="phone"
                   value={formData.phone}
                   onChange={handleChange}
@@ -473,9 +493,10 @@ export default function CRMPage() {
 
               <div>
                 <label className="block font-sans text-sm font-semibold text-foreground/60 mb-2">
-                  {t.crm.modal.budget}
+                  {t.crm.modal.budget}{star("budget")}
                 </label>
                 <input
+                  required={isRequired("budget")}
                   name="budget"
                   value={formData.budget}
                   onChange={handleChange}
@@ -487,8 +508,9 @@ export default function CRMPage() {
 
               <div className="grid grid-cols-2 gap-6">
                 <div>
-                  <label className="block font-sans text-sm font-semibold text-foreground/60 mb-2">{X.crm.source}</label>
+                  <label className="block font-sans text-sm font-semibold text-foreground/60 mb-2">{X.crm.source}{star("source")}</label>
                   <input
+                    required={isRequired("source")}
                     name="source"
                     value={formData.source}
                     onChange={handleChange}
@@ -497,7 +519,7 @@ export default function CRMPage() {
                     placeholder={X.crm.sourcePlaceholder}
                   />
                   <datalist id="lead-sources">
-                    {["Referral", "Website", "Zillow", "StreetEasy", "Realtor.com", "Open House", "Sign Call", "Social Media", "Past Client", "Sphere"].map((s) => (
+                    {policies.crm.leadSources.map((s) => (
                       <option key={s} value={s} />
                     ))}
                   </datalist>

@@ -59,4 +59,22 @@ happen; note anything that doesn't.
 - [ ] Two-factor authentication, login alerts and the IP whitelist show **Coming soon** and do nothing yet.
       *双因素认证、登录提醒和 IP 白名单显示“即将推出”，目前不起作用。*
 
+## 9. Settings: CRM, Properties, Finance, Appointments, Documents / 设置：CRM、房源、财务、预约、文档
+- [ ] **Settings → CRM** (firm admin): make *Email* a required field, save, then add a client without an email — it is refused with a clear message; the add form shows a red asterisk on Email. Set the client limit to 1 and try adding a second open client as an agent — refused.
+      *设置 → CRM（公司管理员）：把“邮箱”设为必填并保存，再添加没有邮箱的客户——会被拒绝并给出提示，表单里邮箱带红色星号。把客户上限设为 1，用经纪人账号再加第二个在跟进的客户——会被拒绝。*
+- [ ] Turn on “agents can see all clients”: an agent sees everyone's clients but can only edit their own.
+      *打开“经纪人可查看全部客户”：经纪人能看到所有客户，但只能修改自己的。*
+- [ ] **Settings → Properties**: require 3 photos before Active. A new listing starts as *Coming soon*; upload 3 photos, then **Set Active** works. Set a photo limit of 3 — a fourth photo is refused. Set “managers only” — an agent cannot add a listing.
+      *设置 → 房源：设为“上架前至少 3 张照片”。新房源先是“即将上市”；传满 3 张后“设为在售”可用。把每个房源照片上限设为 3，第四张会被拒绝。设为“仅经理可新建”，经纪人无法添加房源。*
+- [ ] **Settings → Appointments**: turn on “prevent double booking” and book two overlapping showings — a confirmation asks whether to book anyway. Turn off weekends — the week view shows Monday to Friday. Set workday hours — the week and day views follow them.
+      *设置 → 预约：打开“禁止重复预约”，预约两个时间重叠的看房——会弹出确认是否仍要预约。关闭周末后，周视图只显示周一到周五。设置工作时间后，周视图和日视图按此显示。*
+- [ ] **Settings → Documents**: allow PDF only and 1 MB. In **Documents**, a Word file or a bigger file is refused with a clear message; the upload box lists the rules.
+      *设置 → 文档：只允许 PDF，上限 1 MB。在“文档”里上传 Word 文件或超过 1 MB 的文件会被拒绝并给出提示；上传框会列出规则。*
+- [ ] **Settings → Finance**: turn off “agents see colleagues' gross” — an agent's leaderboard shows “—” for others, while a manager still sees all amounts. Change the fiscal-year start month — year-to-date figures change.
+      *设置 → 财务：关闭“经纪人可看同事佣金总额”——经纪人的排行榜里他人显示“—”，经理仍可见全部金额。修改财年起始月份，“年初至今”数字随之变化。*
+- [ ] Personal preferences (any user) — default client type/stage, compact list, hide budget, default listing status, default appointment length, auto-confirm, hide leaderboard / dashboard income — apply on the matching pages and only for that user.
+      *个人偏好（任何用户）：默认客户类型和阶段、紧凑列表、隐藏预算、新房源默认状态、预约默认时长、自动确认、隐藏排行榜和仪表盘收入——在对应页面生效，且只影响本人。*
+- [ ] Marketing, Access Control and Integrations still show **Coming soon**. A manager or agent sees the company rules but cannot save them.
+      *营销、访问控制、集成仍显示“即将推出”。经理和经纪人能看到公司规则，但不能保存。*
+
 Report problems with: the page, what you clicked, what you expected, what happened, and a screenshot.
