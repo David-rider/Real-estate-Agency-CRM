@@ -1,10 +1,12 @@
 import { prisma } from '../server';
 import { createNotification } from '../routes/notifications';
+import { normalizePreferences } from './policies';
 
 const HOUR = 60 * 60 * 1000;
 
 /**
- * Sends each agent an in-app + email reminder ~24h before their appointments,
+ * Sends each agent an in-app + email reminder before their appointments (24h by default; each agent can choose
+ * 1, 2, 4, 12 or 24 hours in Settings > Appointments > My preferences),
  * and alerts agents when a task becomes overdue (`overdueNotified` makes it idempotent).
  */
 export async function sendAppointmentReminders() {
@@ -18,10 +20,17 @@ export async function sendAppointmentReminders() {
         include: {
             client:   { select: { firstName: true, lastName: true } },
             property: { select: { address: true } },
+            agent:    { select: { preferences: true } },
         },
+        orderBy: { date: 'asc' },
         take: 200,
     });
+    let reminded = 0;
     for (const a of due) {
+        // Not yet inside this agent's chosen reminder window
+        const leadHours = normalizePreferences(a.agent.preferences).appointments.reminderLeadHours;
+        if (a.date.getTime() - now.getTime() > leadHours * HOUR) continue;
+        reminded++;
         const who = a.client ? ` with ${a.client.firstName} ${a.client.lastName}` : '';
         const where = a.property ? ` at ${a.property.address}` : a.location ? ` at ${a.location}` : '';
         await createNotification(a.agentId, a.orgId, 'APPOINTMENT_REMINDER', 'Upcoming appointment',
@@ -49,7 +58,7 @@ export async function sendAppointmentReminders() {
         await prisma.task.update({ where: { id: t.id }, data: { overdueNotified: true } });
     }
 
-    return due.length + overdueTasks.length;
+    return reminded + overdueTasks.length;
 }
 
 export function startReminderLoop(intervalMs = 10 * 60 * 1000) {

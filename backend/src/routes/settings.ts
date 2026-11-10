@@ -7,6 +7,7 @@ import { getSeatUsage } from '../lib/seats';
 import { audit, diffFields } from '../lib/audit';
 import { resolveLeadAssignee } from '../lib/routing';
 import { normalizeNotificationPrefs } from './notifications';
+import { normalizeOrgPolicies, applyOrgPoliciesPatch, normalizePreferences, applyPreferencesPatch } from '../lib/policies';
 
 const router = Router();
 router.use(authenticateToken);
@@ -561,6 +562,86 @@ router.patch('/security', authorizeRole(ADMIN_ROLES), async (req: AuthRequest, r
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Failed to update security settings' });
+    }
+});
+
+// ─── Brokerage policies (CRM, Properties, Finance, Appointments, Documents) ───
+// Enforced by the routes that own each rule; see src/lib/policies.ts for every option and its limits.
+
+const flattenSettings = (obj: Record<string, any>) => {
+    const out: Record<string, unknown> = {};
+    for (const [section, values] of Object.entries(obj)) {
+        for (const [key, value] of Object.entries(values as Record<string, unknown>)) out[`${section}.${key}`] = value;
+    }
+    return out;
+};
+
+// GET /api/settings/policies — every member can read the rules that apply to them
+router.get('/policies', async (req: AuthRequest, res) => {
+    try {
+        if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+        const org = await prisma.organization.findUnique({ where: { id: req.user.orgId }, select: { policies: true } });
+        if (!org) return res.status(404).json({ error: 'Organization not found' });
+        res.json({ policies: normalizeOrgPolicies(org.policies) });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Failed to load brokerage policies' });
+    }
+});
+
+// PATCH /api/settings/policies — admins only; send just the sections / options that change
+router.patch('/policies', authorizeRole(ADMIN_ROLES), async (req: AuthRequest, res) => {
+    try {
+        if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+        const org = await prisma.organization.findUnique({ where: { id: req.user.orgId }, select: { policies: true } });
+        if (!org) return res.status(404).json({ error: 'Organization not found' });
+
+        const current = normalizeOrgPolicies(org.policies);
+        const result = applyOrgPoliciesPatch(current, req.body);
+        if (!result.ok) return res.status(400).json({ error: result.error });
+        if (!result.changed) return res.json({ policies: current });
+
+        await prisma.organization.update({ where: { id: req.user.orgId }, data: { policies: result.value as any } });
+        clearAccountCache();
+        const changes = diffFields(flattenSettings(current as any), flattenSettings(result.value as any));
+        await audit(req, 'UPDATE_ORG_POLICIES', 'Organization', req.user.orgId, changes.before, changes.after);
+        res.json({ policies: result.value });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Failed to update brokerage policies' });
+    }
+});
+
+// ─── Personal preferences (Settings > "My preferences" tabs) ──────────────────
+
+// GET /api/settings/preferences
+router.get('/preferences', async (req: AuthRequest, res) => {
+    try {
+        if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+        const me = await prisma.user.findUnique({ where: { id: req.user.userId }, select: { preferences: true } });
+        if (!me) return res.status(404).json({ error: 'User not found' });
+        res.json({ preferences: normalizePreferences(me.preferences) });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Failed to load preferences' });
+    }
+});
+
+// PATCH /api/settings/preferences — own preferences only
+router.patch('/preferences', async (req: AuthRequest, res) => {
+    try {
+        if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+        const me = await prisma.user.findUnique({ where: { id: req.user.userId }, select: { preferences: true } });
+        if (!me) return res.status(404).json({ error: 'User not found' });
+
+        const current = normalizePreferences(me.preferences);
+        const result = applyPreferencesPatch(current, req.body);
+        if (!result.ok) return res.status(400).json({ error: result.error });
+        if (result.changed) await prisma.user.update({ where: { id: req.user.userId }, data: { preferences: result.value as any } });
+        res.json({ preferences: result.value });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Failed to update preferences' });
     }
 });
 

@@ -23,6 +23,8 @@ model Organization {
   phone             String?
   licenseNumber     String?
   logoUrl           String?
+  // Settings > CRM / Properties / Finance / Appointments / Documents policies (validated and defaulted in src/lib/policies.ts)
+  policies          Json?
   // Public web address of the brokerage's listings page: /public-listings?b=<slug>
   slug              String?  @unique
   brandColor        String?
@@ -101,6 +103,8 @@ model User {
   acceptingLeads      Boolean  @default(true)
   maxActiveLeads      Int?
   notificationPrefs   Json?
+  // Personal Settings > "My preferences" (validated and defaulted in src/lib/policies.ts)
+  preferences         Json?
   lastLoginAt         DateTime?
 
   createdAt DateTime @default(now())

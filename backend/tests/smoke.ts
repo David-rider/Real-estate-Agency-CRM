@@ -48,6 +48,30 @@ async function register(label: string) {
     return r.body.token as string;
 }
 
+// Shared database handle for steps that need to create staff accounts or back-date data
+let sharedPrisma: PrismaClient | null = null;
+const db = () => (sharedPrisma ??= new PrismaClient());
+
+// Invite someone into the owner's brokerage and accept the invitation (needs DATABASE_URL to read the token)
+async function joinOrg(owner: string, label: string, role: string) {
+    const email = `${label}-${run}@smoke.test`;
+    const inv = await call('POST', '/api/settings/invite', owner, { email, role });
+    assert.equal(inv.status, 200, JSON.stringify(inv.body));
+    const row = await db().invitation.findFirst({ where: { email }, orderBy: { createdAt: 'desc' } });
+    assert.ok(row, 'invitation row exists');
+    const acc = await call('POST', '/api/auth/accept-invite', undefined, { name: `${label} User`, email, password: 'SmokeTest123!', inviteToken: row!.token });
+    assert.equal(acc.status, 201, JSON.stringify(acc.body));
+    return { token: acc.body.token as string, id: acc.body.user?.id as string };
+}
+
+async function uploadFile(token: string, bytes: Buffer, mime: string, name: string, visibility: 'PUBLIC' | 'PRIVATE') {
+    const form = new FormData();
+    form.append('file', new Blob([new Uint8Array(bytes)], { type: mime }), name);
+    form.append('visibility', visibility);
+    const res = await fetch(`${API}/api/uploads`, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: form });
+    return { status: res.status, body: await res.json().catch(() => null) as any };
+}
+
 async function main() {
     console.log(`Smoke test against ${API}`);
 
@@ -739,10 +763,321 @@ async function main() {
         }
     });
 
+    // ── Settings policies and preferences (Settings > CRM / Properties / Finance / Appointments / Documents) ──
+    // These steps create staff accounts, so they need DATABASE_URL (to read invitation tokens).
+    const needsDb = (name: string) => {
+        if (process.env.DATABASE_URL) return false;
+        console.log(`    (skipped ${name}: set DATABASE_URL)`);
+        return true;
+    };
+
+    await step('settings policies and preferences: defaults, validation, permissions, audit trail', async () => {
+        if (needsDb('policies')) return;
+        const owner = await register('pol');
+        const agent = await joinOrg(owner, 'polagent', 'AGENT');
+
+        const def = await call('GET', '/api/settings/policies', agent.token);
+        assert.equal(def.status, 200, JSON.stringify(def.body));
+        const d = def.body.policies;
+        assert.equal(d.crm.maxClientsPerAgent, 0, 'no client limit by default');
+        assert.equal(d.crm.clientVisibility, 'own');
+        assert.equal(d.crm.duplicateCheck, true);
+        assert.equal(d.properties.photosRequiredToActivate, 0);
+        assert.equal(d.finance.fiscalYearStartMonth, 1);
+        assert.equal(d.appointments.preventDoubleBooking, false);
+        assert.equal(d.documents.maxFileSizeMb, 20);
+        assert.ok(d.crm.leadSources.includes('Referral'));
+
+        assert.equal((await call('GET', '/api/settings/policies')).status, 401, 'anonymous cannot read policies');
+        assert.equal((await call('PATCH', '/api/settings/policies', agent.token, { crm: { maxClientsPerAgent: 5 } })).status, 403, 'agents cannot change policies');
+
+        for (const bad of [
+            { crm: { clientVisibility: 'team' } }, { crm: { maxClientsPerAgent: -1 } }, { crm: { requiredFields: ['ssn'] } },
+            { crm: { leadSources: [] } }, { crm: { unknownOption: 1 } }, { unknownSection: {} },
+            { finance: { fiscalYearStartMonth: 13 } }, { documents: { maxFileSizeMb: 21 } }, { documents: { allowedFormats: [] } },
+            { appointments: { workdayStart: '18:00', workdayEnd: '09:00' } }, { appointments: { bufferMinutes: 7 } },
+            { properties: { photosRequiredToActivate: 5, maxPhotosPerListing: 3 } },
+        ]) {
+            const r = await call('PATCH', '/api/settings/policies', owner, bad);
+            assert.equal(r.status, 400, `should reject ${JSON.stringify(bad)}: ${JSON.stringify(r.body)}`);
+        }
+        const unchanged = await call('GET', '/api/settings/policies', owner);
+        assert.deepEqual(unchanged.body.policies, d, 'rejected changes leave the policies untouched');
+
+        const ok = await call('PATCH', '/api/settings/policies', owner, { crm: { maxClientsPerAgent: 7, requiredFields: ['phone', 'phone'] }, finance: { fiscalYearStartMonth: 4 } });
+        assert.equal(ok.status, 200, JSON.stringify(ok.body));
+        assert.deepEqual(ok.body.policies.crm.requiredFields, ['phone'], 'duplicates are removed');
+        const seen = await call('GET', '/api/settings/policies', agent.token);
+        assert.equal(seen.body.policies.crm.maxClientsPerAgent, 7, 'members see the new policy right away');
+        assert.equal(seen.body.policies.finance.fiscalYearStartMonth, 4);
+
+        // An identical save changes nothing and adds no audit entry
+        await call('PATCH', '/api/settings/policies', owner, { crm: { maxClientsPerAgent: 7 } });
+        const log = await call('GET', '/api/settings/organization/audit-log', owner);
+        const entries = log.body.logs.filter((l: any) => l.action === 'UPDATE_ORG_POLICIES');
+        assert.equal(entries.length, 1, 'only the real change is audited');
+        assert.equal(JSON.parse(entries[0].after)['crm.maxClientsPerAgent'], 7);
+        assert.equal(JSON.parse(entries[0].before)['crm.maxClientsPerAgent'], 0);
+
+        // Personal preferences: own values only, validated
+        const p0 = await call('GET', '/api/settings/preferences', agent.token);
+        assert.equal(p0.status, 200);
+        assert.equal(p0.body.preferences.appointments.reminderLeadHours, 24);
+        assert.equal(p0.body.preferences.crm.showBudget, true);
+        assert.equal((await call('PATCH', '/api/settings/preferences', agent.token, { appointments: { reminderLeadHours: 3 } })).status, 400);
+        assert.equal((await call('PATCH', '/api/settings/preferences', agent.token, { nope: {} })).status, 400);
+        const p1 = await call('PATCH', '/api/settings/preferences', agent.token, { appointments: { reminderLeadHours: 2, defaultDurationMin: 45 }, crm: { compactList: true } });
+        assert.equal(p1.status, 200, JSON.stringify(p1.body));
+        assert.equal((await call('GET', '/api/settings/preferences', agent.token)).body.preferences.appointments.reminderLeadHours, 2);
+        assert.equal((await call('GET', '/api/settings/preferences', owner)).body.preferences.appointments.reminderLeadHours, 24, "one person's preferences never change another's");
+        assert.equal((await call('GET', '/api/settings/preferences')).status, 401);
+    });
+
+    await step('CRM policy is enforced: required fields, client limit, duplicate check, visibility, import', async () => {
+        if (needsDb('CRM policy')) return;
+        const owner = await register('crmpol');
+        const agent = await joinOrg(owner, 'crmagent', 'AGENT');
+        const setPolicy = async (body: unknown) => {
+            const r = await call('PATCH', '/api/settings/policies', owner, body);
+            assert.equal(r.status, 200, JSON.stringify(r.body));
+        };
+        let n = 0;
+        const person = (extra: Record<string, unknown> = {}) => ({ firstName: 'Pol', lastName: `C${run}`, phone: `555-01${String(++n).padStart(2, '0')}`, email: `pol-${run}-${n}@example.com`, ...extra });
+
+        // Required fields
+        await setPolicy({ crm: { requiredFields: ['phone', 'email'], duplicateCheck: false } });
+        const noPhone = await call('POST', '/api/clients', owner, { firstName: 'No', lastName: 'Phone', email: `np-${run}@example.com` });
+        assert.equal(noPhone.status, 400); assert.equal(noPhone.body.code, 'REQUIRED_FIELD'); assert.match(noPhone.body.error, /Phone/);
+        const noEmail = await call('POST', '/api/clients', owner, { firstName: 'No', lastName: 'Email', phone: '555-0000' });
+        assert.equal(noEmail.status, 400); assert.match(noEmail.body.error, /Email/);
+
+        // Duplicate check off: the same email / phone can be saved twice
+        const a = await call('POST', '/api/clients', owner, person());
+        assert.equal(a.status, 201, JSON.stringify(a.body));
+        const b = await call('POST', '/api/clients', owner, { ...person(), phone: a.body.phone, email: a.body.email });
+        assert.equal(b.status, 201, 'duplicate check is off');
+        await setPolicy({ crm: { duplicateCheck: true } });
+        assert.equal((await call('POST', '/api/clients', owner, { ...person(), email: a.body.email })).status, 409, 'duplicate check is on again');
+
+        // Required fields also apply when editing
+        const clear = await call('PATCH', `/api/clients/${b.body.id}`, owner, { phone: '' });
+        assert.equal(clear.status, 400); assert.equal(clear.body.code, 'REQUIRED_FIELD');
+        assert.equal((await call('PATCH', `/api/clients/${b.body.id}`, owner, { notes: 'edited' })).status, 200, 'editing other fields is fine');
+
+        // Client limit per agent: counts open clients only
+        await setPolicy({ crm: { maxClientsPerAgent: 2 } });
+        const over = await call('POST', '/api/clients', owner, person());
+        assert.equal(over.status, 409); assert.equal(over.body.code, 'CLIENT_LIMIT');
+        assert.equal((await call('DELETE', `/api/clients/${a.body.id}`, owner)).status, 200, 'archiving frees a place');
+        const d = await call('POST', '/api/clients', owner, person());
+        assert.equal(d.status, 201, JSON.stringify(d.body));
+        const reopen = await call('PATCH', `/api/clients/${a.body.id}`, owner, { status: 'LEAD' });
+        assert.equal(reopen.status, 409, 'reopening counts toward the limit'); assert.equal(reopen.body.code, 'CLIENT_LIMIT');
+        assert.equal((await call('PATCH', `/api/clients/${d.body.id}`, owner, { agentId: agent.id })).status, 200, "reassigning to an agent under the limit works");
+
+        // CSV import honours both rules (the owner now has 1 open client, so 1 place is left)
+        const imp = await call('POST', '/api/clients/import', owner, { rows: [
+            { firstName: 'Imp', lastName: 'One', email: `imp1-${run}@example.com` },                       // no phone
+            { firstName: 'Imp', lastName: 'Two', email: `imp2-${run}@example.com`, phone: '555-7002' },     // ok
+            { firstName: 'Imp', lastName: 'Three', email: `imp3-${run}@example.com`, phone: '555-7003' },   // over the limit
+        ] });
+        assert.equal(imp.status, 200, JSON.stringify(imp.body));
+        assert.equal(imp.body.created, 1);
+        assert.equal(imp.body.errors.length, 2);
+        assert.match(imp.body.errors[0].reason, /Phone/);
+        assert.match(imp.body.errors[1].reason, /limit/i);
+
+        // Visibility: 'all' lets the agent READ the whole book, but never edit other agents' clients
+        await setPolicy({ crm: { maxClientsPerAgent: 0 } });
+        assert.equal((await call('GET', `/api/clients/${b.body.id}`, agent.token)).status, 404, "default: an agent cannot see another agent's client");
+        await setPolicy({ crm: { clientVisibility: 'all' } });
+        assert.equal((await call('GET', `/api/clients/${b.body.id}`, agent.token)).status, 200, "'all': the agent can read it");
+        const listed = await call('GET', `/api/clients?q=C${run}&limit=50`, agent.token);
+        assert.ok(listed.body.total >= 2, 'and it shows in their list');
+        assert.equal((await call('PATCH', `/api/clients/${b.body.id}`, agent.token, { notes: 'hijack' })).status, 403, 'but cannot edit it');
+        assert.equal((await call('POST', `/api/clients/${b.body.id}/activities`, agent.token, { type: 'NOTE', content: 'hi' })).status, 403, 'or log activity on it');
+        assert.equal((await call('PATCH', `/api/clients/${d.body.id}`, agent.token, { notes: 'mine' })).status, 200, 'their own client stays editable');
+        await setPolicy({ crm: { clientVisibility: 'own' } });
+        assert.equal((await call('GET', `/api/clients/${b.body.id}`, agent.token)).status, 404, 'back to own clients only');
+    });
+
+    await step('Properties policy is enforced: who creates, required fields, description length, photos before Active, photo limit', async () => {
+        if (needsDb('Properties policy')) return;
+        const owner = await register('proppol');
+        const agent = await joinOrg(owner, 'propagent', 'AGENT');
+        const setPolicy = async (body: unknown) => assert.equal((await call('PATCH', '/api/settings/policies', owner, body)).status, 200);
+        const base = { address: '7 Policy St', city: 'New York', state: 'NY', zip: '10007', price: 900000, beds: 2, baths: 1 };
+
+        // Who can create
+        await setPolicy({ properties: { whoCanCreate: 'MANAGERS' } });
+        const denied = await call('POST', '/api/properties', agent.token, base);
+        assert.equal(denied.status, 403); assert.match(denied.body.error, /managers/i);
+        assert.equal((await call('POST', '/api/properties', owner, base)).status, 201, 'managers still can');
+        await setPolicy({ properties: { whoCanCreate: 'ALL_STAFF' } });
+        assert.equal((await call('POST', '/api/properties', agent.token, { ...base, address: '8 Policy St' })).status, 201);
+
+        // Required fields, description length, photos before Active
+        await setPolicy({ properties: { requiredFields: ['sqft', 'description'], descriptionMaxChars: 100, photosRequiredToActivate: 2, maxPhotosPerListing: 3 } });
+        const noSqft = await call('POST', '/api/properties', owner, { ...base, address: '9 Policy St' });
+        assert.equal(noSqft.status, 400); assert.equal(noSqft.body.code, 'LISTING_POLICY'); assert.match(noSqft.body.error, /Square footage/);
+        const wordy = await call('POST', '/api/properties', owner, { ...base, address: '9 Policy St', sqft: 900, description: 'x'.repeat(101) });
+        assert.equal(wordy.status, 400); assert.match(wordy.body.error, /at most 100/);
+        const early = await call('POST', '/api/properties', owner, { ...base, address: '9 Policy St', sqft: 900, description: 'Bright', status: 'ACTIVE' });
+        assert.equal(early.status, 400); assert.equal(early.body.code, 'PHOTOS_REQUIRED');
+        const made = await call('POST', '/api/properties', owner, { ...base, address: '9 Policy St', sqft: 900, description: 'Bright' });
+        assert.equal(made.status, 201, JSON.stringify(made.body));
+        assert.equal(made.body.status, 'COMING_SOON', 'without photos a new listing starts as Coming Soon');
+        const pid = made.body.id as string;
+
+        const photo = (n: number, type = 'image') => call('POST', '/api/media', owner, { url: `https://example.com/p${n}.jpg`, type, propertyId: pid });
+        assert.equal((await photo(1)).status, 201);
+        const tooSoon = await call('PATCH', `/api/properties/${pid}`, owner, { status: 'ACTIVE' });
+        assert.equal(tooSoon.status, 400); assert.equal(tooSoon.body.code, 'PHOTOS_REQUIRED'); assert.match(tooSoon.body.error, /has 1/);
+        assert.equal((await photo(2)).status, 201);
+        assert.equal((await call('PATCH', `/api/properties/${pid}`, owner, { status: 'ACTIVE' })).status, 200, 'two photos: it can go Active');
+        assert.equal((await photo(3)).status, 201);
+        const fourth = await photo(4);
+        assert.equal(fourth.status, 400); assert.equal(fourth.body.code, 'PHOTO_LIMIT');
+        assert.equal((await photo(5, 'floorplan')).status, 201, 'floor plans are not photos');
+        const blank = await call('PATCH', `/api/properties/${pid}`, owner, { description: '' });
+        assert.equal(blank.status, 400); assert.equal(blank.body.code, 'LISTING_POLICY');
+        assert.equal((await call('PATCH', `/api/properties/${pid}`, owner, { price: 910000 })).status, 200, 'other edits are unaffected');
+
+        // Import: rows marked Active start as Coming Soon (with a warning); missing required fields are reported
+        const imp = await call('POST', '/api/properties/import', owner, { rows: [
+            { address: '20 Import Ave', price: 500000, sqft: 700, description: 'Sunny', status: 'Active' },
+            { address: '21 Import Ave', price: 500000, description: 'No size' },
+        ] });
+        assert.equal(imp.status, 200, JSON.stringify(imp.body));
+        assert.equal(imp.body.created, 1);
+        assert.equal(imp.body.errors.length, 1); assert.match(imp.body.errors[0].reason, /Square footage/);
+        assert.equal(imp.body.warnings.length, 1);
+        const imported = await call('GET', '/api/properties?search=20%20Import', owner);
+        assert.equal(imported.body.data[0].status, 'COMING_SOON');
+    });
+
+    await step('Appointments policy and preferences: double booking, buffer, auto-confirm, default length', async () => {
+        if (needsDb('Appointments policy')) return;
+        const owner = await register('apptpol');
+        const agent = await joinOrg(owner, 'apptagent', 'AGENT');
+        const MIN = 60 * 1000;
+        const t0 = new Date(Math.floor((Date.now() + 3 * 24 * 60 * MIN) / MIN) * MIN);
+        const at = (offsetMin: number) => new Date(t0.getTime() + offsetMin * MIN).toISOString();
+        const book = (token: string, offsetMin: number, extra: Record<string, unknown> = {}) =>
+            call('POST', '/api/appointments', token, { title: `Appt ${offsetMin}`, type: 'SHOWING', date: at(offsetMin), ...extra });
+
+        assert.equal((await call('PATCH', '/api/settings/preferences', owner, { appointments: { defaultDurationMin: 30, autoConfirm: true } })).status, 200);
+        const first = await book(owner, 0);
+        assert.equal(first.status, 201, JSON.stringify(first.body));
+        assert.equal(first.body.status, 'CONFIRMED', 'auto-confirm preference');
+        assert.equal(first.body.durationMin, 30, 'default length preference');
+        assert.equal((await book(owner, 2000, { durationMin: 90 })).body.durationMin, 90, 'an explicit length wins');
+
+        // Policy off: overlapping is allowed
+        const overlapOff = await book(owner, 10);
+        assert.equal(overlapOff.status, 201);
+        assert.equal((await call('DELETE', `/api/appointments/${overlapOff.body.id}`, owner)).status, 200);
+
+        assert.equal((await call('PATCH', '/api/settings/policies', owner, { appointments: { preventDoubleBooking: true, bufferMinutes: 15 } })).status, 200);
+        const clash = await book(owner, 20);
+        assert.equal(clash.status, 409, JSON.stringify(clash.body)); assert.equal(clash.body.code, 'APPOINTMENT_CONFLICT');
+        assert.equal(clash.body.conflict.id, first.body.id);
+        assert.equal((await book(owner, 40)).status, 409, 'closer than the 15-minute buffer');
+        const fits = await book(owner, 45);
+        assert.equal(fits.status, 201, `exactly the buffer apart is fine: ${JSON.stringify(fits.body)}`);
+        const forced = await book(owner, 10, { force: true });
+        assert.equal(forced.status, 201, 'force: true books it anyway');
+
+        // Another agent has their own calendar
+        assert.equal((await book(agent.token, 0)).status, 201, 'a different agent is not in conflict');
+
+        // Cancelled appointments no longer block the slot
+        const day2 = await book(owner, 1440);
+        assert.equal(day2.status, 201);
+        assert.equal((await call('PATCH', `/api/appointments/${day2.body.id}`, owner, { status: 'CANCELLED' })).status, 200);
+        assert.equal((await book(owner, 1440)).status, 201, 'the cancelled slot is free again');
+
+        // Rescheduling is checked too
+        const move = await call('PATCH', `/api/appointments/${fits.body.id}`, owner, { date: at(15) });
+        assert.equal(move.status, 409, JSON.stringify(move.body));
+        assert.equal((await call('PATCH', `/api/appointments/${fits.body.id}`, owner, { date: at(15), force: true })).status, 200);
+        assert.equal((await call('PATCH', `/api/appointments/${fits.body.id}`, owner, { notes: 'just a note' })).status, 200, 'edits that do not move it are not re-checked');
+    });
+
+    await step('Documents policy is enforced: allowed formats and file size limit', async () => {
+        if (needsDb('Documents policy')) return;
+        const owner = await register('docpol');
+        const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', 'base64');
+        const smallPdf = Buffer.from('%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF');
+        const bigPdf = Buffer.concat([Buffer.from('%PDF-1.4\n'), Buffer.alloc(2 * 1024 * 1024, 0x20), Buffer.from('\n%%EOF')]);
+
+        assert.equal((await uploadFile(owner, png, 'image/png', 'scan.png', 'PRIVATE')).status, 201, 'default: images are fine');
+        assert.equal((await call('PATCH', '/api/settings/policies', owner, { documents: { allowedFormats: ['pdf'], maxFileSizeMb: 1 } })).status, 200);
+        const wrong = await uploadFile(owner, png, 'image/png', 'scan.png', 'PRIVATE');
+        assert.equal(wrong.status, 400); assert.equal(wrong.body.code, 'FORMAT_NOT_ALLOWED'); assert.match(wrong.body.error, /PDF/);
+        const big = await uploadFile(owner, bigPdf, 'application/pdf', 'big.pdf', 'PRIVATE');
+        assert.equal(big.status, 413); assert.equal(big.body.code, 'FILE_TOO_LARGE'); assert.match(big.body.error, /1 MB/);
+        assert.equal((await uploadFile(owner, smallPdf, 'application/pdf', 'ok.pdf', 'PRIVATE')).status, 201, 'a small PDF passes');
+        assert.equal((await uploadFile(owner, png, 'image/png', 'photo.png', 'PUBLIC')).status, 201, 'listing photos are not affected by the document policy');
+        assert.equal((await call('PATCH', '/api/settings/policies', owner, { documents: { allowedFormats: ['pdf', 'image'] } })).status, 200);
+        assert.equal((await uploadFile(owner, png, 'image/png', 'scan2.png', 'PRIVATE')).status, 201, 'allowing images again works');
+    });
+
+    await step('Finance policy: leaderboard privacy and fiscal year start', async () => {
+        if (needsDb('Finance policy')) return;
+        const owner = await register('finpol');
+        const agent = await joinOrg(owner, 'finagent', 'AGENT');
+        const closedDeal = async (token: string, label: string, price: number) => {
+            const p = await call('POST', '/api/properties', token, { address: `${label} Fin St`, city: 'New York', state: 'NY', zip: '10001', price, beds: 1, baths: 1 });
+            assert.equal(p.status, 201, JSON.stringify(p.body));
+            const c = await call('POST', '/api/clients', token, { firstName: 'Fin', lastName: label });
+            assert.equal(c.status, 201, JSON.stringify(c.body));
+            const t = await call('POST', '/api/transactions', token, { propertyId: p.body.id, clientId: c.body.id, price, status: 'CLOSED' });
+            assert.equal(t.status, 201, JSON.stringify(t.body));
+            return t.body.id as string;
+        };
+        const payAt = async (transactionId: string, paidAt: Date) => {
+            const r = await db().commission.updateMany({ where: { transactionId }, data: { status: 'PAID', paidAt } });
+            assert.equal(r.count, 1, 'the closed deal created one commission');
+        };
+        const now = new Date();
+        await payAt(await closedDeal(owner, 'Own', 200000), now);          // gross 6,000
+        await payAt(await closedDeal(agent.token, 'Ag1', 100000), now);    // gross 3,000
+        const oldDeal = await closedDeal(agent.token, 'Ag2', 300000);      // gross 9,000, paid 40 days ago
+        const old = new Date(now.getTime() - 40 * 24 * 60 * 60 * 1000);
+        await payAt(oldDeal, old);
+
+        // Leaderboard privacy
+        const open = await call('GET', '/api/finance/metrics', agent.token);
+        assert.equal(open.status, 200, JSON.stringify(open.body));
+        assert.equal(open.body.grossHidden, false);
+        assert.ok(open.body.leaderboard.every((r: any) => typeof r.gross === 'number'), 'default: everyone sees production');
+        assert.equal((await call('PATCH', '/api/settings/policies', owner, { finance: { showAgentGross: false } })).status, 200);
+        const hidden = await call('GET', '/api/finance/metrics', agent.token);
+        assert.equal(hidden.body.grossHidden, true);
+        const rows = hidden.body.leaderboard as { userId: string; gross: number | null; rank: number }[];
+        assert.equal(rows.length, 2, 'ranks stay visible');
+        assert.equal(rows.find(r => r.userId === agent.id)!.gross !== null, true, 'own production is always visible');
+        assert.equal(rows.find(r => r.userId !== agent.id)!.gross, null, "other agents' production is hidden");
+        const mgr = await call('GET', '/api/finance/metrics', owner);
+        assert.equal(mgr.body.grossHidden, false, 'management still sees everything');
+        assert.ok(mgr.body.leaderboard.every((r: any) => typeof r.gross === 'number'));
+
+        // Fiscal year: starting this month leaves out the commission paid 40 days ago
+        const janFirst = new Date(now.getFullYear(), 0, 1);
+        const calendarYearExpected = 3000 + (old >= janFirst ? 9000 : 0);
+        assert.equal(open.body.ytdGross, calendarYearExpected, 'default fiscal year = calendar year');
+        assert.equal((await call('PATCH', '/api/settings/policies', owner, { finance: { fiscalYearStartMonth: now.getMonth() + 1 } })).status, 200);
+        const fy = await call('GET', '/api/finance/metrics', agent.token);
+        assert.equal(fy.body.ytdGross, 3000, 'only commissions paid since the fiscal year start are counted');
+    });
+
     console.log(`\nAll ${passed} smoke checks passed.`);
 }
 
-main().catch(err => {
-    console.error(err);
-    process.exit(1);
-});
+main()
+    .then(() => sharedPrisma?.$disconnect())
+    .catch(err => {
+        console.error(err);
+        process.exit(1);
+    });

@@ -2,7 +2,8 @@ import { Router } from 'express';
 import { prisma } from '../server';
 import rateLimit from 'express-rate-limit';
 import { authenticateToken, AuthRequest } from '../middleware/authMiddleware';
-import { optDate, optNumber } from '../lib/access';
+import { optDate, optNumber, isManager } from '../lib/access';
+import { OrgPolicies, missingListingField, descriptionTooLong } from '../lib/policies';
 import { createNotification } from './notifications';
 import { resolveLeadAssignee } from '../lib/routing';
 import { audit, diffFields } from '../lib/audit';
@@ -10,6 +11,15 @@ import { audit, diffFields } from '../lib/audit';
 const router = Router();
 
 const PROP_STATUSES = ['COMING_SOON', 'ACTIVE', 'IN_CONTRACT', 'SOLD', 'WITHDRAWN', 'EXPIRED'];
+
+// Listing policy (Settings > Properties): the first rule a listing breaks, or null.
+function listingPolicyError(policy: OrgPolicies['properties'], fields: Record<string, unknown>, onlyPresent: boolean): string | null {
+    return missingListingField(policy, fields, onlyPresent)
+        ?? (('description' in fields || !onlyPresent) ? descriptionTooLong(policy, fields.description) : null);
+}
+
+const photosNeededMessage = (n: number) =>
+    `At least ${n} photo${n === 1 ? '' : 's'} ${n === 1 ? 'is' : 'are'} required before a listing can go Active. Keep it as Coming Soon, add the photos, then activate it.`;
 
 // Public lead forms are unauthenticated — keep bots from flooding agents' CRMs
 const inquiryLimiter = rateLimit({
@@ -218,6 +228,10 @@ router.post('/import', async (req: AuthRequest, res) => {
         if (!['SUPERADMIN', 'FIRMADMIN', 'MANAGER', 'AGENT'].includes(req.user.role)) {
             return res.status(403).json({ error: 'Your role cannot import listings' });
         }
+        const policy = req.user.policies.properties;
+        if (policy.whoCanCreate === 'MANAGERS' && !isManager(req.user)) {
+            return res.status(403).json({ error: 'Your brokerage only lets managers create listings' });
+        }
 
         const rows = Array.isArray(req.body.rows) ? req.body.rows : [];
         const onDuplicate = req.body.onDuplicate === 'update' ? 'update' : 'skip';
@@ -228,6 +242,7 @@ router.post('/import', async (req: AuthRequest, res) => {
         let updated = 0;
         let skipped = 0;
         const errors: { row: number; reason: string }[] = [];
+        const warnings: { row: number; reason: string }[] = [];
 
         for (let i = 0; i < rows.length; i++) {
             const raw = rows[i] || {};
@@ -250,7 +265,11 @@ router.post('/import', async (req: AuthRequest, res) => {
 
             const mlsNumber = typeof raw.mlsNumber === 'string' && raw.mlsNumber.trim() ? raw.mlsNumber.trim() : null;
             const statusRaw = typeof raw.status === 'string' ? raw.status.trim().toUpperCase().replace(/\s+/g, '_') : 'ACTIVE';
-            const status = PROP_STATUSES.includes(statusRaw) ? statusRaw : 'ACTIVE';
+            let status = PROP_STATUSES.includes(statusRaw) ? statusRaw : 'ACTIVE';
+            // A new listing has no photos yet, so under a "photos before Active" policy it starts as Coming Soon
+            const needPhotos = policy.photosRequiredToActivate;
+            const downgraded = needPhotos > 0 && status === 'ACTIVE';
+            if (downgraded) status = 'COMING_SOON';
 
             const orCond: any[] = [{ address: { equals: address, mode: 'insensitive' }, zip }];
             if (mlsNumber) orCond.unshift({ mlsNumber: { equals: mlsNumber, mode: 'insensitive' } });
@@ -273,9 +292,21 @@ router.post('/import', async (req: AuthRequest, res) => {
                 description: typeof raw.description === 'string' && raw.description.trim() ? raw.description.trim() : null,
             };
 
+            const policyErr = listingPolicyError(policy, {
+                sqft: propData.sqft, propertyType: propData.propertyType, neighborhood: propData.neighborhood,
+                description: propData.description, yearBuilt: raw.yearBuilt ? Number(raw.yearBuilt) : null,
+            }, false);
+            if (policyErr) {
+                errors.push({ row: i + 1, reason: policyErr });
+                continue;
+            }
+            // Tell the user about the change only for rows that were actually imported
+            if (downgraded) warnings.push({ row: i + 1, reason: `Imported as Coming Soon: ${needPhotos} photo${needPhotos === 1 ? '' : 's'} needed before it can go Active` });
+
             if (existing) {
                 const canEdit = existing.agentId === req.user.userId || ['FIRMADMIN', 'SUPERADMIN', 'MANAGER'].includes(req.user.role);
                 if (onDuplicate === 'update' && canEdit) {
+                    // Updating an existing listing never downgrades an Active one just because of the photo policy
                     await prisma.property.update({ where: { id: existing.id }, data: propData });
                     updated++;
                 } else {
@@ -294,7 +325,7 @@ router.post('/import', async (req: AuthRequest, res) => {
             created++;
         }
 
-        res.json({ created, updated, skipped, errors });
+        res.json({ created, updated, skipped, errors, warnings });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Failed to import properties' });
@@ -350,6 +381,10 @@ router.post('/', async (req: AuthRequest, res) => {
         if (!['SUPERADMIN', 'FIRMADMIN', 'MANAGER', 'AGENT'].includes(req.user.role)) {
             return res.status(403).json({ error: 'Your role cannot create listings' });
         }
+        const policy = req.user.policies.properties;
+        if (policy.whoCanCreate === 'MANAGERS' && !isManager(req.user)) {
+            return res.status(403).json({ error: 'Your brokerage only lets managers create listings' });
+        }
         for (const [k, v] of Object.entries({ address, city, state, zip })) {
             if (typeof v !== 'string' || !v.trim()) return res.status(400).json({ error: `${k} is required` });
         }
@@ -359,6 +394,19 @@ router.post('/', async (req: AuthRequest, res) => {
         const nPrice = optNumber(price), nBeds = optNumber(beds), nBaths = optNumber(baths);
         if (nPrice === undefined || nPrice < 0) return res.status(400).json({ error: 'A valid price is required' });
         if (nBeds === undefined || nBaths === undefined) return res.status(400).json({ error: 'Beds and baths are required' });
+
+        const policyErr = listingPolicyError(policy, {
+            sqft: optNumber(sqft) ?? null, propertyType, neighborhood, description, yearBuilt: optNumber(yearBuilt) ?? null,
+        }, false);
+        if (policyErr) return res.status(400).json({ error: policyErr, code: 'LISTING_POLICY' });
+
+        // A new listing has no photos, so with "photos before Active" it can only start as Coming Soon
+        const needPhotos = policy.photosRequiredToActivate;
+        const requestedStatus = PROP_STATUSES.includes(status) ? status : null;
+        const finalStatus = requestedStatus ?? (needPhotos > 0 ? 'COMING_SOON' : 'ACTIVE');
+        if (finalStatus === 'ACTIVE' && needPhotos > 0) {
+            return res.status(400).json({ error: photosNeededMessage(needPhotos), code: 'PHOTOS_REQUIRED' });
+        }
 
         const property = await prisma.property.create({
             data: {
@@ -371,7 +419,7 @@ router.post('/', async (req: AuthRequest, res) => {
                 parkingSpaces: parkingSpaces ? parseInt(parkingSpaces) : null,
                 hoaFee:        hoaFee        ? parseFloat(hoaFee)      : null,
                 description,
-                status:        PROP_STATUSES.includes(status) ? status : 'ACTIVE',
+                status:        finalStatus,
                 propertyType,
                 neighborhood,
                 mlsNumber,
@@ -438,6 +486,20 @@ router.patch('/:id', async (req: AuthRequest, res) => {
             data[f] = optDate(data[f]) ?? null;
         }
         if (data.featured !== undefined) data.featured = data.featured === true || data.featured === 'true';
+
+        // Listing policy (Settings > Properties)
+        const policy = req.user.policies.properties;
+        const policyErr = listingPolicyError(policy, data, true);
+        if (policyErr) return res.status(400).json({ error: policyErr, code: 'LISTING_POLICY' });
+        if (data.status === 'ACTIVE' && existing.status !== 'ACTIVE' && policy.photosRequiredToActivate > 0) {
+            const photos = await prisma.mediaAsset.count({ where: { propertyId: existing.id, type: 'image' } });
+            if (photos < policy.photosRequiredToActivate) {
+                return res.status(400).json({
+                    error: `${photosNeededMessage(policy.photosRequiredToActivate)} This listing has ${photos}.`,
+                    code: 'PHOTOS_REQUIRED',
+                });
+            }
+        }
 
         const updated = await prisma.property.update({ where: { id: String(req.params.id) }, data });
         const changes = diffFields(existing, data);

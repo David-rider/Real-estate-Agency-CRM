@@ -3,6 +3,8 @@ import { prisma } from '../server';
 import { AuthRequest, requireTier, authorizeRole } from '../middleware/authMiddleware';
 import { audit } from '../lib/audit';
 import { createNotification } from './notifications';
+import { fiscalYearStart } from '../lib/policies';
+import { isManager } from '../lib/access';
 
 // Separation of duties: nobody approves their own payout — unless they are the
 // only manager in the brokerage (solo broker), otherwise it could never be paid.
@@ -26,8 +28,9 @@ router.get('/metrics', async (req: AuthRequest, res) => {
         }
 
         // 1. Calculate YTD Gross Written and Net Payout for the current user
-        const currentYear = new Date().getFullYear();
-        const startOfYear = new Date(currentYear, 0, 1);
+        // "Year to date" starts at the brokerage's fiscal year (Settings > Finance); January by default
+        const financePolicy = req.user!.policies.finance;
+        const startOfYear = fiscalYearStart(new Date(), financePolicy.fiscalYearStartMonth);
 
         const userCommissions = await prisma.commission.findMany({
             where: {
@@ -62,12 +65,14 @@ router.get('/metrics', async (req: AuthRequest, res) => {
             agentTotals[comm.agentId].gross += comm.grossAmount;
         });
 
+        // Finance policy: the brokerage can hide other agents' production. Management always sees it.
+        const grossHidden = !financePolicy.showAgentGross && !isManager(req.user!);
         const leaderboard = Object.values(agentTotals)
             .sort((a, b) => b.gross - a.gross)
             .map((agent, index) => ({
                 rank: index + 1,
                 name: agent.name,
-                gross: agent.gross,
+                gross: grossHidden && agent.userId !== userId ? null : agent.gross,
                 userId: agent.userId
             }));
 
@@ -83,6 +88,7 @@ router.get('/metrics', async (req: AuthRequest, res) => {
             ytdGross,
             ytdNet,
             topPercent,
+            grossHidden,
             leaderboard: leaderboard.slice(0, 5), // Top 5
             userRank: userRankIndex !== -1 ? leaderboard[userRankIndex] : null
         });
