@@ -72,13 +72,40 @@ export interface AuthRequest extends Request {
 
 // Short cache so every request doesn't hit the database
 const ACCOUNT_CACHE_MS = 30 * 1000;
-const accountCache = new Map<string, { at: number; user: { role: string; tier: string; orgId: string } | null }>();
+interface CachedAccount {
+    role: string; tier: string; orgId: string;
+    passwordChangedAtSec: number | null;
+    sessionTimeoutMinutes: number;
+    logoutOnPasswordChange: boolean;
+}
+const accountCache = new Map<string, { at: number; user: CachedAccount | null }>();
+
+// Drop a cached account so a security-relevant change (e.g. a password reset) applies immediately.
+export function invalidateAccount(userId: string) {
+    accountCache.delete(userId);
+}
+
+// Policy changes apply to everyone at once, so drop every cached account.
+export function clearAccountCache() {
+    accountCache.clear();
+}
 
 async function currentAccount(userId: string) {
     const hit = accountCache.get(userId);
     if (hit && Date.now() - hit.at < ACCOUNT_CACHE_MS) return hit.user;
-    const u = await prisma.user.findUnique({ where: { id: userId }, select: { role: true, tier: true, orgId: true, isActive: true } });
-    const user = u && u.isActive ? { role: u.role, tier: u.tier, orgId: u.orgId } : null;
+    const u = await prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+            role: true, tier: true, orgId: true, isActive: true, passwordChangedAt: true,
+            organization: { select: { sessionTimeoutMinutes: true, logoutOnPasswordChange: true } },
+        },
+    });
+    const user: CachedAccount | null = u && u.isActive ? {
+        role: u.role, tier: u.tier, orgId: u.orgId,
+        passwordChangedAtSec: u.passwordChangedAt ? Math.floor(u.passwordChangedAt.getTime() / 1000) : null,
+        sessionTimeoutMinutes: u.organization.sessionTimeoutMinutes,
+        logoutOnPasswordChange: u.organization.logoutOnPasswordChange,
+    } : null;
     accountCache.set(userId, { at: Date.now(), user });
     if (accountCache.size > 5000) accountCache.clear();
     return user;
@@ -123,7 +150,20 @@ export const authenticateToken = async (req: AuthRequest, res: Response, next: N
     try {
         const account = await currentAccount(decoded.userId);
         if (!account) return res.status(401).json({ error: 'This account is no longer active' });
-        req.user = { userId: decoded.userId, ...account };
+
+        // Organization security policy: sessions end after the configured time, and a password
+        // change signs out every session that started before it.
+        const issuedAt = (decoded as any).iat as number | undefined;
+        if (issuedAt) {
+            const ageMinutes = (Date.now() / 1000 - issuedAt) / 60;
+            if (ageMinutes > account.sessionTimeoutMinutes) {
+                return res.status(401).json({ error: 'Your session has expired. Please sign in again.', code: 'SESSION_EXPIRED' });
+            }
+            if (account.logoutOnPasswordChange && account.passwordChangedAtSec !== null && issuedAt < account.passwordChangedAtSec) {
+                return res.status(401).json({ error: 'Your password was changed. Please sign in again.', code: 'PASSWORD_CHANGED' });
+            }
+        }
+        req.user = { userId: decoded.userId, role: account.role, tier: account.tier, orgId: account.orgId };
         next();
     } catch (err) {
         next(err);

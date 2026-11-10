@@ -1,10 +1,10 @@
 import { Router } from 'express';
 import { prisma } from '../server';
-import { AuthRequest, authorizeRole, authenticateToken } from '../middleware/authMiddleware';
+import { AuthRequest, authorizeRole, authenticateToken, clearAccountCache } from '../middleware/authMiddleware';
 import crypto from 'crypto';
 import { sendEmail } from '../lib/email';
 import { getSeatUsage } from '../lib/seats';
-import { audit } from '../lib/audit';
+import { audit, diffFields } from '../lib/audit';
 import { resolveLeadAssignee } from '../lib/routing';
 import { normalizeNotificationPrefs } from './notifications';
 
@@ -498,6 +498,69 @@ router.post('/invite', authorizeRole(['SUPERADMIN', 'FIRMADMIN', 'MANAGER']), as
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Failed to send invitation' });
+    }
+});
+
+// ─── Security policy (enforced by the auth middleware, login and password flows) ───
+
+const SESSION_TIMEOUT_OPTIONS = [15, 30, 60, 120, 480, 1440];
+const SECURITY_SELECT = {
+    sessionTimeoutMinutes: true, minPasswordLength: true, requirePasswordSpecialChar: true,
+    passwordExpiryDays: true, logoutOnPasswordChange: true,
+} as const;
+
+// GET /api/settings/security — everyone can read the policy that applies to them
+router.get('/security', async (req: AuthRequest, res) => {
+    try {
+        if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+        const org = await prisma.organization.findUnique({ where: { id: req.user.orgId }, select: SECURITY_SELECT });
+        if (!org) return res.status(404).json({ error: 'Organization not found' });
+        res.json(org);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Failed to load security settings' });
+    }
+});
+
+// PATCH /api/settings/security — admins only
+router.patch('/security', authorizeRole(ADMIN_ROLES), async (req: AuthRequest, res) => {
+    try {
+        if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+        const b = req.body ?? {};
+        const data: Record<string, number | boolean> = {};
+
+        if (b.sessionTimeoutMinutes !== undefined) {
+            const n = Number(b.sessionTimeoutMinutes);
+            if (!SESSION_TIMEOUT_OPTIONS.includes(n)) return res.status(400).json({ error: `Session timeout must be one of: ${SESSION_TIMEOUT_OPTIONS.join(', ')} minutes` });
+            data.sessionTimeoutMinutes = n;
+        }
+        if (b.minPasswordLength !== undefined) {
+            const n = Number(b.minPasswordLength);
+            if (!Number.isInteger(n) || n < 8 || n > 32) return res.status(400).json({ error: 'Minimum password length must be between 8 and 32' });
+            data.minPasswordLength = n;
+        }
+        if (b.passwordExpiryDays !== undefined) {
+            const n = Number(b.passwordExpiryDays);
+            if (!Number.isInteger(n) || (n !== 0 && (n < 30 || n > 365))) return res.status(400).json({ error: 'Password expiry must be 0 (never) or between 30 and 365 days' });
+            data.passwordExpiryDays = n;
+        }
+        for (const key of ['requirePasswordSpecialChar', 'logoutOnPasswordChange'] as const) {
+            if (b[key] !== undefined) {
+                if (typeof b[key] !== 'boolean') return res.status(400).json({ error: `${key} must be true or false` });
+                data[key] = b[key];
+            }
+        }
+        if (Object.keys(data).length === 0) return res.status(400).json({ error: 'Nothing to update' });
+
+        const before = await prisma.organization.findUnique({ where: { id: req.user.orgId }, select: SECURITY_SELECT });
+        const updated = await prisma.organization.update({ where: { id: req.user.orgId }, data, select: SECURITY_SELECT });
+        clearAccountCache();
+        const changes = diffFields(before ?? {}, data);
+        if (Object.keys(changes.after).length > 0) await audit(req, 'UPDATE_SECURITY_POLICY', 'Organization', req.user.orgId, changes.before, changes.after);
+        res.json(updated);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Failed to update security settings' });
     }
 });
 

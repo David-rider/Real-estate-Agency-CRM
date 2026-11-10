@@ -47,4 +47,16 @@ happen; note anything that doesn't.
 - [ ] An agent only sees their own clients and deals; a manager sees the whole brokerage.
 - [ ] Two separate brokerages never see each other's clients, deals or documents.
 
+## 8. Security settings / 安全设置
+- [ ] **Settings → Security** (as a firm admin): change the minimum password length to 12 and require a special character, save, then invite a teammate — a short or plain password on the invitation page is refused with a clear message.
+      *设置 → 安全（公司管理员）：把最短密码长度改成 12 并要求特殊字符，保存后邀请一位同事——邀请页里过短或没有特殊字符的密码会被拒绝并给出清楚的提示。*
+- [ ] Set the session timeout to 15 minutes, sign in, wait 16 minutes and click anything — you are sent back to sign in. Set it back to 24 hours afterwards.
+      *把会话时长设成 15 分钟，登录后等 16 分钟再点任何地方——会被送回登录页。测完请改回 24 小时。*
+- [ ] **Send Reset Link** emails a real reset link; after resetting the password, a session that was open on another device is signed out (with “sign out on password change” on).
+      *“发送重置链接”会发出真实的重置邮件；重设密码后，另一台设备上已打开的会话会被退出（开启“改密码后退出”时）。*
+- [ ] A manager or agent sees the security rules but cannot save changes.
+      *经理和经纪人能看到安全规则，但不能保存修改。*
+- [ ] Two-factor authentication, login alerts and the IP whitelist show **Coming soon** and do nothing yet.
+      *双因素认证、登录提醒和 IP 白名单显示“即将推出”，目前不起作用。*
+
 Report problems with: the page, what you clicked, what you expected, what happened, and a screenshot.

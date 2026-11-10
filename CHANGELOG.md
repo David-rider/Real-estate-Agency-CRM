@@ -22,6 +22,14 @@
 ## [未发布]
 
 #### 安全 / Security
+- 设置 → 安全 现在真正生效：公司管理员可以设置会话时长（15 分钟到 24 小时）、最短密码长度、是否要求特殊字符、密码有效期、改密码后是否让旧登录退出。这些规则对公司里所有人生效，保存后立即应用；登录、邀请注册和重置密码都会按规则检查。以前这些选项只是摆设。
+  *Settings → Security now really works: company admins can set the session length (15 minutes to 24 hours), minimum password length, whether a special character is required, the password lifetime, and whether a password change signs out older sessions. The rules apply to everyone in the company, take effect as soon as they are saved, and are checked at sign-in, invitation sign-up and password reset. Before, these options did nothing.*
+- 密码过期只在服务器能发邮件时才强制执行，否则忘记密码流程不可用，账号会被永久锁住。双因素认证、登录提醒、IP 白名单仍标“即将推出”。
+  *Password expiry is enforced only when the server can send email; otherwise the forgot-password flow would not work and an account could be locked out for good. Two-factor authentication, login alerts and the IP whitelist are still marked “coming soon”.*
+- “发送重置链接”按钮以前只弹出一个假提示，现在会真的发出密码重置邮件（前提是服务器已配置邮件服务）。
+  *The “Send Reset Link” button used to show a fake message; it now really sends the password reset email (provided the server has an email service configured).*
+- 数据库：新增 `Organization` 的 5 个安全策略字段和 `User.passwordChangedAt`（幂等迁移 `20261110000000_security_policy`）；默认值与原来的行为一致（会话 24 小时、最短 8 位、无特殊字符要求、密码不过期），升级后现有用户不受影响，只有“改密码后退出”默认开启。
+  *Database: 5 security-policy columns on `Organization` and `User.passwordChangedAt` (idempotent migration `20261110000000_security_policy`); the defaults match the old behaviour (24-hour sessions, minimum 8 characters, no special-character rule, passwords never expire), so existing users are unaffected after the upgrade, and only “sign out on password change” is on by default.*
 - 新增 `SECURITY.md`：说明如何通过 GitHub 私下报告漏洞、处理流程、范围和支持的版本。
   *Added `SECURITY.md`: how to report a vulnerability privately through GitHub, what happens next, scope and supported versions.*
 - 审计日志现在也记录房源、报价、预约、文档的新增、修改和删除（只记录改动的字段；文档链接和存储路径不会写入日志）。公司管理员可在“设置”里导出。
@@ -35,7 +43,7 @@
 - 文档补充英文：`CHANGELOG.md`、`guides/roadmap.md`、`guides/release-process.md`、`guides/security-audit-2026-10.md`、`guides/competitive-research.md` 现在是中英双语（中文在前、英文紧随），内容不变。
   *Docs gain English: `CHANGELOG.md`, `guides/roadmap.md`, `guides/release-process.md`, `guides/security-audit-2026-10.md` and `guides/competitive-research.md` are now bilingual (Chinese first, English right after); content unchanged.*
 - 依赖更新（Dependabot 5 个 PR 逐个测试后合并）：后端 Express 相关依赖（`body-parser`、`qs`、`type-is` 等）、前端 Next.js 16.4.3、React 19.3.1、Tailwind 4.3、`recharts` 3.10、`date-fns`、`react-big-calendar`，以及 CI 使用的 GitHub Actions（`checkout`、`setup-node` v7）。用户界面和功能没有变化；生产依赖 `npm audit` 前后端均为 0 漏洞，23 项冒烟测试全部通过。
-  *Dependency updates (5 Dependabot PRs, each tested before merging): backend Express-related packages (`body-parser`, `qs`, `type-is`, etc.), frontend Next.js 16.4.3, React 19.3.1, Tailwind 4.3, `recharts` 3.10, `date-fns`, `react-big-calendar`, and the GitHub Actions used by CI (`checkout`, `setup-node` v7). No UI or feature change; `npm audit` shows 0 production vulnerabilities on both sides and all 23 smoke checks pass.*
+  *Dependency updates (5 Dependabot PRs, each tested before merging): backend Express-related packages (`body-parser`, `qs`, `type-is`, etc.), frontend Next.js 16.4.3, React 19.3.1, Tailwind 4.3, `recharts` 3.10, `date-fns`, `react-big-calendar`, and the GitHub Actions used by CI (`checkout`, `setup-node` v7). No UI or feature change; `npm audit` shows 0 production vulnerabilities on both sides and all 23 smoke checks pass.* *Later bumps (Dependabot PRs #35–#37): Next.js 16.4.5, Tailwind 4.3.5 and two backend packages.*
 
 ---
 
