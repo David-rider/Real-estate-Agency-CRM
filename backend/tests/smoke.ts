@@ -8,6 +8,7 @@
  */
 import assert from 'node:assert/strict';
 import { PrismaClient } from '@prisma/client';
+import jwt from 'jsonwebtoken';
 
 const API = process.env.API_URL || 'http://localhost:4000';
 const run = Date.now().toString(36);
@@ -563,6 +564,91 @@ async function main() {
         assert.deepEqual(JSON.parse(upd.before), { price: 500000 });
         assert.deepEqual(JSON.parse(upd.after), { price: 510000 });
         assert.ok(!JSON.stringify(log.body.logs).includes('secret-link-token-123'), 'document links must never be written to the audit trail');
+    });
+
+    // Security policy: the settings are saved AND enforced (session length, password rules, sign-out on password change, expiry).
+    // Needs DATABASE_URL and JWT_SECRET (to mint an older token and to back-date a password change).
+    await step('security policy is saved and enforced', async () => {
+        if (!process.env.DATABASE_URL || !process.env.JWT_SECRET) {
+            console.log('    (skipped: set DATABASE_URL and JWT_SECRET to run the security policy checks)');
+            return;
+        }
+        const prisma = new PrismaClient();
+        try {
+            const owner = await register('secpol');
+            const me = await call('GET', '/api/settings/profile', owner);
+            const ownerId = me.body.id as string;
+            const patch = (token: string, body: unknown) => call('PATCH', '/api/settings/security', token, body);
+
+            // Defaults match the behaviour before the policy existed
+            const def = await call('GET', '/api/settings/security', owner);
+            assert.equal(def.status, 200);
+            assert.deepEqual(def.body, { sessionTimeoutMinutes: 1440, minPasswordLength: 8, requirePasswordSpecialChar: false, passwordExpiryDays: 0, logoutOnPasswordChange: true });
+
+            // Validation and permission
+            assert.equal((await patch(owner, { sessionTimeoutMinutes: 7 })).status, 400);
+            assert.equal((await patch(owner, { minPasswordLength: 4 })).status, 400);
+            assert.equal((await patch(owner, { passwordExpiryDays: 5 })).status, 400);
+            assert.equal((await patch(owner, { requirePasswordSpecialChar: 'yes' })).status, 400);
+            assert.equal((await patch(owner, {})).status, 400);
+            // One invitation can be retried: a rejected password does not consume it (pending invites reserve seats)
+            const inviteMember = async (label: string, attempts: Array<[string, number]>) => {
+                const email = `${label}-${run}@smoke.test`;
+                const inv = await call('POST', '/api/settings/invite', owner, { email, role: 'AGENT' });
+                assert.equal(inv.status, 200, JSON.stringify(inv.body));
+                const row = await prisma.invitation.findFirst({ where: { email }, orderBy: { createdAt: 'desc' } });
+                let token: string | undefined;
+                for (const [password, wantStatus] of attempts) {
+                    const acc = await call('POST', '/api/auth/accept-invite', undefined, { name: label, email, password, inviteToken: row!.token });
+                    assert.equal(acc.status, wantStatus, `${label} with "${password}": ${JSON.stringify(acc.body)}`);
+                    if (acc.status === 201) token = acc.body.token as string;
+                }
+                return token;
+            };
+            const agentToken = (await inviteMember('secagent', [['SmokeTest123!', 201]]))!;
+            assert.equal((await patch(agentToken, { minPasswordLength: 20 })).status, 403, 'agents cannot change the policy');
+
+            // Password rules apply to invitations
+            assert.equal((await patch(owner, { minPasswordLength: 12, requirePasswordSpecialChar: true })).status, 200);
+            await inviteMember('secnew', [['Ab1!short', 400], ['NoSpecialChars123', 400], ['Long-Enough-Pass1', 201]]);
+            assert.equal((await patch(owner, { minPasswordLength: 8, requirePasswordSpecialChar: false })).status, 200);
+
+            // Session length: a token older than the limit is refused with 401 (not 403)
+            const now = Math.floor(Date.now() / 1000);
+            const oldToken = jwt.sign({ userId: ownerId, iat: now - 20 * 60 }, process.env.JWT_SECRET!, { algorithm: 'HS256', expiresIn: '24h' });
+            assert.equal((await call('GET', '/api/settings/profile', oldToken)).status, 200, 'a 20-minute-old session is fine with the default limit');
+            assert.equal((await patch(owner, { sessionTimeoutMinutes: 15 })).status, 200);
+            const expired = await call('GET', '/api/settings/profile', oldToken);
+            assert.equal(expired.status, 401);
+            assert.equal(expired.body.code, 'SESSION_EXPIRED');
+            assert.equal((await call('GET', '/api/settings/profile', owner)).status, 200, 'a fresh session still works');
+            assert.equal((await patch(owner, { sessionTimeoutMinutes: 1440 })).status, 200);
+
+            // Signing out on password change: sessions started before the change stop working
+            await prisma.user.update({ where: { id: ownerId }, data: { passwordChangedAt: new Date() } });
+            // The owner's own earlier session is now stale too, so continue with a session that starts after the change
+            const fresh = jwt.sign({ userId: ownerId }, process.env.JWT_SECRET!, { algorithm: 'HS256', expiresIn: '24h' });
+            assert.equal((await patch(fresh, { logoutOnPasswordChange: true })).status, 200); // also flushes the account cache
+            const changed = await call('GET', '/api/settings/profile', oldToken);
+            assert.equal(changed.status, 401);
+            assert.equal(changed.body.code, 'PASSWORD_CHANGED');
+            assert.equal((await patch(fresh, { logoutOnPasswordChange: false })).status, 200);
+            assert.equal((await call('GET', '/api/settings/profile', oldToken)).status, 200, 'with the switch off, old sessions keep working');
+            assert.equal((await patch(fresh, { logoutOnPasswordChange: true })).status, 200);
+
+            // Password expiry: enforced at sign-in when the server can send reset emails, otherwise ignored so nobody is locked out
+            assert.equal((await patch(fresh, { passwordExpiryDays: 30 })).status, 200);
+            await prisma.user.update({ where: { id: ownerId }, data: { passwordChangedAt: new Date(Date.now() - 40 * 86400000) } });
+            const login = await call('POST', '/api/auth/login', undefined, { email: `secpol-${run}@smoke.test`, password: 'SmokeTest123!' });
+            if (process.env.EMAIL_API_KEY && process.env.EMAIL_FROM) {
+                assert.equal(login.status, 403, JSON.stringify(login.body));
+                assert.equal(login.body.code, 'PASSWORD_EXPIRED');
+            } else {
+                assert.equal(login.status, 200, 'without a working reset email the expiry must not lock anyone out');
+            }
+        } finally {
+            await prisma.$disconnect();
+        }
     });
 
     // Permission matrix: 401 vs 403 stay distinct, and each role only reaches what it should.

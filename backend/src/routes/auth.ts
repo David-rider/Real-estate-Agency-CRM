@@ -5,7 +5,8 @@ import crypto from 'crypto';
 import { PrismaClient } from '@prisma/client';
 import rateLimit from 'express-rate-limit';
 import { sendEmail, passwordResetEmail, welcomeEmail } from '../lib/email';
-import { authenticateToken, AuthRequest, setAuthCookie, clearAuthCookie } from '../middleware/authMiddleware';
+import { authenticateToken, AuthRequest, setAuthCookie, clearAuthCookie, invalidateAccount } from '../middleware/authMiddleware';
+import { passwordPolicyError, orgPasswordPolicy } from '../lib/passwordPolicy';
 import { getSeatUsage } from '../lib/seats';
 import { orgSlug } from '../lib/slug';
 
@@ -65,6 +66,20 @@ router.post('/login', authLimiter, async (req, res) => {
 
         if (!user.isActive) {
             return res.status(403).json({ error: 'This account has been deactivated. Contact your administrator.' });
+        }
+
+        // Password expiry policy. Only enforced when email can be sent: without a working
+        // reset flow an expired password would lock the account out for good.
+        const policyOrg = await prisma.organization.findUnique({ where: { id: user.orgId }, select: { passwordExpiryDays: true } });
+        if (policyOrg && policyOrg.passwordExpiryDays > 0 && emailServiceConfigured()) {
+            const since = user.passwordChangedAt ?? user.createdAt;
+            const ageDays = (Date.now() - since.getTime()) / 86400000;
+            if (ageDays > policyOrg.passwordExpiryDays) {
+                return res.status(403).json({
+                    error: 'Your password has expired. Use "Forgot password" to choose a new one.',
+                    code: 'PASSWORD_EXPIRED',
+                });
+            }
         }
 
         if (!user.emailVerified && emailServiceConfigured()) {
@@ -241,12 +256,16 @@ router.post('/reset-password', authLimiter, async (req, res) => {
 
         if (!user) return res.status(400).json({ error: 'Invalid or expired reset token' });
 
+        const policyError = passwordPolicyError(password, await orgPasswordPolicy(user.orgId));
+        if (policyError) return res.status(400).json({ error: policyError });
+
         const hashedPassword = await bcrypt.hash(password, 10);
 
         await prisma.user.update({
             where: { id: user.id },
-            data: { password: hashedPassword, passwordResetToken: null, passwordResetExpiry: null }
+            data: { password: hashedPassword, passwordResetToken: null, passwordResetExpiry: null, passwordChangedAt: new Date() }
         });
+        invalidateAccount(user.id);
 
         res.json({ message: 'Password reset successfully. You can now log in.' });
     } catch (error) {
@@ -284,6 +303,8 @@ router.post('/accept-invite', authLimiter, async (req, res) => {
         if (invitation.email !== email.trim().toLowerCase()) {
             return res.status(403).json({ error: 'This invitation was sent to a different email address.' });
         }
+        const invitePolicyError = passwordPolicyError(password, await orgPasswordPolicy(invitation.orgId));
+        if (invitePolicyError) return res.status(400).json({ error: invitePolicyError });
 
         // Check email not already taken
         const existingUser = await prisma.user.findUnique({ where: { email: invitation.email } });

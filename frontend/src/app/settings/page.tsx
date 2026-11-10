@@ -140,7 +140,7 @@ export default function SettingsPage() {
   // Remove a key from this set when its backend enforcement ships.
   // (Profile, Notifications, Org Settings, Team & Roles, Lead Routing and the theme picker are real and server-backed.)
   const COMING_SOON = new Set([
-    "access-control", "security", "integrations",
+    "access-control", "integrations",
     "crm", "properties", "finance", "appointments", "documents", "marketing",
   ]);
   const soonLabel = Sc.comingSoon ?? "Coming soon";
@@ -267,7 +267,8 @@ export default function SettingsPage() {
   const [docPersonal, setDocPersonal] = React.useState(() => ls("settings_doc_personal",  DEFAULT_DOC_PREF));
   const [mktOrg,      setMktOrg]      = React.useState(() => ls("settings_mkt_org",       DEFAULT_MKT_ORG));
   const [mktPersonal, setMktPersonal] = React.useState(() => ls("settings_mkt_personal",  DEFAULT_MKT_PREF));
-  const [security,    setSecurity]    = React.useState({ twoFAEnabled: false, sessionTimeout: "60", ipWhitelist: "", loginAlerts: true, passwordExpiry: "90", minPasswordLength: "10", requireSpecialChar: true, forceLogoutOnPwChange: true });
+  // Organization security policy; every field here is saved by the backend and enforced there.
+  const [security,    setSecurity]    = React.useState({ sessionTimeoutMinutes: 1440, minPasswordLength: 8, requirePasswordSpecialChar: false, passwordExpiryDays: 0, logoutOnPasswordChange: true });
   const [integrations,setIntegrations]= React.useState({ stripeConnected: false, googleCalendarConnected: false, mlsConnected: false, docusignConnected: false, mailchimpConnected: false, zapierConnected: false, mapboxKey: "", openaiKey: "" });
 
   // ── Load team & lead routing ──────────────────────────────────────────────────
@@ -301,6 +302,12 @@ export default function SettingsPage() {
       .then((r) => (r.ok ? r.json() : null))
       .then((n) => {
         if (n) setNotif({ ...DEFAULT_NOTIF, ...n });
+      })
+      .catch(() => {});
+    fetch(`${API_BASE}/api/settings/security`, { headers: authHeaders(), credentials: "include" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((p) => {
+        if (p) setSecurity((prev) => ({ ...prev, ...p }));
       })
       .catch(() => {});
     fetch(`${API_BASE}/api/settings/organization`, { headers: authHeaders(), credentials: "include" })
@@ -352,6 +359,44 @@ export default function SettingsPage() {
       toast.error(t.login.serverError);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const saveSecurity = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/settings/security`, {
+        method: "PATCH",
+        headers: { ...authHeaders(), "X-CSRF-Protection": "1" },
+        credentials: "include",
+        body: JSON.stringify(security),
+      });
+      const d = await res.json();
+      if (res.ok) {
+        setSecurity((prev) => ({ ...prev, ...d }));
+        toast.success(XS.secSaved);
+      } else {
+        toast.error(d.error || XS.secSaveFailed);
+      }
+    } catch {
+      toast.error(t.login.serverError);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const sendPasswordResetLink = async () => {
+    if (!user?.email) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/forgot-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-CSRF-Protection": "1" },
+        body: JSON.stringify({ email: user.email }),
+      });
+      if (res.ok) toast.success(XS.secResetSent);
+      else toast.error(XS.secResetFailed);
+    } catch {
+      toast.error(t.login.serverError);
     }
   };
 
@@ -845,44 +890,52 @@ export default function SettingsPage() {
 
   const renderSecurity = () => {
     const SC = S.security ?? {};
+    const timeoutOptions: Array<[number, string]> = [
+      [15, `15 ${XS.secMinutes}`], [30, `30 ${XS.secMinutes}`], [60, `60 ${XS.secMinutes}`],
+      [120, `2 ${XS.secHours}`], [480, `8 ${XS.secHours}`], [1440, `24 ${XS.secHours}`],
+    ];
+    const soonBadge = <span className="px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs">{soonLabel}</span>;
     return (
       <div>
         <SectionHeader title={SC.title ?? "Security"} description={SC.desc ?? "Authentication and session security settings"} />
         <div className="text-xs font-semibold uppercase tracking-widest text-foreground/40 mb-2">{SC.personal ?? "Personal Security"}</div>
         <div className="space-y-0 mb-6">
-          <SettingRow label={SC.twoFA ?? "Two-Factor Authentication"} description={SC.twoFADesc}><Toggle checked={security.twoFAEnabled} onChange={(v) => setSecurity({ ...security, twoFAEnabled: v })} /></SettingRow>
-          <SettingRow label={SC.loginAlerts ?? "Login Alerts"} description={SC.loginAlertsDesc}><Toggle checked={security.loginAlerts} onChange={(v) => setSecurity({ ...security, loginAlerts: v })} /></SettingRow>
-          <SettingRow label={SC.sessionTimeout ?? "Session Timeout (minutes)"} description={SC.sessionTimeoutDesc}>
-            <select className={SELECT_CLS} value={security.sessionTimeout} onChange={(e) => setSecurity({ ...security, sessionTimeout: e.target.value })}>
-              <option value="15">15 min</option><option value="30">30 min</option><option value="60">60 min</option>
-              <option value="120">2 hours</option><option value="480">8 hours</option>
-            </select>
-          </SettingRow>
           <SettingRow label={SC.changePassword ?? "Change Password"}>
-            <button className="px-3 py-1.5 bg-surface border border-border rounded-lg text-xs text-foreground hover:bg-background" onClick={() => toast.info("Password change email sent")}>{SC.sendResetLink ?? "Send Reset Link"}</button>
+            <button className="px-3 py-1.5 bg-surface border border-border rounded-lg text-xs text-foreground hover:bg-background" onClick={sendPasswordResetLink}>{SC.sendResetLink ?? "Send Reset Link"}</button>
           </SettingRow>
+          <SettingRow label={SC.twoFA ?? "Two-Factor Authentication"} description={XS.secNotYet}>{soonBadge}</SettingRow>
+          <SettingRow label={SC.loginAlerts ?? "Login Alerts"} description={XS.secNotYet}>{soonBadge}</SettingRow>
         </div>
-        <div className="text-xs font-semibold uppercase tracking-widest text-foreground/40 mb-2">{SC.orgPolicy ?? "Org Security Policy"}</div>
+        <div className="text-xs font-semibold uppercase tracking-widest text-foreground/40 mb-1">{SC.orgPolicy ?? "Org Security Policy"}</div>
+        <div className="text-xs text-foreground/50 mb-2">{XS.secRulesNote}</div>
         <div className="space-y-0 mb-6">
+          <LockedRow label={SC.sessionTimeout ?? "Session Timeout"} description={XS.secSessionDesc} minRoleLabel={roleLabel("FIRMADMIN")} canEdit={isFirmAdmin}>
+            <select className={SELECT_CLS} value={security.sessionTimeoutMinutes} onChange={(e) => setSecurity({ ...security, sessionTimeoutMinutes: Number(e.target.value) })}>
+              {timeoutOptions.map(([v, label]) => <option key={v} value={v}>{label}</option>)}
+            </select>
+          </LockedRow>
           <LockedRow label={SC.minPasswordLength ?? "Minimum Password Length"} minRoleLabel={roleLabel("FIRMADMIN")} canEdit={isFirmAdmin}>
-            <select className={SELECT_CLS} value={security.minPasswordLength} onChange={(e) => setSecurity({ ...security, minPasswordLength: e.target.value })}>
-              {["8","10","12","14","16"].map((n) => <option key={n} value={n}>{n} {SC.characters ?? "characters"}</option>)}
+            <select className={SELECT_CLS} value={security.minPasswordLength} onChange={(e) => setSecurity({ ...security, minPasswordLength: Number(e.target.value) })}>
+              {[8, 10, 12, 14, 16].map((n) => <option key={n} value={n}>{n} {SC.characters ?? "characters"}</option>)}
             </select>
           </LockedRow>
           <LockedRow label={SC.requireSpecialChar ?? "Require Special Character"} minRoleLabel={roleLabel("FIRMADMIN")} canEdit={isFirmAdmin}>
-            <Toggle checked={security.requireSpecialChar} onChange={(v) => setSecurity({ ...security, requireSpecialChar: v })} disabled={!isFirmAdmin} />
+            <Toggle checked={security.requirePasswordSpecialChar} onChange={(v) => setSecurity({ ...security, requirePasswordSpecialChar: v })} disabled={!isFirmAdmin} />
           </LockedRow>
-          <LockedRow label={SC.passwordExpiry ?? "Password Expiry (days)"} description={SC.passwordExpiryDesc} minRoleLabel={roleLabel("FIRMADMIN")} canEdit={isFirmAdmin}>
-            <input className={INPUT_CLS} style={{ width: 80 }} value={security.passwordExpiry} onChange={(e) => setSecurity({ ...security, passwordExpiry: e.target.value })} />
+          <LockedRow label={SC.passwordExpiry ?? "Password Expiry (days)"} description={XS.secExpiryDesc} minRoleLabel={roleLabel("FIRMADMIN")} canEdit={isFirmAdmin}>
+            <select className={SELECT_CLS} value={security.passwordExpiryDays} onChange={(e) => setSecurity({ ...security, passwordExpiryDays: Number(e.target.value) })}>
+              <option value={0}>{XS.secNever}</option>
+              {[30, 60, 90, 180, 365].map((n) => <option key={n} value={n}>{n} {XS.secDays}</option>)}
+            </select>
           </LockedRow>
-          <LockedRow label={SC.forceLogout ?? "Force Logout on Password Change"} minRoleLabel={roleLabel("FIRMADMIN")} canEdit={isFirmAdmin}>
-            <Toggle checked={security.forceLogoutOnPwChange} onChange={(v) => setSecurity({ ...security, forceLogoutOnPwChange: v })} disabled={!isFirmAdmin} />
+          <LockedRow label={SC.forceLogout ?? "Force Logout on Password Change"} description={XS.secForceLogoutDesc} minRoleLabel={roleLabel("FIRMADMIN")} canEdit={isFirmAdmin}>
+            <Toggle checked={security.logoutOnPasswordChange} onChange={(v) => setSecurity({ ...security, logoutOnPasswordChange: v })} disabled={!isFirmAdmin} />
           </LockedRow>
-          <LockedRow label={SC.ipWhitelist ?? "IP Whitelist"} description={SC.ipWhitelistDesc} minRoleLabel={roleLabel("FIRMADMIN")} canEdit={isFirmAdmin}>
-            <input className={INPUT_CLS} style={{ width: 240 }} value={security.ipWhitelist} onChange={(e) => setSecurity({ ...security, ipWhitelist: e.target.value })} placeholder="192.168.1.0/24" />
+          <LockedRow label={SC.ipWhitelist ?? "IP Whitelist"} description={XS.secNotYet} minRoleLabel={roleLabel("FIRMADMIN")} canEdit={isFirmAdmin}>
+            {soonBadge}
           </LockedRow>
         </div>
-        <SaveBtn label={SC.save ?? "Save Security Settings"} onClick={() => toast.success("Security settings saved")} />
+        {isFirmAdmin && <SaveBtn label={saving ? "…" : (SC.save ?? "Save Security Settings")} onClick={saveSecurity} />}
       </div>
     );
   };

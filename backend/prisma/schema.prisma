@@ -29,6 +29,12 @@ model Organization {
   // Commission defaults applied when a deal closes (percent values, e.g. 3 = 3%)
   defaultCommissionRate Float @default(3)
   defaultFirmSplit      Float @default(30)
+  // Security policy, enforced by the auth middleware, login and password flows (0 days = passwords never expire)
+  sessionTimeoutMinutes      Int     @default(1440)
+  minPasswordLength          Int     @default(8)
+  requirePasswordSpecialChar Boolean @default(false)
+  passwordExpiryDays         Int     @default(0)
+  logoutOnPasswordChange     Boolean @default(true)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
@@ -74,6 +80,8 @@ model User {
   preferredLanguage String       @default("en")
   orgId             String
   organization      Organization @relation(fields: [orgId], references: [id])
+  // Set when the password is reset; null = never changed since the account was created
+  passwordChangedAt DateTime?
 
   // Profile fields
   avatarUrl     String?
