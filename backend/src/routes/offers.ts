@@ -4,6 +4,7 @@ import { AuthRequest } from '../middleware/authMiddleware';
 import { createNotification } from './notifications';
 import { checkRefs, isManager, optDate, optNumber, pickEnum } from '../lib/access';
 import { createClosingChecklist, onTransactionStatusChange } from '../lib/deals';
+import { audit, diffFields } from '../lib/audit';
 
 const router = express.Router();
 const STATUSES = ['PENDING', 'ACCEPTED', 'REJECTED', 'COUNTER', 'WITHDRAWN', 'EXPIRED'] as const;
@@ -63,6 +64,7 @@ router.post('/', async (req: AuthRequest, res) => {
         where: { id: clientId, funnelStage: { in: ['LEAD', 'QUALIFIED', 'SHOWING'] } },
         data: { funnelStage: 'OFFERING' },
     });
+    await audit(req, 'CREATE_OFFER', 'Offer', offer.id, undefined, { amount, propertyId, clientId });
     res.status(201).json(offer);
 });
 
@@ -92,6 +94,8 @@ router.patch('/:id', async (req: AuthRequest, res) => {
     if (expiresAt !== undefined) data.expiresAt = expiresAt;
 
     const updated = await prisma.offer.update({ where: { id: offer.id }, data });
+    const changes = diffFields(offer, data);
+    if (Object.keys(changes.after).length > 0) await audit(req, 'UPDATE_OFFER', 'Offer', offer.id, changes.before, changes.after);
 
     let transaction = null;
     if (status && status !== offer.status) {

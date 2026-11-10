@@ -21,6 +21,16 @@
 
 ## [未发布]
 
+#### 安全 / Security
+- 新增 `SECURITY.md`：说明如何通过 GitHub 私下报告漏洞、处理流程、范围和支持的版本。
+  *Added `SECURITY.md`: how to report a vulnerability privately through GitHub, what happens next, scope and supported versions.*
+- 审计日志现在也记录房源、报价、预约、文档的新增、修改和删除（只记录改动的字段；文档链接和存储路径不会写入日志）。公司管理员可在“设置”里导出。
+  *The audit trail now also records creating, editing and deleting listings, offers, appointments and documents (only the changed fields are stored; document links and storage keys are never written to it). Company admins can export it from Settings.*
+
+#### 新增 / Added
+- 冒烟测试增加“权限矩阵”和“审计日志”检查：经纪人、经理、公司管理员各自能访问和不能访问的接口，套餐档位限制返回 403，未登录或令牌无效始终返回 401；共 25 项。
+  *The smoke test gains permission-matrix and audit-trail checks: what an agent, a manager and a firm admin can and cannot reach, plan-tier limits returning 403, and signed-out or invalid tokens always returning 401; 25 checks in total.*
+
 #### 变更 / Changed
 - 文档补充英文：`CHANGELOG.md`、`guides/roadmap.md`、`guides/release-process.md`、`guides/security-audit-2026-10.md`、`guides/competitive-research.md` 现在是中英双语（中文在前、英文紧随），内容不变。
   *Docs gain English: `CHANGELOG.md`, `guides/roadmap.md`, `guides/release-process.md`, `guides/security-audit-2026-10.md` and `guides/competitive-research.md` are now bilingual (Chinese first, English right after); content unchanged.*

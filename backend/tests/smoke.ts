@@ -7,6 +7,7 @@
  * main agent workflows, plus checks that one brokerage cannot touch the other's data.
  */
 import assert from 'node:assert/strict';
+import { PrismaClient } from '@prisma/client';
 
 const API = process.env.API_URL || 'http://localhost:4000';
 const run = Date.now().toString(36);
@@ -528,6 +529,128 @@ async function main() {
         assert.equal(r.status, 200);
         const list = await call('GET', '/api/clients?q=pat', a);
         assert.equal(list.body.total, 0);
+    });
+
+    await step('audit trail covers listings, offers, appointments and documents (no secrets in it)', async () => {
+        const sec = await register('audit');
+        const prop = await call('POST', '/api/properties', sec, { address: '1 Audit St', city: 'New York', state: 'NY', zip: '10001', price: 500000, beds: 1, baths: 1 });
+        assert.equal(prop.status, 201, JSON.stringify(prop.body));
+        const pid = prop.body.id as string;
+        assert.equal((await call('PATCH', `/api/properties/${pid}`, sec, { price: 510000 })).status, 200);
+        const cl = await call('POST', '/api/clients', sec, { firstName: 'Audit', lastName: `Buyer${run}` });
+        assert.equal(cl.status, 201, JSON.stringify(cl.body));
+        const off = await call('POST', '/api/offers', sec, { amount: 480000, propertyId: pid, clientId: cl.body.id });
+        assert.equal(off.status, 201, JSON.stringify(off.body));
+        assert.equal((await call('PATCH', `/api/offers/${off.body.id}`, sec, { status: 'REJECTED' })).status, 200);
+        const ap = await call('POST', '/api/appointments', sec, { title: 'Audit showing', type: 'SHOWING', date: new Date(Date.now() + 7200000).toISOString() });
+        assert.equal(ap.status, 201, JSON.stringify(ap.body));
+        assert.equal((await call('PATCH', `/api/appointments/${ap.body.id}`, sec, { status: 'CONFIRMED' })).status, 200);
+        assert.equal((await call('DELETE', `/api/appointments/${ap.body.id}`, sec)).status, 200);
+        const doc = await call('POST', '/api/documents', sec, { name: 'Audit doc', url: 'https://example.com/secret-link-token-123', type: 'OTHER' });
+        assert.equal(doc.status, 201, JSON.stringify(doc.body));
+        assert.equal((await call('PATCH', `/api/documents/${doc.body.id}`, sec, { name: 'Audit doc renamed' })).status, 200);
+        assert.equal((await call('DELETE', `/api/documents/${doc.body.id}`, sec)).status, 200);
+        assert.equal((await call('DELETE', `/api/properties/${pid}`, sec)).status, 200);
+
+        const log = await call('GET', '/api/settings/organization/audit-log', sec);
+        assert.equal(log.status, 200);
+        const actions = new Set<string>(log.body.logs.map((l: any) => l.action));
+        for (const want of ['CREATE_PROPERTY', 'UPDATE_PROPERTY', 'WITHDRAW_PROPERTY', 'CREATE_OFFER', 'UPDATE_OFFER',
+            'CREATE_APPOINTMENT', 'UPDATE_APPOINTMENT', 'DELETE_APPOINTMENT', 'CREATE_DOCUMENT', 'UPDATE_DOCUMENT', 'DELETE_DOCUMENT']) {
+            assert.ok(actions.has(want), `audit log is missing ${want}`);
+        }
+        const upd = log.body.logs.find((l: any) => l.action === 'UPDATE_PROPERTY');
+        assert.deepEqual(JSON.parse(upd.before), { price: 500000 });
+        assert.deepEqual(JSON.parse(upd.after), { price: 510000 });
+        assert.ok(!JSON.stringify(log.body.logs).includes('secret-link-token-123'), 'document links must never be written to the audit trail');
+    });
+
+    // Permission matrix: 401 vs 403 stay distinct, and each role only reaches what it should.
+    // Needs DATABASE_URL (the invitation token is only ever emailed, so we read it from the DB).
+    await step('permission matrix: roles, tiers and 401 / 403 behaviour', async () => {
+        if (!process.env.DATABASE_URL) {
+            console.log('    (skipped: set DATABASE_URL to run the permission matrix)');
+            return;
+        }
+        const prisma = new PrismaClient();
+        try {
+            const owner = await register('perm');
+            const join = async (label: string, role: string) => {
+                const email = `${label}-${run}@smoke.test`;
+                const inv = await call('POST', '/api/settings/invite', owner, { email, role });
+                assert.equal(inv.status, 200, JSON.stringify(inv.body));
+                const row = await prisma.invitation.findFirst({ where: { email }, orderBy: { createdAt: 'desc' } });
+                assert.ok(row, 'invitation row exists');
+                const acc = await call('POST', '/api/auth/accept-invite', undefined, { name: `${label} User`, email, password: 'SmokeTest123!', inviteToken: row!.token });
+                assert.equal(acc.status, 201, JSON.stringify(acc.body));
+                return { token: acc.body.token as string, id: acc.body.user?.id as string };
+            };
+            const manager = await join('permmgr', 'MANAGER');
+            const agent = await join('permagent', 'AGENT');
+            const me = await call('GET', '/api/settings/profile', owner);
+            const ownerId = me.body.id as string;
+            assert.ok(ownerId && manager.id && agent.id, 'user ids resolved');
+
+            const expectStatus = async (who: string, token: string | undefined, method: string, path: string, want: number, body?: unknown) => {
+                const r = await call(method, path, token, body);
+                assert.equal(r.status, want, `${who} ${method} ${path}: expected ${want}, got ${r.status} ${JSON.stringify(r.body)?.slice(0, 120)}`);
+            };
+
+            // Not signed in, or a bad token: always 401, never 403
+            for (const path of ['/api/clients', '/api/settings/users', '/api/finance/payout-requests', '/api/dashboard']) {
+                await expectStatus('anonymous', undefined, 'GET', path, 401);
+                await expectStatus('bad token', 'not-a-real-token', 'GET', path, 401);
+            }
+
+            // Agent: no management or admin endpoints
+            await expectStatus('agent', agent.token, 'GET', '/api/settings/users', 403);
+            await expectStatus('agent', agent.token, 'POST', '/api/settings/invite', 403, { email: `nope-${run}@smoke.test`, role: 'AGENT' });
+            await expectStatus('agent', agent.token, 'PATCH', '/api/settings/organization', 403, { name: 'Hijacked' });
+            await expectStatus('agent', agent.token, 'GET', '/api/settings/organization/audit-log', 403);
+            await expectStatus('agent', agent.token, 'GET', '/api/settings/organization/export', 403);
+            await expectStatus('agent', agent.token, 'PUT', `/api/settings/users/${manager.id}/role`, 403, { role: 'FIRMADMIN' });
+            await expectStatus('agent', agent.token, 'DELETE', `/api/settings/users/${manager.id}`, 403);
+            await expectStatus('agent', agent.token, 'GET', '/api/settings/lead-routing', 403);
+            await expectStatus('agent', agent.token, 'GET', '/api/finance/payout-requests', 403);
+            await expectStatus('agent', agent.token, 'POST', '/api/finance/commissions/none/approve', 403);
+
+            // Manager: management endpoints yes, admin-only endpoints no
+            await expectStatus('manager', manager.token, 'GET', '/api/settings/users', 200);
+            await expectStatus('manager', manager.token, 'GET', '/api/settings/lead-routing', 200);
+            await expectStatus('manager', manager.token, 'GET', '/api/finance/payout-requests', 200);
+            await expectStatus('manager', manager.token, 'PATCH', '/api/settings/organization', 403, { name: 'Hijacked' });
+            await expectStatus('manager', manager.token, 'GET', '/api/settings/organization/audit-log', 403);
+            await expectStatus('manager', manager.token, 'GET', '/api/settings/organization/export', 403);
+            await expectStatus('manager', manager.token, 'PUT', `/api/settings/users/${agent.id}/role`, 403, { role: 'MANAGER' });
+            await expectStatus('manager', manager.token, 'DELETE', `/api/settings/users/${agent.id}`, 403);
+            await expectStatus('manager', manager.token, 'POST', '/api/settings/invite', 403, { email: `admin-${run}@smoke.test`, role: 'FIRMADMIN' });
+
+            // Firm admin (the owner): everything above is allowed
+            await expectStatus('owner', owner, 'GET', '/api/settings/users', 200);
+            await expectStatus('owner', owner, 'GET', '/api/settings/organization/audit-log', 200);
+            await expectStatus('owner', owner, 'GET', '/api/settings/organization/export', 200);
+
+            // Subscription tier: a CORE org is refused ELITE features with 403 (not 401) and the required tier
+            const tier = await call('GET', '/api/finance/projections', owner);
+            assert.equal(tier.status, 403, JSON.stringify(tier.body));
+            assert.equal(tier.body.requiredTier, 'ELITE');
+
+            // Row level: an agent cannot see or take over another user's client, a manager can reassign
+            const c = await call('POST', '/api/clients', owner, { firstName: 'Perm', lastName: `Client${run}`, email: `permclient-${run}@example.com` });
+            assert.equal(c.status, 201, JSON.stringify(c.body));
+            const cid = c.body.id as string;
+            const peek = await call('GET', `/api/clients/${cid}`, agent.token);
+            assert.ok(peek.status === 403 || peek.status === 404, `agent must not read the owner's client, got ${peek.status}`);
+            const list = await call('GET', `/api/clients?q=Client${run}`, agent.token);
+            assert.equal(list.status, 200);
+            assert.equal(list.body.total, 0, "agent list must not include the owner's client");
+            await expectStatus('agent', agent.token, 'PATCH', `/api/clients/${cid}`, 404, { notes: 'x' });
+            await expectStatus('agent', agent.token, 'POST', '/api/clients', 403, { firstName: 'Steal', lastName: 'Lead', agentId: ownerId });
+            await expectStatus('manager', manager.token, 'PATCH', `/api/clients/${cid}`, 200, { agentId: agent.id });
+            await expectStatus('agent', agent.token, 'GET', `/api/clients/${cid}`, 200);
+        } finally {
+            await prisma.$disconnect();
+        }
     });
 
     console.log(`\nAll ${passed} smoke checks passed.`);
