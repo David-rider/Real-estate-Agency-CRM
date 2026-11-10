@@ -3,6 +3,7 @@ import { prisma } from '../server';
 import { AuthRequest } from '../middleware/authMiddleware';
 import { checkRefs, isManager } from '../lib/access';
 import { createSignedPrivateFileToken, deleteUploadedFile } from '../lib/storage';
+import { audit, diffFields } from '../lib/audit';
 
 const router = express.Router();
 const DOC_TYPES = ['CONTRACT', 'INSPECTION', 'APPRAISAL', 'BOARD_PACKAGE', 'ID', 'DISCLOSURE', 'OTHER'];
@@ -102,6 +103,7 @@ router.post('/', async (req: AuthRequest, res) => {
             orgId: user.orgId,
         },
     });
+    await audit(req, 'CREATE_DOCUMENT', 'Document', doc.id, undefined, { name: doc.name, type: doc.type, transactionId: doc.transactionId });
     res.status(201).json(doc);
 });
 
@@ -116,7 +118,10 @@ router.patch('/:id', async (req: AuthRequest, res) => {
     if (DOC_TYPES.includes(req.body.type)) data.type = req.body.type;
     if (req.body.signed === true) data.signedAt = new Date();
     if (req.body.signed === false) data.signedAt = null;
-    res.json(await prisma.document.update({ where: { id: doc.id }, data }));
+    const updated = await prisma.document.update({ where: { id: doc.id }, data });
+    const changes = diffFields(doc, data);
+    if (Object.keys(changes.after).length > 0) await audit(req, 'UPDATE_DOCUMENT', 'Document', doc.id, changes.before, changes.after);
+    res.json(updated);
 });
 
 // DELETE /api/documents/:id
@@ -126,6 +131,7 @@ router.delete('/:id', async (req: AuthRequest, res) => {
     if (!doc) return res.status(404).json({ error: 'Document not found' });
     if (doc.uploadedById !== user.userId && !isManager(user)) return res.status(403).json({ error: 'Forbidden' });
     await prisma.document.delete({ where: { id: doc.id } });
+    await audit(req, 'DELETE_DOCUMENT', 'Document', doc.id, { name: doc.name, type: doc.type });
     if (doc.storageKey) {
         await deleteUploadedFile(doc.storageKey, user.orgId);
     }

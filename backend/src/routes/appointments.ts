@@ -3,6 +3,7 @@ import { prisma } from '../server';
 import { AuthRequest } from '../middleware/authMiddleware';
 import { createNotification } from './notifications';
 import { checkRefs, isManager, optDate, optNumber, pickEnum } from '../lib/access';
+import { audit, diffFields } from '../lib/audit';
 
 const router = express.Router();
 const STATUSES = ['SCHEDULED', 'CONFIRMED', 'COMPLETED', 'CANCELLED', 'NO_SHOW', 'RESCHEDULED'] as const;
@@ -76,6 +77,7 @@ router.post('/', async (req: AuthRequest, res) => {
             data: { funnelStage: 'SHOWING' },
         });
     }
+    await audit(req, 'CREATE_APPOINTMENT', 'Appointment', appointment.id, undefined, { title: appointment.title, type: appointment.type, date: appointment.date.toISOString() });
     res.status(201).json(appointment);
 });
 
@@ -99,6 +101,8 @@ router.patch('/:id', async (req: AuthRequest, res) => {
     if (refErr) return res.status(400).json({ error: refErr });
 
     const updated = await prisma.appointment.update({ where: { id: found.appt!.id }, data });
+    const changes = diffFields(found.appt!, data);
+    if (Object.keys(changes.after).length > 0) await audit(req, 'UPDATE_APPOINTMENT', 'Appointment', found.appt!.id, changes.before, changes.after);
     // A completed meeting counts as contact with the client
     if (data.status === 'COMPLETED' && updated.clientId) {
         await prisma.client.update({ where: { id: updated.clientId }, data: { lastContactedAt: new Date() } });
@@ -112,6 +116,7 @@ router.delete('/:id', async (req: AuthRequest, res) => {
     if (found.error === 404) return res.status(404).json({ error: 'Appointment not found' });
     if (found.error === 403) return res.status(403).json({ error: 'Forbidden' });
     await prisma.appointment.delete({ where: { id: found.appt!.id } });
+    await audit(req, 'DELETE_APPOINTMENT', 'Appointment', found.appt!.id, { title: found.appt!.title, date: found.appt!.date.toISOString() });
     res.json({ message: 'Appointment deleted' });
 });
 

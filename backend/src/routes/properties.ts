@@ -5,6 +5,7 @@ import { authenticateToken, AuthRequest } from '../middleware/authMiddleware';
 import { optDate, optNumber } from '../lib/access';
 import { createNotification } from './notifications';
 import { resolveLeadAssignee } from '../lib/routing';
+import { audit, diffFields } from '../lib/audit';
 
 const router = Router();
 
@@ -381,6 +382,7 @@ router.post('/', async (req: AuthRequest, res) => {
             },
         });
 
+        await audit(req, 'CREATE_PROPERTY', 'Property', property.id, undefined, { address: property.address, price: property.price, status: property.status });
         res.status(201).json(property);
     } catch (error) {
         console.error(error);
@@ -438,6 +440,8 @@ router.patch('/:id', async (req: AuthRequest, res) => {
         if (data.featured !== undefined) data.featured = data.featured === true || data.featured === 'true';
 
         const updated = await prisma.property.update({ where: { id: String(req.params.id) }, data });
+        const changes = diffFields(existing, data);
+        if (Object.keys(changes.after).length > 0) await audit(req, 'UPDATE_PROPERTY', 'Property', existing.id, changes.before, changes.after);
         res.json(updated);
     } catch (error) {
         console.error(error);
@@ -463,6 +467,7 @@ router.delete('/:id', async (req: AuthRequest, res) => {
             where: { id: String(req.params.id) },
             data:  { status: 'WITHDRAWN' },
         });
+        await audit(req, 'WITHDRAW_PROPERTY', 'Property', existing.id, { status: existing.status }, { status: 'WITHDRAWN' });
         res.json({ message: 'Property withdrawn' });
     } catch (error) {
         console.error(error);
