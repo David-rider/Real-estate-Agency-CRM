@@ -48,6 +48,8 @@
   *Marketing (depends on the AI assistant), Access Control and Integrations stay marked “coming soon”: Marketing waits for the AI assistant (roadmap stage 4), the access-control matrix cannot yet truly drive authorization, and integrations ship together with each integration.*
 - 以前只存在浏览器里、对服务器没有任何作用的设置项已移除（例如自动归档、房源审核、MLS 同步、货币、费用收据、文档保留期），以免让人误以为生效。
   *Options that were only stored in the browser and did nothing on the server have been removed (for example auto-archive, listing approval, MLS sync, currency, expense receipts and document retention), so nobody believes they work.*
+- 防重复预约的提示现在按你自己的时区显示冲突时间（以前显示 UTC）。
+  *The double-booking warning now shows the clashing time in your own time zone (it used to show UTC).*
 - 预约提醒邮件按每位经纪人自己的“提前小时数”发送。
   *Appointment reminder emails are sent according to each agent's own “hours ahead” setting.*
 - 冒烟测试增加 6 项检查（设置接口、CRM、房源、预约、文档、财务），共 32 项。

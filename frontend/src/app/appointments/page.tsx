@@ -122,7 +122,12 @@ export default function AppointmentsPage() {
     } catch (err) {
       // The brokerage prevents double booking: let the person book it anyway after confirming
       if (err instanceof ApiError && err.status === 409 && err.body?.code === "APPOINTMENT_CONFLICT") {
-        if (window.confirm(fmt(X.policy.appointments.conflictConfirm, { msg: err.message }))) {
+        // Show the clash in the viewer's own time zone (the server message is in UTC)
+        const c = err.body?.conflict;
+        const msg = c?.date
+          ? fmt(X.policy.appointments.overlaps, { title: c.title, time: new Date(c.date).toLocaleString() })
+          : err.message;
+        if (window.confirm(fmt(X.policy.appointments.conflictConfirm, { msg }))) {
           setIsSubmitting(false);
           return saveAppointment(true);
         }

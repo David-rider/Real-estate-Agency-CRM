@@ -187,6 +187,7 @@ const en = {
       defaultDuration: "Default appointment length", defaultDurationDesc: "Used when you don't pick an end time.",
       reminderLead: "Remind me before an appointment", reminderLeadDesc: "In-app and email reminder (see Notifications).", hoursBefore: "{n} h before",
       autoConfirm: "Mark new appointments as Confirmed", autoConfirmDesc: "Instead of Scheduled.",
+      overlaps: "This overlaps \"{title}\" at {time}.",
       conflictConfirm: "{msg}\n\nBook it anyway?",
     },
     documents: {
@@ -387,6 +388,7 @@ const zhCN: Dict = {
       defaultDuration: "默认预约时长", defaultDurationDesc: "没有选择结束时间时使用。",
       reminderLead: "预约前多久提醒我", reminderLeadDesc: "站内和邮件提醒（见“通知”）。", hoursBefore: "提前 {n} 小时",
       autoConfirm: "新预约自动标记为“已确认”", autoConfirmDesc: "而不是“已安排”。",
+      overlaps: "这个时间和“{title}”（{time}）重叠。",
       conflictConfirm: "{msg}\n\n仍然要预约吗？",
     },
     documents: {
@@ -585,6 +587,7 @@ const zhTW: Dict = {
       defaultDuration: "預設預約時長", defaultDurationDesc: "沒有選擇結束時間時使用。",
       reminderLead: "預約前多久提醒我", reminderLeadDesc: "站內和電子郵件提醒（見「通知」）。", hoursBefore: "提前 {n} 小時",
       autoConfirm: "新預約自動標記為「已確認」", autoConfirmDesc: "而不是「已安排」。",
+      overlaps: "這個時間和「{title}」（{time}）重疊。",
       conflictConfirm: "{msg}\n\n仍然要預約嗎？",
     },
     documents: {
@@ -783,6 +786,7 @@ const es: Dict = {
       defaultDuration: "Duración predeterminada de las citas", defaultDurationDesc: "Se usa cuando no eliges hora de fin.",
       reminderLead: "Recordarme antes de una cita", reminderLeadDesc: "Recordatorio en la app y por correo (ver Notificaciones).", hoursBefore: "{n} h antes",
       autoConfirm: "Marcar las citas nuevas como Confirmadas", autoConfirmDesc: "En lugar de Programadas.",
+      overlaps: "Se solapa con \"{title}\" ({time}).",
       conflictConfirm: "{msg}\n\n¿Reservarla de todos modos?",
     },
     documents: {
