@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../server';
+import { OrgPolicies, normalizeOrgPolicies } from '../lib/policies';
 
 const JWT_SECRET = process.env.JWT_SECRET as string;
 
@@ -67,6 +68,8 @@ export interface AuthRequest extends Request {
         role: string;
         tier: string;
         orgId: string;
+        // The brokerage's Settings policies (cached for 30 s with the rest of the account)
+        policies: OrgPolicies;
     }
 }
 
@@ -77,6 +80,7 @@ interface CachedAccount {
     passwordChangedAtSec: number | null;
     sessionTimeoutMinutes: number;
     logoutOnPasswordChange: boolean;
+    policies: OrgPolicies;
 }
 const accountCache = new Map<string, { at: number; user: CachedAccount | null }>();
 
@@ -97,7 +101,7 @@ async function currentAccount(userId: string) {
         where: { id: userId },
         select: {
             role: true, tier: true, orgId: true, isActive: true, passwordChangedAt: true,
-            organization: { select: { sessionTimeoutMinutes: true, logoutOnPasswordChange: true } },
+            organization: { select: { sessionTimeoutMinutes: true, logoutOnPasswordChange: true, policies: true } },
         },
     });
     const user: CachedAccount | null = u && u.isActive ? {
@@ -105,6 +109,7 @@ async function currentAccount(userId: string) {
         passwordChangedAtSec: u.passwordChangedAt ? Math.floor(u.passwordChangedAt.getTime() / 1000) : null,
         sessionTimeoutMinutes: u.organization.sessionTimeoutMinutes,
         logoutOnPasswordChange: u.organization.logoutOnPasswordChange,
+        policies: normalizeOrgPolicies(u.organization.policies),
     } : null;
     accountCache.set(userId, { at: Date.now(), user });
     if (accountCache.size > 5000) accountCache.clear();
@@ -163,7 +168,7 @@ export const authenticateToken = async (req: AuthRequest, res: Response, next: N
                 return res.status(401).json({ error: 'Your password was changed. Please sign in again.', code: 'PASSWORD_CHANGED' });
             }
         }
-        req.user = { userId: decoded.userId, role: account.role, tier: account.tier, orgId: account.orgId };
+        req.user = { userId: decoded.userId, role: account.role, tier: account.tier, orgId: account.orgId, policies: account.policies };
         next();
     } catch (err) {
         next(err);

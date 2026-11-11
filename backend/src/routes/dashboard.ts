@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { prisma } from '../server';
 import { AuthRequest } from '../middleware/authMiddleware';
 import { isManager } from '../lib/access';
+import { fiscalYearStart } from '../lib/policies';
 import { STALE_DAYS } from './clients';
 
 const router = Router();
@@ -20,7 +21,8 @@ router.get('/', async (req: AuthRequest, res) => {
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const endOfToday = new Date(startOfToday.getTime() + DAY);
     const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
-    const startOfYear = new Date(now.getFullYear(), 0, 1);
+    // Fiscal year start comes from Settings > Finance (January by default)
+    const startOfYear = fiscalYearStart(now, user.policies.finance.fiscalYearStartMonth);
     const staleCutoff = new Date(now.getTime() - STALE_DAYS * DAY);
 
     const [

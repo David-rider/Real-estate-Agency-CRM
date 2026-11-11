@@ -16,11 +16,13 @@ import {
 import React from "react";
 import Link from "next/link";
 import { useExtra, fmt } from "@/lib/i18n/extra";
+import { useSettings } from "@/lib/settings/useSettings";
 
 export default function DashboardPage() {
   const { t } = useI18n();
   const D = t.dashboard as any;
   const X = useExtra();
+  const { preferences } = useSettings();
   const [now] = React.useState(() => Date.now());
 
   const [dashboardData, setDashboardData] = React.useState({
@@ -201,7 +203,9 @@ export default function DashboardPage() {
             <p className="text-4xl font-bold mt-3 text-foreground tracking-tight">
               {loading
                 ? "..."
-                : `$${dashboardData.ytdCommission.toLocaleString()}`}
+                : preferences.finance.showIncomeOnDashboard
+                  ? `$${dashboardData.ytdCommission.toLocaleString()}`
+                  : "••••"}
             </p>
             <div className="mt-6 w-full bg-background rounded-full h-1.5 overflow-hidden ring-1 ring-inset ring-border">
               <div className="bg-primary w-3/4 h-full rounded-full" />

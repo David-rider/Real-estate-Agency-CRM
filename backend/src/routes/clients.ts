@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import { prisma } from '../server';
 import { AuthRequest } from '../middleware/authMiddleware';
-import { clientScope, checkRefs, isManager, optDate, pickEnum, AuthUser } from '../lib/access';
+import { clientScope, canEditClient, checkRefs, isManager, optDate, pickEnum, AuthUser } from '../lib/access';
+import { OrgPolicies, missingClientField } from '../lib/policies';
 import { audit } from '../lib/audit';
 import { createNotification } from './notifications';
 
@@ -22,6 +23,18 @@ const ACTIVITY_TYPES  = ['NOTE', 'CALL', 'EMAIL', 'TEXT', 'MEETING', 'SHOWING'] 
 
 // A lead nobody has touched in this many days shows up as "needs follow-up"
 export const STALE_DAYS = 14;
+
+const isOpenClient = (status: string) => status !== 'CLOSED' && status !== 'ARCHIVED';
+
+// "Max clients per agent" (CRM policy) counts open clients: not closed, not archived.
+async function clientLimitError(policy: OrgPolicies['crm'], orgId: string, agentId: string, adding = 1): Promise<string | null> {
+    if (policy.maxClientsPerAgent <= 0) return null;
+    const open = await prisma.client.count({ where: { orgId, agentId, status: { notIn: ['CLOSED', 'ARCHIVED'] } } });
+    if (open + adding > policy.maxClientsPerAgent) {
+        return `This agent already has ${open} open clients; your brokerage allows at most ${policy.maxClientsPerAgent}`;
+    }
+    return null;
+}
 
 function canRead(user: AuthUser)  { return CRM_READ_ROLES.includes(user.role); }
 function canWrite(user: AuthUser) { return CRM_WRITE_ROLES.includes(user.role); }
@@ -129,6 +142,9 @@ router.post('/', async (req: AuthRequest, res) => {
     if (data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(data.email))) {
         return res.status(400).json({ error: 'Invalid email address' });
     }
+    const crmPolicy = user.policies.crm;
+    const missing = missingClientField(crmPolicy, data);
+    if (missing) return res.status(400).json({ error: missing, code: 'REQUIRED_FIELD' });
 
     // Managers may assign the lead to another agent in their org
     let agentId = user.userId;
@@ -143,7 +159,7 @@ router.post('/', async (req: AuthRequest, res) => {
         if (err) return res.status(400).json({ error: 'Co-agent not found' });
     }
 
-    if (req.body.force !== true && (data.email || data.phone)) {
+    if (req.body.force !== true && crmPolicy.duplicateCheck && (data.email || data.phone)) {
         const or: any[] = [];
         if (data.email) or.push({ email: { equals: String(data.email), mode: 'insensitive' } });
         if (data.phone) or.push({ phone: String(data.phone) });
@@ -157,6 +173,11 @@ router.post('/', async (req: AuthRequest, res) => {
                 duplicateId: dup.id,
             });
         }
+    }
+
+    if (isOpenClient(String(data.status ?? 'LEAD'))) {
+        const limitErr = await clientLimitError(crmPolicy, user.orgId, agentId);
+        if (limitErr) return res.status(409).json({ error: limitErr, code: 'CLIENT_LIMIT' });
     }
 
     const client = await prisma.client.create({
@@ -191,6 +212,14 @@ router.post('/import', async (req: AuthRequest, res) => {
     let skipped = 0;
     const errors: { row: number; reason: string }[] = [];
 
+    // CRM policy: how many more open clients this importer may take on (null = no limit)
+    const crmPolicy = user.policies.crm;
+    let room: number | null = null;
+    if (crmPolicy.maxClientsPerAgent > 0) {
+        const open = await prisma.client.count({ where: { orgId: user.orgId, agentId: user.userId, status: { notIn: ['CLOSED', 'ARCHIVED'] } } });
+        room = Math.max(0, crmPolicy.maxClientsPerAgent - open);
+    }
+
     for (let i = 0; i < rows.length; i++) {
         const raw = rows[i] || {};
         const data = clientFields(raw);
@@ -206,6 +235,11 @@ router.post('/import', async (req: AuthRequest, res) => {
         if (data.lastName === undefined) data.lastName = '';
         if (data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(data.email))) {
             errors.push({ row: i + 1, reason: `Invalid email: ${data.email}` });
+            continue;
+        }
+        const missing = missingClientField(crmPolicy, { source: 'CSV Import', ...data });
+        if (missing) {
+            errors.push({ row: i + 1, reason: missing });
             continue;
         }
 
@@ -229,6 +263,11 @@ router.post('/import', async (req: AuthRequest, res) => {
             }
         }
 
+        if (room !== null && room <= 0) {
+            errors.push({ row: i + 1, reason: `Client limit reached (${crmPolicy.maxClientsPerAgent} open clients per agent)` });
+            continue;
+        }
+        if (room !== null) room--;
         await prisma.client.create({
             data: {
                 ...(data as any),
@@ -331,9 +370,12 @@ router.patch('/:id', async (req: AuthRequest, res) => {
 
     const existing = await prisma.client.findFirst({ where: { id, ...clientScope(user) } });
     if (!existing) return res.status(404).json({ error: 'Client not found' });
+    if (!canEditClient(user, existing)) return res.status(403).json({ error: 'This client belongs to another agent' });
 
     const data = clientFields(req.body);
     if ('firstName' in req.body && !data.firstName) return res.status(400).json({ error: 'First name cannot be empty' });
+    const missing = missingClientField(user.policies.crm, data, true);
+    if (missing) return res.status(400).json({ error: missing, code: 'REQUIRED_FIELD' });
     if (data.coAgentId) {
         const err = await checkRefs(user.orgId, { userId: String(data.coAgentId) });
         if (err) return res.status(400).json({ error: 'Co-agent not found' });
@@ -344,6 +386,14 @@ router.patch('/:id', async (req: AuthRequest, res) => {
         const err = await checkRefs(user.orgId, { userId: req.body.agentId });
         if (err) return res.status(400).json({ error: 'Assigned agent not found' });
         data.agentId = req.body.agentId;
+    }
+
+    // CRM policy: a client that becomes open for an agent (reassigned to them, or reopened) counts toward their limit
+    const nextAgentId = String(data.agentId ?? existing.agentId);
+    const nextStatus = String(data.status ?? existing.status);
+    if (isOpenClient(nextStatus) && (nextAgentId !== existing.agentId || !isOpenClient(existing.status))) {
+        const limitErr = await clientLimitError(user.policies.crm, user.orgId, nextAgentId);
+        if (limitErr) return res.status(409).json({ error: limitErr, code: 'CLIENT_LIMIT' });
     }
 
     const client = await prisma.client.update({ where: { id }, data: data as any });
@@ -377,6 +427,7 @@ router.post('/:id/activities', async (req: AuthRequest, res) => {
 
     const client = await prisma.client.findFirst({ where: { id, ...clientScope(user) } });
     if (!client) return res.status(404).json({ error: 'Client not found or access denied' });
+    if (!canEditClient(user, client)) return res.status(403).json({ error: 'This client belongs to another agent' });
 
     const type = pickEnum(req.body.type, ACTIVITY_TYPES) ?? 'NOTE';
     const subject = str(req.body.subject);

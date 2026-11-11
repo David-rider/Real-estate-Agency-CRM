@@ -14,84 +14,8 @@ const ROLE_WEIGHT: Record<string, number> = {
   MARKETING: 2, OFFICE_SUPPORT: 2, ATTORNEY: 1, LENDER: 1, TITLECO: 1,
 };
 
-// ─── CSS constants ──────────────────────────────────────────────────────────────
-const INPUT_CLS =
-  "px-3 py-1.5 bg-background border border-border rounded-lg text-sm text-foreground focus:border-primary outline-none transition-colors";
-const SELECT_CLS =
-  "px-3 py-1.5 bg-background border border-border rounded-lg text-sm text-foreground focus:border-primary outline-none cursor-pointer";
-const TEXTAREA_CLS =
-  "px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground focus:border-primary outline-none resize-none transition-colors w-full";
-const LOCKED_BADGE =
-  "inline-flex items-center gap-1 px-1.5 py-0.5 bg-amber-500/10 border border-amber-500/20 rounded text-xs text-amber-500/80 shrink-0";
-
-// ─── Reusable inline components ─────────────────────────────────────────────────
-function Toggle({ checked, onChange, disabled }: { checked: boolean; onChange: (v: boolean) => void; disabled?: boolean }) {
-  return (
-    <button type="button" onClick={() => !disabled && onChange(!checked)} disabled={disabled}
-      className={`relative w-10 h-5 rounded-full transition-colors ${checked ? "bg-primary" : "bg-border"} ${disabled ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}`}>
-      <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-background rounded-full shadow transition-transform ${checked ? "translate-x-5" : "translate-x-0"}`} />
-    </button>
-  );
-}
-
-function SectionHeader({ title, description, badge }: { title: string; description: string; badge?: string }) {
-  return (
-    <div className="mb-6 pb-4 border-b border-border">
-      <div className="flex items-center gap-3">
-        <h2 className="text-lg font-bold text-foreground">{title}</h2>
-        {badge && <span className="px-2 py-0.5 bg-primary/10 border border-primary/20 rounded text-xs text-primary font-medium">{badge}</span>}
-      </div>
-      <p className="text-sm text-foreground/50 mt-1">{description}</p>
-    </div>
-  );
-}
-
-function SettingRow({ label, description, children }: { label: string; description?: string; children: React.ReactNode }) {
-  return (
-    <div className="flex items-start justify-between gap-6 py-4 border-b border-border/40 last:border-0">
-      <div className="flex-1 min-w-0">
-        <div className="text-sm font-medium text-foreground">{label}</div>
-        {description && <div className="text-xs text-foreground/50 mt-0.5">{description}</div>}
-      </div>
-      <div className="shrink-0">{children}</div>
-    </div>
-  );
-}
-
-function LockedRow({ label, description, minRoleLabel, canEdit, children }: {
-  label: string; description?: string; minRoleLabel: string; canEdit: boolean; children: React.ReactNode;
-}) {
-  return (
-    <div className={`flex items-start justify-between gap-6 py-4 border-b border-border/40 last:border-0 ${!canEdit ? "opacity-75" : ""}`}>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-sm font-medium text-foreground">{label}</span>
-          {!canEdit && <span className={LOCKED_BADGE}>🔒 {minRoleLabel}+</span>}
-        </div>
-        {description && <div className="text-xs text-foreground/50 mt-0.5">{description}</div>}
-      </div>
-      <div className={`shrink-0 ${!canEdit ? "pointer-events-none opacity-50" : ""}`}>{children}</div>
-    </div>
-  );
-}
-
-function SubTabs({ tabs, active, onChange }: {
-  tabs: { key: string; label: string; locked?: boolean }[]; active: string; onChange: (k: string) => void;
-}) {
-  return (
-    <div className="flex mb-6 border-b border-border">
-      {tabs.map((tab) => (
-        <button key={tab.key} onClick={() => onChange(tab.key)}
-          className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors flex items-center gap-1.5 ${
-            active === tab.key ? "border-primary text-primary" : "border-transparent text-foreground/50 hover:text-foreground"
-          }`}>
-          {tab.label}
-          {tab.locked && <span className="text-amber-500/70">🔒</span>}
-        </button>
-      ))}
-    </div>
-  );
-}
+import { INPUT_CLS, SELECT_CLS, TEXTAREA_CLS, LOCKED_BADGE, Toggle, SectionHeader, SettingRow, LockedRow, SubTabs } from "./ui";
+import { CrmSettings, PropertiesSettings, FinanceSettings, AppointmentsSettings, DocumentsSettings } from "./PolicySections";
 
 // ─── Permission level types ─────────────────────────────────────────────────────
 type PermLevel = "full" | "team" | "own" | "read" | "none";
@@ -111,16 +35,6 @@ const DEFAULT_ACCESS: Record<string, Record<string, PermLevel>> = {
 // ─── Default state ───────────────────────────────────────────────────────────────
 const DEFAULT_PROFILE    = { name: "", phone: "", title: "", timezone: "America/New_York", bio: "", licenseNumber: "", linkedIn: "" };
 const DEFAULT_NOTIF      = { emailNewClient: true, emailAppointmentReminder: true, emailTransactionUpdate: true, emailOfferReceived: true, emailCommissionPaid: true, emailTaskOverdue: true, emailWeeklyReport: true, inAppAll: true, inAppMentions: true, smsUrgent: false, digestFrequency: "daily" };
-const DEFAULT_CRM_ORG    = { requiredFields: "firstName,lastName,phone", maxClientsPerAgent: "100", leadSources: "Referral,Zillow,StreetEasy,Website,Cold Call,Open House", clientVisibility: "own", autoArchiveDays: "180", duplicateEmailCheck: true, allowAgentSelfAssign: true };
-const DEFAULT_CRM_PREF   = { defaultClientType: "BUYER", autoAssignToMe: true, defaultFunnelStage: "LEAD", showBudgetField: true, compactView: false };
-const DEFAULT_PROP_ORG   = { listingApprovalRequired: false, whoCanCreateListing: "AGENT", requiredFields: "address,city,state,zip,price,beds,baths", photoMinRequired: "3", photoLimit: "25", mlsSyncEnabled: false, descMaxChars: "1500" };
-const DEFAULT_PROP_PREF  = { defaultStatus: "ACTIVE", priceFormat: "full", defaultAgentSelf: true, requireSqft: false };
-const DEFAULT_FIN_ORG    = { defaultCommissionRate: "2.5", firmSplitPercent: "25", overridePercent: "5", fiscalYearStart: "1", currency: "USD", showGrossInLeaderboard: false, requireExpenseReceipts: true, taxReportingEnabled: true };
-const DEFAULT_FIN_PREF   = { showNetInDashboard: true, showLeaderboard: true, preferredCurrency: "USD" };
-const DEFAULT_APPT_ORG   = { workdayStart: "09:00", workdayEnd: "18:00", showWeekends: false, cancellationNoticehours: "24", allowClientBooking: false, bufferBetween: "15", maxAdvanceBookingDays: "60" };
-const DEFAULT_APPT_PREF  = { defaultDuration: "60", reminderBefore: "24", personalBuffer: "10", autoConfirm: true, colorCode: "blue" };
-const DEFAULT_DOC_ORG    = { allowedTypes: "PDF,DOCX,XLSX,PNG,JPG", maxFileSizeMb: "25", retentionDays: "365", autoOrganizeByTransaction: true, requireSignatureForContract: true, versionControlEnabled: true, auditTrailEnabled: true };
-const DEFAULT_DOC_PREF   = { defaultFolderView: "transaction", showThumbnails: true, autoTagEnabled: true };
 const DEFAULT_MKT_ORG    = { aiContentEnabled: true, allowedChannels: "email,instagram,facebook", brandVoice: "Professional, sophisticated, and trustworthy.", requireManagerApproval: false, autoCloseCampaignDays: "30", defaultHashtags: "#NYCRealEstate #LuxuryHomes" };
 const DEFAULT_MKT_PREF   = { emailSignature: "", defaultListingTemplate: "", preferredChannel: "email", autoScheduleEnabled: false };
 
@@ -138,11 +52,9 @@ export default function SettingsPage() {
   // Sections that are previews only: nothing in the app reads these values yet, so
   // they render read-only and labelled "Coming soon" rather than pretending to save.
   // Remove a key from this set when its backend enforcement ships.
-  // (Profile, Notifications, Org Settings, Team & Roles, Lead Routing and the theme picker are real and server-backed.)
-  const COMING_SOON = new Set([
-    "access-control", "integrations",
-    "crm", "properties", "finance", "appointments", "documents", "marketing",
-  ]);
+  // (Profile, Notifications, Org Settings, Team & Roles, Lead Routing, Security, CRM, Properties, Finance, Appointments, Documents
+  // and the theme picker are real and server-backed.)
+  const COMING_SOON = new Set(["access-control", "integrations", "marketing"]);
   const soonLabel = Sc.comingSoon ?? "Coming soon";
   const soonShort = Sc.comingSoonShort ?? "Soon"; // compact form for the narrow sidebar
   const soonBanner = () => (
@@ -223,11 +135,6 @@ export default function SettingsPage() {
   const [activeSection, setActiveSection] = React.useState("profile");
 
   // ── Sub-tab state ────────────────────────────────────────────────────────────
-  const [crmTab,  setCrmTab]  = React.useState<"org"|"personal">("org");
-  const [propTab, setPropTab] = React.useState<"org"|"personal">("org");
-  const [finTab,  setFinTab]  = React.useState<"org"|"personal">("org");
-  const [apptTab, setApptTab] = React.useState<"org"|"personal">("org");
-  const [docTab,  setDocTab]  = React.useState<"org"|"personal">("org");
   const [mktTab,  setMktTab]  = React.useState<"org"|"personal">("org");
 
   // ── Users & Lead Routing ─────────────────────────────────────────────────────
@@ -249,22 +156,12 @@ export default function SettingsPage() {
   const ls = <T,>(key: string, def: T): T => { try { return { ...def, ...JSON.parse(localStorage.getItem(key) || "{}") }; } catch { return def; } };
   // Profile and org details are server-backed (loaded below), not localStorage
   const [profile,     setProfile]     = React.useState(DEFAULT_PROFILE);
-  const [orgSettings, setOrgSettings] = React.useState({ companyName: "", website: "", address: "", licenseNumber: "", phone: "", logoUrl: "", brandColor: "", defaultCommissionRate: "3", defaultFirmSplit: "30", slug: "" });
+  const [orgSettings, setOrgSettings] = React.useState({ companyName: "", website: "", address: "", licenseNumber: "", phone: "", logoUrl: "", brandColor: "", slug: "" });
   const XE = useExtra();
   const XS = XE.settings;
   const [orgPlan,     setOrgPlan]     = React.useState<{ subscription: string; seats: { limit: number | null; used: number; pendingInvites: number } } | null>(null);
   const [saving,      setSaving]      = React.useState(false);
   const [notif,       setNotif]       = React.useState(() => ls("settings_notif",         DEFAULT_NOTIF));
-  const [crmOrg,      setCrmOrg]      = React.useState(() => ls("settings_crm_org",       DEFAULT_CRM_ORG));
-  const [crmPersonal, setCrmPersonal] = React.useState(() => ls("settings_crm_personal",  DEFAULT_CRM_PREF));
-  const [propOrg,     setPropOrg]     = React.useState(() => ls("settings_prop_org",      DEFAULT_PROP_ORG));
-  const [propPersonal,setPropPersonal]= React.useState(() => ls("settings_prop_personal", DEFAULT_PROP_PREF));
-  const [finOrg,      setFinOrg]      = React.useState(() => ls("settings_fin_org",       DEFAULT_FIN_ORG));
-  const [finPersonal, setFinPersonal] = React.useState(() => ls("settings_fin_personal",  DEFAULT_FIN_PREF));
-  const [apptOrg,     setApptOrg]     = React.useState(() => ls("settings_appt_org",      DEFAULT_APPT_ORG));
-  const [apptPersonal,setApptPersonal]= React.useState(() => ls("settings_appt_personal", DEFAULT_APPT_PREF));
-  const [docOrg,      setDocOrg]      = React.useState(() => ls("settings_doc_org",       DEFAULT_DOC_ORG));
-  const [docPersonal, setDocPersonal] = React.useState(() => ls("settings_doc_personal",  DEFAULT_DOC_PREF));
   const [mktOrg,      setMktOrg]      = React.useState(() => ls("settings_mkt_org",       DEFAULT_MKT_ORG));
   const [mktPersonal, setMktPersonal] = React.useState(() => ls("settings_mkt_personal",  DEFAULT_MKT_PREF));
   // Organization security policy; every field here is saved by the backend and enforced there.
@@ -317,7 +214,6 @@ export default function SettingsPage() {
         setOrgSettings({
           companyName: o.name ?? "", website: o.website ?? "", address: o.address ?? "",
           licenseNumber: o.licenseNumber ?? "", phone: o.phone ?? "", logoUrl: o.logoUrl ?? "",
-          defaultCommissionRate: String(o.defaultCommissionRate ?? 3), defaultFirmSplit: String(o.defaultFirmSplit ?? 30),
           slug: o.slug ?? "", brandColor: o.brandColor ?? "",
         });
         setOrgPlan({ subscription: o.subscription, seats: o.seats });
@@ -406,8 +302,7 @@ export default function SettingsPage() {
       const res = await fetch(`${API_BASE}/api/settings/organization`, {
         method: "PATCH", headers: authHeaders(),
         body: JSON.stringify({ name: orgSettings.companyName, website: orgSettings.website, address: orgSettings.address,
-          phone: orgSettings.phone, licenseNumber: orgSettings.licenseNumber, logoUrl: orgSettings.logoUrl, slug: orgSettings.slug, brandColor: orgSettings.brandColor,
-          defaultCommissionRate: orgSettings.defaultCommissionRate, defaultFirmSplit: orgSettings.defaultFirmSplit }),
+          phone: orgSettings.phone, licenseNumber: orgSettings.licenseNumber, logoUrl: orgSettings.logoUrl, slug: orgSettings.slug, brandColor: orgSettings.brandColor }),
       });
       const d = await res.json();
       if (res.ok) { if (d.slug) setOrgSettings((prev) => ({ ...prev, slug: d.slug, brandColor: d.brandColor ?? "" })); toast.success(Sc.saveChanges ?? XE.common.saved); }
@@ -653,14 +548,6 @@ export default function SettingsPage() {
             </div>
           </div>
         )}
-        <div className="mt-6 text-xs font-semibold uppercase tracking-widest text-foreground/40">{XS.commissionDefaults}</div>
-        <p className="text-xs text-foreground/50 mt-1 mb-2">{XS.commissionHelp}</p>
-        <LockedRow label={XS.defaultCommissionRate} minRoleLabel={roleLabel("FIRMADMIN")} canEdit={isFirmAdmin}>
-          <input type="number" min="0" max="100" step="0.25" className={INPUT_CLS} value={orgSettings.defaultCommissionRate} onChange={(e) => setOrgSettings({ ...orgSettings, defaultCommissionRate: e.target.value })} />
-        </LockedRow>
-        <LockedRow label={XS.defaultFirmSplit} minRoleLabel={roleLabel("FIRMADMIN")} canEdit={isFirmAdmin}>
-          <input type="number" min="0" max="100" step="1" className={INPUT_CLS} value={orgSettings.defaultFirmSplit} onChange={(e) => setOrgSettings({ ...orgSettings, defaultFirmSplit: e.target.value })} />
-        </LockedRow>
         <div className="mt-6 pb-6 border-b border-border">
           <div className="text-xs font-semibold uppercase tracking-widest text-foreground/40 mb-4">{O.subscription ?? "Subscription"}</div>
           <div className="flex items-center justify-between p-4 bg-surface rounded-lg border border-border">
@@ -1043,309 +930,10 @@ export default function SettingsPage() {
     );
   };
 
-  const renderCRM = () => {
-    const C = S.crm ?? {};
-    const tabs = [{ key: "org", label: Sc.orgPolicy ?? "Org Policy", locked: !isFirmAdmin }, { key: "personal", label: Sc.myPreferences ?? "My Preferences" }];
-    return (
-      <div>
-        <SectionHeader title={C.title ?? "CRM Settings"} description={C.desc ?? "Client relationship management configuration"} />
-        <SubTabs tabs={tabs} active={crmTab} onChange={(k) => setCrmTab(k as any)} />
-        {crmTab === "org" && (
-          <div>
-            {!isFirmAdmin && <PolicyLockNotice minRole="FIRMADMIN" />}
-            <LockedRow label={C.requiredFields ?? "Required Fields"} description={C.requiredFieldsDesc} minRoleLabel={roleLabel("FIRMADMIN")} canEdit={isFirmAdmin}>
-              <input className={INPUT_CLS} style={{ width: 280 }} value={crmOrg.requiredFields} onChange={(e) => setCrmOrg({ ...crmOrg, requiredFields: e.target.value })} />
-            </LockedRow>
-            <LockedRow label={C.maxClients ?? "Max Clients per Agent"} description={C.maxClientsDesc} minRoleLabel={roleLabel("FIRMADMIN")} canEdit={isFirmAdmin}>
-              <input className={INPUT_CLS} style={{ width: 80 }} value={crmOrg.maxClientsPerAgent} onChange={(e) => setCrmOrg({ ...crmOrg, maxClientsPerAgent: e.target.value })} type="number" min="0" />
-            </LockedRow>
-            <LockedRow label={C.clientVisibility ?? "Client Visibility"} description={C.clientVisibilityDesc} minRoleLabel={roleLabel("FIRMADMIN")} canEdit={isFirmAdmin}>
-              <select className={SELECT_CLS} value={crmOrg.clientVisibility} onChange={(e) => setCrmOrg({ ...crmOrg, clientVisibility: e.target.value })}>
-                <option value="own">{C.visibilityOwn ?? "Own clients only"}</option>
-                <option value="team">{C.visibilityTeam ?? "Team clients"}</option>
-                <option value="all">{C.visibilityAll ?? "All org clients"}</option>
-              </select>
-            </LockedRow>
-            <LockedRow label={C.autoArchive ?? "Auto-Archive After (days)"} description={C.autoArchiveDesc} minRoleLabel={roleLabel("FIRMADMIN")} canEdit={isFirmAdmin}>
-              <input className={INPUT_CLS} style={{ width: 80 }} value={crmOrg.autoArchiveDays} onChange={(e) => setCrmOrg({ ...crmOrg, autoArchiveDays: e.target.value })} type="number" />
-            </LockedRow>
-            <LockedRow label={C.duplicateCheck ?? "Enforce Duplicate Email Check"} minRoleLabel={roleLabel("FIRMADMIN")} canEdit={isFirmAdmin}>
-              <Toggle checked={crmOrg.duplicateEmailCheck} onChange={(v) => setCrmOrg({ ...crmOrg, duplicateEmailCheck: v })} disabled={!isFirmAdmin} />
-            </LockedRow>
-            <LockedRow label={C.selfAssign ?? "Allow Agent Self-Assignment"} description={C.selfAssignDesc} minRoleLabel={roleLabel("FIRMADMIN")} canEdit={isFirmAdmin}>
-              <Toggle checked={crmOrg.allowAgentSelfAssign} onChange={(v) => setCrmOrg({ ...crmOrg, allowAgentSelfAssign: v })} disabled={!isFirmAdmin} />
-            </LockedRow>
-            <LockedRow label={C.leadSources ?? "Lead Sources"} description={C.leadSourcesDesc} minRoleLabel={roleLabel("MANAGER")} canEdit={isManager}>
-              <input className={INPUT_CLS} style={{ width: 300 }} value={crmOrg.leadSources} onChange={(e) => setCrmOrg({ ...crmOrg, leadSources: e.target.value })} />
-            </LockedRow>
-            {isFirmAdmin && <SaveBtn label={Sc.saveOrgPolicy ?? "Save Org Policy"} onClick={() => save("settings_crm_org", crmOrg)} />}
-          </div>
-        )}
-        {crmTab === "personal" && (
-          <div>
-            <SettingRow label={C.defaultType ?? "Default Client Type"}>
-              <select className={SELECT_CLS} value={crmPersonal.defaultClientType} onChange={(e) => setCrmPersonal({ ...crmPersonal, defaultClientType: e.target.value })}>
-                <option value="BUYER">Buyer</option><option value="SELLER">Seller</option><option value="RENTER">Renter</option><option value="INVESTOR">Investor</option>
-              </select>
-            </SettingRow>
-            <SettingRow label={C.defaultFunnelStage ?? "Default Funnel Stage"}>
-              <select className={SELECT_CLS} value={crmPersonal.defaultFunnelStage} onChange={(e) => setCrmPersonal({ ...crmPersonal, defaultFunnelStage: e.target.value })}>
-                {["LEAD","PROSPECT","ACTIVE","UNDER_CONTRACT","CLOSED","LOST"].map((s) => <option key={s} value={s}>{s}</option>)}
-              </select>
-            </SettingRow>
-            <SettingRow label={C.autoAssignLeads ?? "Auto-Assign New Leads to Me"}><Toggle checked={crmPersonal.autoAssignToMe} onChange={(v) => setCrmPersonal({ ...crmPersonal, autoAssignToMe: v })} /></SettingRow>
-            <SettingRow label={C.showBudget ?? "Show Budget Field on Client Card"}><Toggle checked={crmPersonal.showBudgetField} onChange={(v) => setCrmPersonal({ ...crmPersonal, showBudgetField: v })} /></SettingRow>
-            <SettingRow label={C.compactView ?? "Compact List View"}><Toggle checked={crmPersonal.compactView} onChange={(v) => setCrmPersonal({ ...crmPersonal, compactView: v })} /></SettingRow>
-            <SaveBtn label={Sc.saveMyPreferences ?? "Save My Preferences"} onClick={() => save("settings_crm_personal", crmPersonal)} />
-          </div>
-        )}
-      </div>
-    );
-  };
 
-  const renderProperties = () => {
-    const P = S.properties ?? {};
-    const tabs = [{ key: "org", label: Sc.orgPolicy ?? "Org Policy", locked: !isFirmAdmin }, { key: "personal", label: Sc.myPreferences ?? "My Preferences" }];
-    return (
-      <div>
-        <SectionHeader title={P.title ?? "Property Settings"} description={P.desc ?? "Listing management configuration"} />
-        <SubTabs tabs={tabs} active={propTab} onChange={(k) => setPropTab(k as any)} />
-        {propTab === "org" && (
-          <div>
-            {!isFirmAdmin && <PolicyLockNotice minRole="FIRMADMIN" />}
-            <LockedRow label={P.listingApproval ?? "Listing Approval Required"} description={P.listingApprovalDesc} minRoleLabel={roleLabel("FIRMADMIN")} canEdit={isFirmAdmin}>
-              <Toggle checked={propOrg.listingApprovalRequired} onChange={(v) => setPropOrg({ ...propOrg, listingApprovalRequired: v })} disabled={!isFirmAdmin} />
-            </LockedRow>
-            <LockedRow label={P.whoCanCreate ?? "Who Can Create Listings"} minRoleLabel={roleLabel("FIRMADMIN")} canEdit={isFirmAdmin}>
-              <select className={SELECT_CLS} value={propOrg.whoCanCreateListing} onChange={(e) => setPropOrg({ ...propOrg, whoCanCreateListing: e.target.value })}>
-                <option value="AGENT">{P.whoCanCreateAgent ?? "Agent and above"}</option>
-                <option value="MANAGER">{P.whoCanCreateManager ?? "Manager and above"}</option>
-                <option value="FIRMADMIN">{P.whoCanCreateFirmAdmin ?? "Firm Admin only"}</option>
-              </select>
-            </LockedRow>
-            <LockedRow label={P.requiredFields ?? "Required Listing Fields"} description={P.requiredFieldsDesc} minRoleLabel={roleLabel("FIRMADMIN")} canEdit={isFirmAdmin}>
-              <input className={INPUT_CLS} style={{ width: 300 }} value={propOrg.requiredFields} onChange={(e) => setPropOrg({ ...propOrg, requiredFields: e.target.value })} />
-            </LockedRow>
-            <LockedRow label={P.minPhotos ?? "Min Photos Required"} minRoleLabel={roleLabel("FIRMADMIN")} canEdit={isFirmAdmin}>
-              <input className={INPUT_CLS} style={{ width: 80 }} type="number" value={propOrg.photoMinRequired} onChange={(e) => setPropOrg({ ...propOrg, photoMinRequired: e.target.value })} />
-            </LockedRow>
-            <LockedRow label={P.maxPhotos ?? "Max Photos per Listing"} minRoleLabel={roleLabel("FIRMADMIN")} canEdit={isFirmAdmin}>
-              <input className={INPUT_CLS} style={{ width: 80 }} type="number" value={propOrg.photoLimit} onChange={(e) => setPropOrg({ ...propOrg, photoLimit: e.target.value })} />
-            </LockedRow>
-            <LockedRow label={P.descMaxChars ?? "Description Max Characters"} minRoleLabel={roleLabel("MANAGER")} canEdit={isManager}>
-              <input className={INPUT_CLS} style={{ width: 100 }} type="number" value={propOrg.descMaxChars} onChange={(e) => setPropOrg({ ...propOrg, descMaxChars: e.target.value })} />
-            </LockedRow>
-            <LockedRow label={P.mlsSync ?? "MLS Auto-Sync"} description={P.mlsSyncDesc} minRoleLabel={roleLabel("FIRMADMIN")} canEdit={isFirmAdmin}>
-              <Toggle checked={propOrg.mlsSyncEnabled} onChange={(v) => setPropOrg({ ...propOrg, mlsSyncEnabled: v })} disabled={!isFirmAdmin} />
-            </LockedRow>
-            {isFirmAdmin && <SaveBtn label={Sc.saveOrgPolicy ?? "Save Org Policy"} onClick={() => save("settings_prop_org", propOrg)} />}
-          </div>
-        )}
-        {propTab === "personal" && (
-          <div>
-            <SettingRow label={P.defaultStatus ?? "Default Listing Status"}>
-              <select className={SELECT_CLS} value={propPersonal.defaultStatus} onChange={(e) => setPropPersonal({ ...propPersonal, defaultStatus: e.target.value })}>
-                <option value="ACTIVE">Active</option><option value="PENDING">Pending</option><option value="DRAFT">Draft</option>
-              </select>
-            </SettingRow>
-            <SettingRow label={P.priceFormat ?? "Price Display Format"}>
-              <select className={SELECT_CLS} value={propPersonal.priceFormat} onChange={(e) => setPropPersonal({ ...propPersonal, priceFormat: e.target.value })}>
-                <option value="full">{P.priceFull ?? "Full ($1,250,000)"}</option>
-                <option value="short">{P.priceShort ?? "Short ($1.25M)"}</option>
-              </select>
-            </SettingRow>
-            <SettingRow label={P.autoAssignAgent ?? "Auto-Assign Me as Listing Agent"}><Toggle checked={propPersonal.defaultAgentSelf} onChange={(v) => setPropPersonal({ ...propPersonal, defaultAgentSelf: v })} /></SettingRow>
-            <SettingRow label={P.requireSqft ?? "Require Square Footage"}><Toggle checked={propPersonal.requireSqft} onChange={(v) => setPropPersonal({ ...propPersonal, requireSqft: v })} /></SettingRow>
-            <SaveBtn label={Sc.saveMyPreferences ?? "Save My Preferences"} onClick={() => save("settings_prop_personal", propPersonal)} />
-          </div>
-        )}
-      </div>
-    );
-  };
 
-  const renderFinance = () => {
-    const F = S.finance ?? {};
-    const tabs = [{ key: "org", label: Sc.firmPolicy ?? "Firm Policy", locked: !isFirmAdmin }, { key: "personal", label: Sc.myView ?? "My View" }];
-    return (
-      <div>
-        <SectionHeader title={F.title ?? "Finance Settings"} description={F.desc ?? "Commission rates, splits, and fiscal configuration"} />
-        <SubTabs tabs={tabs} active={finTab} onChange={(k) => setFinTab(k as any)} />
-        {finTab === "org" && (
-          <div>
-            {!isFirmAdmin && <PolicyLockNotice minRole="FIRMADMIN" />}
-            <div className="p-3 mb-4 bg-amber-500/5 border border-amber-500/20 rounded-lg text-xs text-amber-500/80">⚠️ {F.rateWarning}</div>
-            <LockedRow label={F.defaultCommissionRate ?? "Default Commission Rate (%)"} description={F.defaultCommissionRateDesc} minRoleLabel={roleLabel("FIRMADMIN")} canEdit={isFirmAdmin}>
-              <input className={INPUT_CLS} style={{ width: 100 }} type="number" step="0.1" value={finOrg.defaultCommissionRate} onChange={(e) => setFinOrg({ ...finOrg, defaultCommissionRate: e.target.value })} />
-            </LockedRow>
-            <LockedRow label={F.firmSplit ?? "Firm Split (%)"} description={F.firmSplitDesc} minRoleLabel={roleLabel("FIRMADMIN")} canEdit={isFirmAdmin}>
-              <input className={INPUT_CLS} style={{ width: 100 }} type="number" step="1" value={finOrg.firmSplitPercent} onChange={(e) => setFinOrg({ ...finOrg, firmSplitPercent: e.target.value })} />
-            </LockedRow>
-            <LockedRow label={F.overrideCap ?? "Override / Bonus Cap (%)"} description={F.overrideCapDesc} minRoleLabel={roleLabel("FIRMADMIN")} canEdit={isFirmAdmin}>
-              <input className={INPUT_CLS} style={{ width: 100 }} type="number" step="0.5" value={finOrg.overridePercent} onChange={(e) => setFinOrg({ ...finOrg, overridePercent: e.target.value })} />
-            </LockedRow>
-            <LockedRow label={F.fiscalYearStart ?? "Fiscal Year Start Month"} minRoleLabel={roleLabel("FIRMADMIN")} canEdit={isFirmAdmin}>
-              <select className={SELECT_CLS} value={finOrg.fiscalYearStart} onChange={(e) => setFinOrg({ ...finOrg, fiscalYearStart: e.target.value })}>
-                {["January","February","March","April","May","June","July","August","September","October","November","December"].map((m, i) => (
-                  <option key={i+1} value={String(i+1)}>{m}</option>
-                ))}
-              </select>
-            </LockedRow>
-            <LockedRow label={F.currency ?? "Currency"} minRoleLabel={roleLabel("FIRMADMIN")} canEdit={isFirmAdmin}>
-              <select className={SELECT_CLS} value={finOrg.currency} onChange={(e) => setFinOrg({ ...finOrg, currency: e.target.value })}>
-                <option value="USD">USD — US Dollar</option><option value="EUR">EUR — Euro</option><option value="GBP">GBP — British Pound</option>
-              </select>
-            </LockedRow>
-            <LockedRow label={F.showGrossLeaderboard ?? "Show Gross Commission in Leaderboard"} description={F.showGrossLeaderboardDesc} minRoleLabel={roleLabel("FIRMADMIN")} canEdit={isFirmAdmin}>
-              <Toggle checked={finOrg.showGrossInLeaderboard} onChange={(v) => setFinOrg({ ...finOrg, showGrossInLeaderboard: v })} disabled={!isFirmAdmin} />
-            </LockedRow>
-            <LockedRow label={F.requireReceipts ?? "Require Receipts for Expenses"} minRoleLabel={roleLabel("FIRMADMIN")} canEdit={isFirmAdmin}>
-              <Toggle checked={finOrg.requireExpenseReceipts} onChange={(v) => setFinOrg({ ...finOrg, requireExpenseReceipts: v })} disabled={!isFirmAdmin} />
-            </LockedRow>
-            <LockedRow label={F.taxReporting ?? "Tax Reporting Module Enabled"} minRoleLabel={roleLabel("FIRMADMIN")} canEdit={isFirmAdmin}>
-              <Toggle checked={finOrg.taxReportingEnabled} onChange={(v) => setFinOrg({ ...finOrg, taxReportingEnabled: v })} disabled={!isFirmAdmin} />
-            </LockedRow>
-            {isFirmAdmin && <SaveBtn label={Sc.saveFirmPolicy ?? "Save Firm Policy"} onClick={() => save("settings_fin_org", finOrg)} />}
-          </div>
-        )}
-        {finTab === "personal" && (
-          <div>
-            <SettingRow label={F.showNetDashboard ?? "Show Net Commission in My Dashboard"} description={F.showNetDashboardDesc}><Toggle checked={finPersonal.showNetInDashboard} onChange={(v) => setFinPersonal({ ...finPersonal, showNetInDashboard: v })} /></SettingRow>
-            <SettingRow label={F.showLeaderboard ?? "Show Team Leaderboard"}><Toggle checked={finPersonal.showLeaderboard} onChange={(v) => setFinPersonal({ ...finPersonal, showLeaderboard: v })} /></SettingRow>
-            <SettingRow label={F.preferredCurrency ?? "Preferred Currency Display"}>
-              <select className={SELECT_CLS} value={finPersonal.preferredCurrency} onChange={(e) => setFinPersonal({ ...finPersonal, preferredCurrency: e.target.value })}>
-                <option value="USD">USD</option><option value="EUR">EUR</option><option value="GBP">GBP</option>
-              </select>
-            </SettingRow>
-            <SaveBtn label={Sc.saveMyView ?? "Save My View"} onClick={() => save("settings_fin_personal", finPersonal)} />
-          </div>
-        )}
-      </div>
-    );
-  };
 
-  const renderAppointments = () => {
-    const A = S.appointments ?? {};
-    const tabs = [{ key: "org", label: Sc.orgPolicy ?? "Org Policy", locked: !isManager }, { key: "personal", label: Sc.myPreferences ?? "My Preferences" }];
-    return (
-      <div>
-        <SectionHeader title={A.title ?? "Appointments"} description={A.desc ?? "Scheduling policies and personal calendar preferences"} />
-        <SubTabs tabs={tabs} active={apptTab} onChange={(k) => setApptTab(k as any)} />
-        {apptTab === "org" && (
-          <div>
-            {!isManager && <PolicyLockNotice minRole="MANAGER" />}
-            <LockedRow label={A.workdayStart ?? "Firm Working Hours Start"} minRoleLabel={roleLabel("MANAGER")} canEdit={isManager}>
-              <input className={INPUT_CLS} type="time" value={apptOrg.workdayStart} onChange={(e) => setApptOrg({ ...apptOrg, workdayStart: e.target.value })} />
-            </LockedRow>
-            <LockedRow label={A.workdayEnd ?? "Firm Working Hours End"} minRoleLabel={roleLabel("MANAGER")} canEdit={isManager}>
-              <input className={INPUT_CLS} type="time" value={apptOrg.workdayEnd} onChange={(e) => setApptOrg({ ...apptOrg, workdayEnd: e.target.value })} />
-            </LockedRow>
-            <LockedRow label={A.showWeekends ?? "Show Weekends"} description={A.showWeekendsDesc} minRoleLabel={roleLabel("MANAGER")} canEdit={isManager}>
-              <Toggle checked={apptOrg.showWeekends} onChange={(v) => setApptOrg({ ...apptOrg, showWeekends: v })} disabled={!isManager} />
-            </LockedRow>
-            <LockedRow label={A.cancellationNotice ?? "Cancellation Notice Required (hours)"} description={A.cancellationNoticeDesc} minRoleLabel={roleLabel("MANAGER")} canEdit={isManager}>
-              <select className={SELECT_CLS} value={apptOrg.cancellationNoticehours} onChange={(e) => setApptOrg({ ...apptOrg, cancellationNoticehours: e.target.value })}>
-                <option value="0">{A.noMinimum ?? "No minimum"}</option>
-                <option value="2">2 hours</option><option value="12">12 hours</option><option value="24">24 hours</option><option value="48">48 hours</option>
-              </select>
-            </LockedRow>
-            <LockedRow label={A.clientBooking ?? "Allow Client Self-Booking"} description={A.clientBookingDesc} minRoleLabel={roleLabel("FIRMADMIN")} canEdit={isFirmAdmin}>
-              <Toggle checked={apptOrg.allowClientBooking} onChange={(v) => setApptOrg({ ...apptOrg, allowClientBooking: v })} disabled={!isFirmAdmin} />
-            </LockedRow>
-            <LockedRow label={A.bufferBetween ?? "Buffer Between Appointments (min)"} minRoleLabel={roleLabel("MANAGER")} canEdit={isManager}>
-              <select className={SELECT_CLS} value={apptOrg.bufferBetween} onChange={(e) => setApptOrg({ ...apptOrg, bufferBetween: e.target.value })}>
-                {["0","5","10","15","30"].map((n) => <option key={n} value={n}>{n} min</option>)}
-              </select>
-            </LockedRow>
-            <LockedRow label={A.maxAdvanceDays ?? "Max Advance Booking (days)"} description={A.maxAdvanceDaysDesc} minRoleLabel={roleLabel("MANAGER")} canEdit={isManager}>
-              <input className={INPUT_CLS} style={{ width: 80 }} type="number" value={apptOrg.maxAdvanceBookingDays} onChange={(e) => setApptOrg({ ...apptOrg, maxAdvanceBookingDays: e.target.value })} />
-            </LockedRow>
-            {isManager && <SaveBtn label={Sc.saveOrgPolicy ?? "Save Org Policy"} onClick={() => save("settings_appt_org", apptOrg)} />}
-          </div>
-        )}
-        {apptTab === "personal" && (
-          <div>
-            <SettingRow label={A.defaultDuration ?? "Default Duration (minutes)"}>
-              <select className={SELECT_CLS} value={apptPersonal.defaultDuration} onChange={(e) => setApptPersonal({ ...apptPersonal, defaultDuration: e.target.value })}>
-                {["15","30","45","60","90","120"].map((n) => <option key={n} value={n}>{n} min</option>)}
-              </select>
-            </SettingRow>
-            <SettingRow label={A.reminderBefore ?? "Send Reminder (hours before)"}>
-              <select className={SELECT_CLS} value={apptPersonal.reminderBefore} onChange={(e) => setApptPersonal({ ...apptPersonal, reminderBefore: e.target.value })}>
-                {["1","2","4","12","24","48"].map((n) => <option key={n} value={n}>{n}h</option>)}
-              </select>
-            </SettingRow>
-            <SettingRow label={A.personalBuffer ?? "Personal Buffer (min)"} description={A.personalBufferDesc}>
-              <select className={SELECT_CLS} value={apptPersonal.personalBuffer} onChange={(e) => setApptPersonal({ ...apptPersonal, personalBuffer: e.target.value })}>
-                {["0","5","10","15","30"].map((n) => <option key={n} value={n}>{n} min</option>)}
-              </select>
-            </SettingRow>
-            <SettingRow label={A.autoConfirm ?? "Auto-Confirm Appointments"}><Toggle checked={apptPersonal.autoConfirm} onChange={(v) => setApptPersonal({ ...apptPersonal, autoConfirm: v })} /></SettingRow>
-            <SettingRow label={A.calendarColor ?? "Calendar Color"}>
-              <div className="flex gap-2">
-                {["blue","green","purple","orange","red"].map((c) => (
-                  <button key={c} onClick={() => setApptPersonal({ ...apptPersonal, colorCode: c })} className={`w-7 h-7 rounded-full border-2 transition-transform ${apptPersonal.colorCode === c ? "scale-125 border-foreground" : "border-transparent"}`} style={{ backgroundColor: c }} />
-                ))}
-              </div>
-            </SettingRow>
-            <SaveBtn label={Sc.saveMyPreferences ?? "Save My Preferences"} onClick={() => save("settings_appt_personal", apptPersonal)} />
-          </div>
-        )}
-      </div>
-    );
-  };
 
-  const renderDocuments = () => {
-    const D = S.documents ?? {};
-    const tabs = [{ key: "org", label: Sc.orgPolicy ?? "Org Policy", locked: !isFirmAdmin }, { key: "personal", label: Sc.myPreferences ?? "My Preferences" }];
-    return (
-      <div>
-        <SectionHeader title={D.title ?? "Documents"} description={D.desc ?? "File management, retention and signature policies"} />
-        <SubTabs tabs={tabs} active={docTab} onChange={(k) => setDocTab(k as any)} />
-        {docTab === "org" && (
-          <div>
-            {!isFirmAdmin && <PolicyLockNotice minRole="FIRMADMIN" />}
-            <LockedRow label={D.allowedTypes ?? "Allowed File Types"} description={D.allowedTypesDesc} minRoleLabel={roleLabel("FIRMADMIN")} canEdit={isFirmAdmin}>
-              <input className={INPUT_CLS} style={{ width: 260 }} value={docOrg.allowedTypes} onChange={(e) => setDocOrg({ ...docOrg, allowedTypes: e.target.value })} />
-            </LockedRow>
-            <LockedRow label={D.maxFileSize ?? "Max File Size (MB)"} minRoleLabel={roleLabel("FIRMADMIN")} canEdit={isFirmAdmin}>
-              <input className={INPUT_CLS} style={{ width: 80 }} type="number" value={docOrg.maxFileSizeMb} onChange={(e) => setDocOrg({ ...docOrg, maxFileSizeMb: e.target.value })} />
-            </LockedRow>
-            <LockedRow label={D.retentionDays ?? "Retention Period (days)"} description={D.retentionDaysDesc} minRoleLabel={roleLabel("FIRMADMIN")} canEdit={isFirmAdmin}>
-              <input className={INPUT_CLS} style={{ width: 100 }} type="number" value={docOrg.retentionDays} onChange={(e) => setDocOrg({ ...docOrg, retentionDays: e.target.value })} />
-            </LockedRow>
-            <LockedRow label={D.autoOrganize ?? "Auto-Organize by Transaction"} description={D.autoOrganizeDesc} minRoleLabel={roleLabel("FIRMADMIN")} canEdit={isFirmAdmin}>
-              <Toggle checked={docOrg.autoOrganizeByTransaction} onChange={(v) => setDocOrg({ ...docOrg, autoOrganizeByTransaction: v })} disabled={!isFirmAdmin} />
-            </LockedRow>
-            <LockedRow label={D.requireSignature ?? "Require E-Signature for Contracts"} description={D.requireSignatureDesc} minRoleLabel={roleLabel("FIRMADMIN")} canEdit={isFirmAdmin}>
-              <Toggle checked={docOrg.requireSignatureForContract} onChange={(v) => setDocOrg({ ...docOrg, requireSignatureForContract: v })} disabled={!isFirmAdmin} />
-            </LockedRow>
-            <LockedRow label={D.versionControl ?? "Version Control Enabled"} description={D.versionControlDesc} minRoleLabel={roleLabel("FIRMADMIN")} canEdit={isFirmAdmin}>
-              <Toggle checked={docOrg.versionControlEnabled} onChange={(v) => setDocOrg({ ...docOrg, versionControlEnabled: v })} disabled={!isFirmAdmin} />
-            </LockedRow>
-            <LockedRow label={D.auditTrail ?? "Audit Trail"} description={D.auditTrailDesc} minRoleLabel={roleLabel("FIRMADMIN")} canEdit={isFirmAdmin}>
-              <Toggle checked={docOrg.auditTrailEnabled} onChange={(v) => setDocOrg({ ...docOrg, auditTrailEnabled: v })} disabled={!isFirmAdmin} />
-            </LockedRow>
-            {isFirmAdmin && <SaveBtn label={Sc.saveOrgPolicy ?? "Save Org Policy"} onClick={() => save("settings_doc_org", docOrg)} />}
-          </div>
-        )}
-        {docTab === "personal" && (
-          <div>
-            <SettingRow label={D.defaultFolderView ?? "Default Folder View"}>
-              <select className={SELECT_CLS} value={docPersonal.defaultFolderView} onChange={(e) => setDocPersonal({ ...docPersonal, defaultFolderView: e.target.value })}>
-                <option value="transaction">{D.byTransaction ?? "By Transaction"}</option>
-                <option value="type">{D.byType ?? "By Document Type"}</option>
-                <option value="date">{D.byDate ?? "By Date"}</option>
-                <option value="client">{D.byClient ?? "By Client"}</option>
-              </select>
-            </SettingRow>
-            <SettingRow label={D.showThumbnails ?? "Show Thumbnails"} description={D.showThumbnailsDesc}><Toggle checked={docPersonal.showThumbnails} onChange={(v) => setDocPersonal({ ...docPersonal, showThumbnails: v })} /></SettingRow>
-            <SettingRow label={D.autoTag ?? "Auto-Tag Documents with AI"} description={D.autoTagDesc}><Toggle checked={docPersonal.autoTagEnabled} onChange={(v) => setDocPersonal({ ...docPersonal, autoTagEnabled: v })} /></SettingRow>
-            <SaveBtn label={Sc.saveMyPreferences ?? "Save My Preferences"} onClick={() => save("settings_doc_personal", docPersonal)} />
-          </div>
-        )}
-      </div>
-    );
-  };
 
   const renderMarketing = () => {
     const M = S.marketing ?? {};
@@ -1661,11 +1249,11 @@ export default function SettingsPage() {
       case "security":       return renderSecurity();
       case "appearance":     return renderAppearance();
       case "integrations":   return renderIntegrations();
-      case "crm":            return renderCRM();
-      case "properties":     return renderProperties();
-      case "finance":        return renderFinance();
-      case "appointments":   return renderAppointments();
-      case "documents":      return renderDocuments();
+      case "crm":            return <CrmSettings />;
+      case "properties":     return <PropertiesSettings />;
+      case "finance":        return <FinanceSettings />;
+      case "appointments":   return <AppointmentsSettings />;
+      case "documents":      return <DocumentsSettings />;
       case "marketing":      return renderMarketing();
       default:               return null;
     }

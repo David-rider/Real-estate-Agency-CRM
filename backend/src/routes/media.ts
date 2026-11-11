@@ -33,6 +33,14 @@ router.post('/', async (req: AuthRequest, res) => {
     if (!property) return res.status(400).json({ error: 'Property not found' });
     if (property.agentId !== user.userId && !isManager(user)) return res.status(403).json({ error: 'Forbidden' });
     const count = await prisma.mediaAsset.count({ where: { propertyId } });
+    // Listing policy: a cap on photos per listing (videos, floor plans and tours are not photos)
+    const maxPhotos = user.policies.properties.maxPhotosPerListing;
+    if (maxPhotos > 0 && normalizeMediaType(req.body.type) === 'image') {
+        const photos = await prisma.mediaAsset.count({ where: { propertyId, type: 'image' } });
+        if (photos >= maxPhotos) {
+            return res.status(400).json({ error: `This listing already has ${photos} photos; your brokerage allows at most ${maxPhotos} per listing`, code: 'PHOTO_LIMIT' });
+        }
+    }
     const media = await prisma.mediaAsset.create({
         data: {
             url: url.trim(),

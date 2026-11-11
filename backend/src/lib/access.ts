@@ -9,12 +9,19 @@ export function isManager(user: AuthUser): boolean {
     return MANAGEMENT_ROLES.includes(user.role);
 }
 
-// Clients an AGENT may see: their own or ones they co-represent. Management sees the org.
+// Clients a user may READ. An AGENT sees their own / co-represented clients, unless the
+// brokerage's CRM policy opens the whole book to everyone. Management sees the org.
 export function clientScope(user: AuthUser) {
-    if (user.role === 'AGENT') {
+    if (user.role === 'AGENT' && user.policies?.crm.clientVisibility !== 'all') {
         return { orgId: user.orgId, OR: [{ agentId: user.userId }, { coAgentId: user.userId }] };
     }
     return { orgId: user.orgId };
+}
+
+// Whether a user may EDIT a client they can read: agents only edit their own or co-represented clients,
+// even when the policy lets them read everyone's.
+export function canEditClient(user: AuthUser, client: { agentId: string; coAgentId: string | null }): boolean {
+    return user.role !== 'AGENT' || client.agentId === user.userId || client.coAgentId === user.userId;
 }
 
 /**

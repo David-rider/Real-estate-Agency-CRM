@@ -3,13 +3,22 @@
 import React from "react";
 import { useI18n } from "@/lib/i18n/I18nContext";
 import { useToast } from "@/components/ui/Toast";
-import { useExtra } from "@/lib/i18n/extra";
+import { useExtra, fmt } from "@/lib/i18n/extra";
+import { useSettings } from "@/lib/settings/useSettings";
 import { api, uploadFile } from "@/lib/api";
 
 export default function DocumentsPage() {
   const { t } = useI18n();
   const toast = useToast();
   const X = useExtra();
+  const { policies } = useSettings();
+  const docPolicy = policies.documents;
+  const acceptAttr = [
+    docPolicy.allowedFormats.includes("pdf") ? ".pdf" : "",
+    docPolicy.allowedFormats.includes("word") ? ".doc,.docx" : "",
+    docPolicy.allowedFormats.includes("image") ? "image/jpeg,image/png,image/webp,image/gif" : "",
+  ].filter(Boolean).join(",");
+  const formatsLabel = docPolicy.allowedFormats.map(f => X.policy.documents.format[f as "pdf" | "word" | "image"]).join(", ");
 
   const [documents, setDocuments] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -108,6 +117,11 @@ export default function DocumentsPage() {
       let mimeType: string | undefined;
 
       if (selectedFile) {
+        if (selectedFile.size > docPolicy.maxFileSizeMb * 1024 * 1024) {
+          toast.error(fmt(X.policy.documents.tooLarge, { n: docPolicy.maxFileSizeMb }));
+          setIsSubmitting(false);
+          return;
+        }
         const uploaded = await uploadFile(selectedFile, "PRIVATE");
         url = uploaded.url;
         storageKey = uploaded.storageKey;
@@ -323,10 +337,11 @@ export default function DocumentsPage() {
                 <label className="block font-sans text-sm uppercase tracking-widest text-foreground/50 mb-2">
                   {X.documentsExtra.chooseFile}
                 </label>
+                <p className="text-xs text-foreground/40 mb-2">{fmt(X.policy.documents.onlyFormats, { formats: formatsLabel })} · {fmt(X.policy.documents.mb, { n: docPolicy.maxFileSizeMb })}</p>
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept=".pdf,.doc,.docx,image/jpeg,image/png,image/webp,image/gif"
+                  accept={acceptAttr}
                   className="hidden"
                   onChange={(e) => handleFileSelect(e.target.files?.[0] || null)}
                 />

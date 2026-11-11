@@ -1,6 +1,7 @@
 import express from 'express';
 import multer from 'multer';
 import { authenticateToken, AuthRequest } from '../middleware/authMiddleware';
+import { documentFormatAllowed, describeAllowedFormats } from '../lib/policies';
 import {
     storeUploadedFile,
     loadUploadedFile,
@@ -118,6 +119,14 @@ router.post(
         } else {
             if (!ALLOWED_PRIVATE_MIMES.has(mimeType)) {
                 return res.status(400).json({ error: 'Unsupported document format. Allowed: PDF, JPG, PNG, WebP, DOC, DOCX' });
+            }
+            // Documents policy (Settings > Documents): the brokerage may allow fewer formats and a smaller size
+            const docPolicy = user.policies.documents;
+            if (!documentFormatAllowed(docPolicy, mimeType)) {
+                return res.status(400).json({ error: `Your brokerage only accepts: ${describeAllowedFormats(docPolicy)}`, code: 'FORMAT_NOT_ALLOWED' });
+            }
+            if (file.buffer.byteLength > docPolicy.maxFileSizeMb * 1024 * 1024) {
+                return res.status(413).json({ error: `Your brokerage limits documents to ${docPolicy.maxFileSizeMb} MB`, code: 'FILE_TOO_LARGE' });
             }
         }
 

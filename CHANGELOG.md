@@ -21,6 +21,44 @@
 
 ## [未发布]
 
+#### 新增 / Added
+- 设置里的五个栏目现在都是真的：**CRM、房源、财务、预约、文档**。公司管理员定下全公司的规则，每个人再按自己的习惯调整个人偏好；所有规则由服务器强制执行，不是只改界面。
+  *Five Settings sections are now real: **CRM, Properties, Finance, Appointments and Documents**. Company admins set the rules for the whole firm and everyone adjusts their own preferences; the server enforces every rule, it is not just a change to the screen.*
+  - **CRM**：可设客户必填字段、每位经纪人最多同时跟进多少客户、经纪人能否看到全公司客户（只读，仍只能改自己的客户）、是否检查重复客户、线索来源列表；个人偏好：新建客户的默认类型和阶段、是否显示预算、列表是否紧凑。
+    *CRM: required client fields, the maximum open clients per agent, whether agents can see the whole firm's clients (read-only; they can still edit only their own), the duplicate check, and the lead-source list; personal: default type and stage for new clients, showing the budget, and a compact list.*
+  - **房源**：谁能新建房源（所有员工或仅经理）、必填字段、上架前至少几张照片、每个房源最多几张照片、描述字数上限；个人偏好：新房源默认状态。照片不够时新房源自动为“即将上市”，卡片上有“设为在售”按钮。
+    *Properties: who can create listings (all staff or managers only), required fields, photos needed before a listing can go Active, a photo limit per listing, and a description length limit; personal: default status for new listings. Without enough photos a new listing starts as Coming Soon, and its card has a “Set Active” button.*
+  - **财务**：财年起始月份（影响“年初至今”），以及是否让经纪人看到同事的佣金总额（经理始终可见）；默认佣金比例和分成也移到这里；个人偏好：是否显示排行榜、仪表盘是否显示收入。
+    *Finance: the fiscal-year start month (changes “year to date”), and whether agents can see colleagues' gross commission (managers always can); the default commission rate and split moved here; personal: showing the leaderboard and showing income on the dashboard.*
+  - **预约**：工作时间（周视图和日视图按此显示）、是否显示周末、是否禁止重复预约（冲突时提示，可确认后仍然预约）、预约间隔缓冲；个人偏好：默认时长、提前几小时提醒、新预约是否自动确认。
+    *Appointments: workday hours (week and day views follow them), showing weekends, preventing double booking (a conflict asks you to confirm and you can still book), and a buffer between appointments; personal: default length, how many hours ahead to be reminded, and auto-confirming new appointments.*
+  - **文档**：允许上传的格式（PDF、Word、图片）和单个文件大小上限（1–20 MB）；上传框会提示规则，超限时给出清楚的说明。房源照片不受影响。
+    *Documents: allowed formats (PDF, Word, images) and the maximum file size (1–20 MB); the upload box shows the rules and explains clearly when a file is refused. Listing photos are not affected.*
+- 所有默认值与原来的行为一致，升级后什么都不会变，直到管理员修改。管理员的每次修改都会记入审计日志。
+  *All defaults match the previous behaviour, so nothing changes after the upgrade until an admin changes a rule. Every admin change is recorded in the audit trail.*
+- 新接口：`GET/PATCH /api/settings/policies`（所有成员可读，公司管理员可写）和 `GET/PATCH /api/settings/preferences`（本人）。
+  *New endpoints: `GET/PATCH /api/settings/policies` (everyone can read, company admins can write) and `GET/PATCH /api/settings/preferences` (your own).*
+- 数据库：`Organization.policies` 和 `User.preferences` 两个可空列（幂等迁移 `20261111000000_settings_policies_preferences`），旧数据不受影响。无新增环境变量。
+  *Database: nullable `Organization.policies` and `User.preferences` columns (idempotent migration `20261111000000_settings_policies_preferences`); old data is unaffected. No new environment variables.*
+- 冒烟测试增加“权限矩阵”和“审计日志”检查：经纪人、经理、公司管理员各自能访问和不能访问的接口，套餐档位限制返回 403，未登录或令牌无效始终返回 401；共 25 项。
+  *The smoke test gains permission-matrix and audit-trail checks: what an agent, a manager and a firm admin can and cannot reach, plan-tier limits returning 403, and signed-out or invalid tokens always returning 401; 25 checks in total.*
+
+#### 变更 / Changed
+- **营销**（依赖 AI 助手）、**访问控制**、**集成**仍标“即将推出”：营销要等 AI 助手（路线图第 4 阶段）；访问控制的权限矩阵尚不能真正驱动鉴权；集成要随各自的对接一起上线。
+  *Marketing (depends on the AI assistant), Access Control and Integrations stay marked “coming soon”: Marketing waits for the AI assistant (roadmap stage 4), the access-control matrix cannot yet truly drive authorization, and integrations ship together with each integration.*
+- 以前只存在浏览器里、对服务器没有任何作用的设置项已移除（例如自动归档、房源审核、MLS 同步、货币、费用收据、文档保留期），以免让人误以为生效。
+  *Options that were only stored in the browser and did nothing on the server have been removed (for example auto-archive, listing approval, MLS sync, currency, expense receipts and document retention), so nobody believes they work.*
+- 防重复预约的提示现在按你自己的时区显示冲突时间（以前显示 UTC）。
+  *The double-booking warning now shows the clashing time in your own time zone (it used to show UTC).*
+- 预约提醒邮件按每位经纪人自己的“提前小时数”发送。
+  *Appointment reminder emails are sent according to each agent's own “hours ahead” setting.*
+- 冒烟测试增加 6 项检查（设置接口、CRM、房源、预约、文档、财务），共 32 项。
+  *The smoke test gains 6 checks (settings API, CRM, properties, appointments, documents, finance); 32 in total.*
+- 文档补充英文：`CHANGELOG.md`、`guides/roadmap.md`、`guides/release-process.md`、`guides/security-audit-2026-10.md`、`guides/competitive-research.md` 现在是中英双语（中文在前、英文紧随），内容不变。
+  *Docs gain English: `CHANGELOG.md`, `guides/roadmap.md`, `guides/release-process.md`, `guides/security-audit-2026-10.md` and `guides/competitive-research.md` are now bilingual (Chinese first, English right after); content unchanged.*
+- 依赖更新（Dependabot 5 个 PR 逐个测试后合并）：后端 Express 相关依赖（`body-parser`、`qs`、`type-is` 等）、前端 Next.js 16.4.3、React 19.3.1、Tailwind 4.3、`recharts` 3.10、`date-fns`、`react-big-calendar`，以及 CI 使用的 GitHub Actions（`checkout`、`setup-node` v7）。用户界面和功能没有变化；生产依赖 `npm audit` 前后端均为 0 漏洞，23 项冒烟测试全部通过。
+  *Dependency updates (5 Dependabot PRs, each tested before merging): backend Express-related packages (`body-parser`, `qs`, `type-is`, etc.), frontend Next.js 16.4.3, React 19.3.1, Tailwind 4.3, `recharts` 3.10, `date-fns`, `react-big-calendar`, and the GitHub Actions used by CI (`checkout`, `setup-node` v7). No UI or feature change; `npm audit` shows 0 production vulnerabilities on both sides and all 23 smoke checks pass.* *Later bumps (Dependabot PRs #35–#37): Next.js 16.4.5, Tailwind 4.3.5 and two backend packages.*
+
 #### 安全 / Security
 - 设置 → 安全 现在真正生效：公司管理员可以设置会话时长（15 分钟到 24 小时）、最短密码长度、是否要求特殊字符、密码有效期、改密码后是否让旧登录退出。这些规则对公司里所有人生效，保存后立即应用；登录、邀请注册和重置密码都会按规则检查。以前这些选项只是摆设。
   *Settings → Security now really works: company admins can set the session length (15 minutes to 24 hours), minimum password length, whether a special character is required, the password lifetime, and whether a password change signs out older sessions. The rules apply to everyone in the company, take effect as soon as they are saved, and are checked at sign-in, invitation sign-up and password reset. Before, these options did nothing.*
@@ -34,16 +72,6 @@
   *Added `SECURITY.md`: how to report a vulnerability privately through GitHub, what happens next, scope and supported versions.*
 - 审计日志现在也记录房源、报价、预约、文档的新增、修改和删除（只记录改动的字段；文档链接和存储路径不会写入日志）。公司管理员可在“设置”里导出。
   *The audit trail now also records creating, editing and deleting listings, offers, appointments and documents (only the changed fields are stored; document links and storage keys are never written to it). Company admins can export it from Settings.*
-
-#### 新增 / Added
-- 冒烟测试增加“权限矩阵”和“审计日志”检查：经纪人、经理、公司管理员各自能访问和不能访问的接口，套餐档位限制返回 403，未登录或令牌无效始终返回 401；共 25 项。
-  *The smoke test gains permission-matrix and audit-trail checks: what an agent, a manager and a firm admin can and cannot reach, plan-tier limits returning 403, and signed-out or invalid tokens always returning 401; 25 checks in total.*
-
-#### 变更 / Changed
-- 文档补充英文：`CHANGELOG.md`、`guides/roadmap.md`、`guides/release-process.md`、`guides/security-audit-2026-10.md`、`guides/competitive-research.md` 现在是中英双语（中文在前、英文紧随），内容不变。
-  *Docs gain English: `CHANGELOG.md`, `guides/roadmap.md`, `guides/release-process.md`, `guides/security-audit-2026-10.md` and `guides/competitive-research.md` are now bilingual (Chinese first, English right after); content unchanged.*
-- 依赖更新（Dependabot 5 个 PR 逐个测试后合并）：后端 Express 相关依赖（`body-parser`、`qs`、`type-is` 等）、前端 Next.js 16.4.3、React 19.3.1、Tailwind 4.3、`recharts` 3.10、`date-fns`、`react-big-calendar`，以及 CI 使用的 GitHub Actions（`checkout`、`setup-node` v7）。用户界面和功能没有变化；生产依赖 `npm audit` 前后端均为 0 漏洞，23 项冒烟测试全部通过。
-  *Dependency updates (5 Dependabot PRs, each tested before merging): backend Express-related packages (`body-parser`, `qs`, `type-is`, etc.), frontend Next.js 16.4.3, React 19.3.1, Tailwind 4.3, `recharts` 3.10, `date-fns`, `react-big-calendar`, and the GitHub Actions used by CI (`checkout`, `setup-node` v7). No UI or feature change; `npm audit` shows 0 production vulnerabilities on both sides and all 23 smoke checks pass.* *Later bumps (Dependabot PRs #35–#37): Next.js 16.4.5, Tailwind 4.3.5 and two backend packages.*
 
 ---
 

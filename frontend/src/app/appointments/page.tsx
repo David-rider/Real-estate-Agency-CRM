@@ -3,8 +3,9 @@
 import React from "react";
 import { useI18n } from "@/lib/i18n/I18nContext";
 import { useToast } from "@/components/ui/Toast";
-import { useExtra } from "@/lib/i18n/extra";
-import { api, dateInputToISO } from "@/lib/api";
+import { useExtra, fmt } from "@/lib/i18n/extra";
+import { api, ApiError, dateInputToISO } from "@/lib/api";
+import { useSettings } from "@/lib/settings/useSettings";
 import { Calendar, dateFnsLocalizer } from "react-big-calendar";
 import { format, parse, startOfWeek, getDay } from "date-fns";
 import { enUS, zhCN, es } from "date-fns/locale";
@@ -28,6 +29,9 @@ export default function AppointmentsPage() {
   const { t, language } = useI18n();
   const toast = useToast();
   const X = useExtra();
+  // Brokerage rules (Settings > Appointments) and this person's preferences
+  const { policies, preferences } = useSettings();
+  const ap = policies.appointments;
 
   const [appointments, setAppointments] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -91,47 +95,53 @@ export default function AppointmentsPage() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleAddAppointment = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // A blank form. New appointments start Confirmed when the person prefers that.
+  const blankForm = () => ({
+    title: "", date: "", notes: "", clientId: "", propertyId: "", type: "SHOWING", location: "",
+    status: preferences.appointments.autoConfirm ? "CONFIRMED" : "SCHEDULED",
+  });
+  const openAddModal = () => { setFormData(blankForm()); setIsAddModalOpen(true); };
+
+  const saveAppointment = async (force = false): Promise<void> => {
     setIsSubmitting(true);
     try {
-      const token = localStorage.getItem("token");
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/appointments`, {
+      await api("/api/appointments", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
+        body: {
           ...formData,
           date: dateInputToISO(formData.date),
           clientId: formData.clientId || undefined,
           propertyId: formData.propertyId || undefined,
-        }),
+          ...(force ? { force: true } : {}),
+        },
       });
-      if (res.ok) {
-        setIsAddModalOpen(false);
-        setFormData({
-          title: "",
-          date: "",
-          notes: "",
-          status: "SCHEDULED",
-          clientId: "",
-          propertyId: "",
-          type: "SHOWING",
-          location: "",
-        });
-        fetchAppointments();
-        toast.success(t.appointments.modal.save ?? "Meeting scheduled");
+      setIsAddModalOpen(false);
+      setFormData(blankForm());
+      fetchAppointments();
+      toast.success(t.appointments.modal.save ?? "Meeting scheduled");
+    } catch (err) {
+      // The brokerage prevents double booking: let the person book it anyway after confirming
+      if (err instanceof ApiError && err.status === 409 && err.body?.code === "APPOINTMENT_CONFLICT") {
+        // Show the clash in the viewer's own time zone (the server message is in UTC)
+        const c = err.body?.conflict;
+        const msg = c?.date
+          ? fmt(X.policy.appointments.overlaps, { title: c.title, time: new Date(c.date).toLocaleString() })
+          : err.message;
+        if (window.confirm(fmt(X.policy.appointments.conflictConfirm, { msg }))) {
+          setIsSubmitting(false);
+          return saveAppointment(true);
+        }
       } else {
-        const err = await res.json().catch(() => ({}));
-        toast.error(err.error || t.appointments.failSchedule || "Failed to schedule appointment");
+        toast.error(err instanceof Error ? err.message : t.appointments.failSchedule || "Failed to schedule appointment");
       }
-    } catch (error) {
-      console.error(error);
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleAddAppointment = (e: React.FormEvent) => {
+    e.preventDefault();
+    return saveAppointment();
   };
 
   const handleSyncGoogle = async () => {
@@ -270,6 +280,19 @@ export default function AppointmentsPage() {
     raw: apt,
   }));
 
+  // Week/day views show the brokerage's workday hours, stretched so no appointment is ever hidden
+  const visibleRange = (() => {
+    const toMin = (hhmm: string) => Number(hhmm.slice(0, 2)) * 60 + Number(hhmm.slice(3, 5));
+    let lo = toMin(ap.workdayStart), hi = toMin(ap.workdayEnd);
+    for (const ev of calendarEvents) {
+      lo = Math.min(lo, ev.start.getHours() * 60 + ev.start.getMinutes());
+      const sameDay = ev.end.toDateString() === ev.start.toDateString();
+      hi = Math.max(hi, sameDay ? ev.end.getHours() * 60 + ev.end.getMinutes() : 24 * 60 - 1);
+    }
+    hi = Math.min(hi, 24 * 60 - 1);
+    return { min: new Date(1970, 0, 1, Math.floor(lo / 60), lo % 60), max: new Date(1970, 0, 1, Math.floor(hi / 60), hi % 60) };
+  })();
+
   const handleSelectEvent = (event: any) => {
     // Show a brief toast with appointment details; edit modal can be added later
     const clientName = event.raw.client
@@ -305,7 +328,7 @@ export default function AppointmentsPage() {
             {isSyncingGoogle ? (t.appointments.syncing ?? "Syncing...") : (t.appointments.syncGoogle ?? "Sync with Google")}
           </button>
           <button
-            onClick={() => setIsAddModalOpen(true)}
+            onClick={openAddModal}
             className="px-6 py-3 bg-primary text-background hover:bg-primary-hover transition-colors duration-500 rounded-xl text-base font-semibold w-full sm:w-auto text-center shadow-md"
           >
             {t.appointments.addMeeting}
@@ -396,6 +419,9 @@ export default function AppointmentsPage() {
             <Calendar
               localizer={localizer}
               events={calendarEvents}
+              views={ap.showWeekends ? ["month", "week", "day", "agenda"] : ["month", "work_week", "day", "agenda"]}
+              min={visibleRange.min}
+              max={visibleRange.max}
               startAccessor="start"
               endAccessor="end"
               style={{ height: "100%" }}
@@ -407,6 +433,7 @@ export default function AppointmentsPage() {
                 next: t.appointments.calendarTranslations?.next,
                 month: t.appointments.calendarTranslations?.month,
                 week: t.appointments.calendarTranslations?.week,
+                work_week: t.appointments.calendarTranslations?.week,
                 day: t.appointments.calendarTranslations?.day,
                 agenda: t.appointments.calendarTranslations?.agenda,
                 date: t.appointments.calendarTranslations?.date,
@@ -480,6 +507,7 @@ export default function AppointmentsPage() {
                     <option value="SCHEDULED">
                       {t.appointments.modal.scheduled}
                     </option>
+                    <option value="CONFIRMED">{X.appts.confirm}</option>
                     <option value="COMPLETED">
                       {t.appointments.modal.completed}
                     </option>

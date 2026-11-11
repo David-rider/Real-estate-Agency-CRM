@@ -4,6 +4,7 @@ import { AuthRequest } from '../middleware/authMiddleware';
 import { createNotification } from './notifications';
 import { checkRefs, isManager, optDate, optNumber, pickEnum } from '../lib/access';
 import { audit, diffFields } from '../lib/audit';
+import { normalizePreferences } from '../lib/policies';
 
 const router = express.Router();
 const STATUSES = ['SCHEDULED', 'CONFIRMED', 'COMPLETED', 'CANCELLED', 'NO_SHOW', 'RESCHEDULED'] as const;
@@ -55,6 +56,46 @@ function parseFields(body: any) {
     return data;
 }
 
+const MINUTE = 60 * 1000;
+const ACTIVE_STATUSES = ['SCHEDULED', 'CONFIRMED', 'RESCHEDULED'];
+
+/**
+ * Appointments policy (Settings > Appointments): finds an existing appointment of the same agent that
+ * overlaps the proposed time, keeping the configured buffer on both sides. Returns null when the policy is off.
+ */
+async function findConflict(
+    req: AuthRequest,
+    agentId: string,
+    start: Date,
+    durationMin: number,
+    endDate: Date | null | undefined,
+    ignoreId?: string,
+) {
+    const policy = req.user!.policies.appointments;
+    if (!policy.preventDoubleBooking) return null;
+    const end = endDate ?? new Date(start.getTime() + durationMin * MINUTE);
+    const buffer = policy.bufferMinutes * MINUTE;
+    // Candidates start within a day on either side; exact overlap is computed below
+    const candidates = await prisma.appointment.findMany({
+        where: {
+            agentId, orgId: req.user!.orgId, status: { in: ACTIVE_STATUSES as any },
+            ...(ignoreId ? { id: { not: ignoreId } } : {}),
+            date: { gte: new Date(start.getTime() - 24 * 60 * MINUTE), lte: new Date(end.getTime() + 24 * 60 * MINUTE) },
+        },
+        select: { id: true, title: true, date: true, endDate: true, durationMin: true },
+    });
+    return candidates.find(c => {
+        const cEnd = c.endDate ?? new Date(c.date.getTime() + (c.durationMin ?? 60) * MINUTE);
+        return start.getTime() < cEnd.getTime() + buffer && end.getTime() + buffer > c.date.getTime();
+    }) ?? null;
+}
+
+const conflictResponse = (c: { id: string; title: string; date: Date }, bufferMinutes: number) => ({
+    error: `This overlaps "${c.title}" at ${c.date.toISOString().replace('T', ' ').slice(0, 16)} UTC${bufferMinutes > 0 ? ` (a ${bufferMinutes}-minute gap is required between appointments)` : ''}`,
+    code: 'APPOINTMENT_CONFLICT',
+    conflict: { id: c.id, title: c.title, date: c.date },
+});
+
 // POST /api/appointments
 router.post('/', async (req: AuthRequest, res) => {
     const user = req.user!;
@@ -64,8 +105,20 @@ router.post('/', async (req: AuthRequest, res) => {
     const refErr = await checkRefs(user.orgId, { clientId: data.clientId, propertyId: data.propertyId });
     if (refErr) return res.status(400).json({ error: refErr });
 
+    // Personal preferences (Settings > Appointments > My preferences): default length and auto-confirm
+    const me = await prisma.user.findUnique({ where: { id: user.userId }, select: { preferences: true } });
+    const prefs = normalizePreferences(me?.preferences).appointments;
+    if (data.durationMin === undefined && data.endDate === undefined) data.durationMin = prefs.defaultDurationMin;
+    const status = data.status ?? (prefs.autoConfirm ? 'CONFIRMED' : 'SCHEDULED');
+
+    // Brokerage policy: no double booking (the caller can confirm with force: true)
+    if (req.body.force !== true && ACTIVE_STATUSES.includes(status)) {
+        const clash = await findConflict(req, user.userId, data.date, data.durationMin ?? 60, data.endDate);
+        if (clash) return res.status(409).json(conflictResponse(clash, user.policies.appointments.bufferMinutes));
+    }
+
     const appointment = await prisma.appointment.create({
-        data: { ...data, status: data.status ?? 'SCHEDULED', agentId: user.userId, orgId: user.orgId },
+        data: { ...data, status, agentId: user.userId, orgId: user.orgId },
     });
 
     const when = appointment.date.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
@@ -99,6 +152,18 @@ router.patch('/:id', async (req: AuthRequest, res) => {
     if ('title' in data && !data.title) return res.status(400).json({ error: 'Title cannot be empty' });
     const refErr = await checkRefs(req.user!.orgId, { clientId: data.clientId, propertyId: data.propertyId });
     if (refErr) return res.status(400).json({ error: refErr });
+
+    // Brokerage policy: rescheduling (or reopening) must not overlap another appointment of the same agent
+    const appt = found.appt!;
+    const nextStatus = data.status ?? appt.status;
+    const timeChanged = data.date !== undefined || data.durationMin !== undefined || data.endDate !== undefined || (data.status !== undefined && !ACTIVE_STATUSES.includes(appt.status));
+    if (req.body.force !== true && timeChanged && ACTIVE_STATUSES.includes(nextStatus)) {
+        const clash = await findConflict(
+            req, appt.agentId, data.date ?? appt.date, data.durationMin ?? appt.durationMin ?? 60,
+            data.endDate !== undefined ? data.endDate : appt.endDate, appt.id,
+        );
+        if (clash) return res.status(409).json(conflictResponse(clash, req.user!.policies.appointments.bufferMinutes));
+    }
 
     const updated = await prisma.appointment.update({ where: { id: found.appt!.id }, data });
     const changes = diffFields(found.appt!, data);
