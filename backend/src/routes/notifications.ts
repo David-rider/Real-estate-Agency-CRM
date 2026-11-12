@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import { prisma } from '../server';
 import { authenticateToken, AuthRequest } from '../middleware/authMiddleware';
-import { sendEmail } from '../lib/email';
+import { sendEmail, escapeHtml } from '../lib/email';
+import { EMAIL, Lang, NotificationKey, normalizeLang, notificationText } from '../lib/messages';
 
 const router = Router();
 router.use(authenticateToken);
@@ -74,7 +75,8 @@ function shouldSendEmailForType(prefs: NotificationPrefs, type: string): boolean
     }
 }
 
-function buildNotificationEmailHtml(userName: string, title: string, message: string, link?: string): string {
+function buildNotificationEmailHtml(userName: string, title: string, message: string, link: string | undefined, lang: Lang): string {
+    const t = EMAIL[lang].notification;
     const appUrl = (process.env.FRONTEND_URL || process.env.APP_URL || 'http://localhost:3000').split(',')[0].trim();
     const actionHref = link ? `${appUrl.replace(/\/$/, '')}${link.startsWith('/') ? link : `/${link}`}` : appUrl;
     return `
@@ -83,11 +85,11 @@ function buildNotificationEmailHtml(userName: string, title: string, message: st
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background:#f9fafb; margin:0; padding:32px 16px;">
   <div style="max-width:560px; margin:0 auto; background:#ffffff; border:1px solid #e5e7eb; border-radius:10px; padding:32px;">
-    <div style="font-size:18px; font-weight:700; color:#111827; margin-bottom:8px;">${title}</div>
-    <p style="color:#4b5563; font-size:14px; line-height:1.6; margin:0 0 24px;">Hi ${userName},<br>${message}</p>
-    <a href="${actionHref}" style="display:inline-block; background:#B8977E; color:#ffffff; text-decoration:none; padding:10px 22px; border-radius:6px; font-size:13px; font-weight:600;">Open in CRM</a>
+    <div style="font-size:18px; font-weight:700; color:#111827; margin-bottom:8px;">${escapeHtml(title)}</div>
+    <p style="color:#4b5563; font-size:14px; line-height:1.6; margin:0 0 24px;">${t.greeting(escapeHtml(userName))}<br>${escapeHtml(message)}</p>
+    <a href="${actionHref}" style="display:inline-block; background:#B8977E; color:#ffffff; text-decoration:none; padding:10px 22px; border-radius:6px; font-size:13px; font-weight:600;">${t.button}</a>
     <hr style="border:none; border-top:1px solid #e5e7eb; margin:24px 0">
-    <p style="color:#9ca3af; font-size:11px; margin:0;">You can manage your email alert preferences in CRM Settings → Notifications.</p>
+    <p style="color:#9ca3af; font-size:11px; margin:0;">${t.footer}</p>
   </div>
 </body>
 </html>`;
@@ -153,12 +155,20 @@ router.patch('/read-all', async (req: AuthRequest, res) => {
 });
 
 // ─── Helper exported for use in other routes ──────────────────────────────────
+// A notification is either raw text (title + message) or a catalog entry that is worded in the recipient's language.
+export interface CatalogMessage { key: NotificationKey; params?: Record<string, unknown> }
+
+function resolveText(lang: Lang, title: string | CatalogMessage, message: string | undefined): { title: string; message: string } {
+    if (typeof title === 'object') return notificationText(lang, title.key, title.params ?? {});
+    return { title, message: message ?? '' };
+}
+
 export async function createNotification(
     userId: string,
     orgId:  string,
     type:   string,
-    title:  string,
-    message: string,
+    title:  string | CatalogMessage,
+    message: string | undefined,
     link?:  string,
     metadata?: object,
 ) {
@@ -168,9 +178,11 @@ export async function createNotification(
     try {
         const recipient = await prisma.user.findUnique({
             where: { id: userId },
-            select: { email: true, name: true, isActive: true, notificationPrefs: true },
+            select: { email: true, name: true, isActive: true, notificationPrefs: true, preferredLanguage: true },
         });
         const prefs = normalizeNotificationPrefs(recipient?.notificationPrefs);
+        const lang = normalizeLang(recipient?.preferredLanguage);
+        const text = resolveText(lang, title, message);
 
         if (prefs.inAppAll !== false) {
             await prisma.notification.create({
@@ -178,8 +190,8 @@ export async function createNotification(
                     userId,
                     orgId,
                     type:     normalizedType as any,
-                    title,
-                    message,
+                    title:    text.title,
+                    message:  text.message,
                     link,
                     metadata: metadata ? JSON.stringify(metadata) : null,
                 },
@@ -189,9 +201,9 @@ export async function createNotification(
         if (recipient && recipient.isActive && recipient.email && shouldSendEmailForType(prefs, normalizedType)) {
             await sendEmail({
                 to: recipient.email,
-                subject: `[CRM] ${title}`,
-                html: buildNotificationEmailHtml(recipient.name || 'Agent', title, message, link),
-                text: `${title}\n\n${message}`,
+                subject: EMAIL[lang].notification.subject(text.title),
+                html: buildNotificationEmailHtml(recipient.name || 'Agent', text.title, text.message, link, lang),
+                text: `${text.title}\n\n${text.message}`,
             }).catch(err => console.error('Failed to send notification email:', err));
         }
     } catch (e) {

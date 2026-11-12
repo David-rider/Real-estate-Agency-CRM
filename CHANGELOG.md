@@ -22,6 +22,14 @@
 ## [未发布]
 
 #### 新增 / Added
+- 邮件和站内通知现在按收件人的语言发送（English、简体中文、繁體中文、Español）：邀请、验证邮箱、重置密码，以及新线索、报价、预约、任务逾期、佣金等提醒。以前这些全是英文。
+  *Emails and in-app notifications are now sent in the recipient's language (English, Simplified Chinese, Traditional Chinese, Spanish): invitations, email verification, password reset, and the new-lead, offer, appointment, overdue-task and commission alerts. Before, all of these were English only.*
+- 你选的界面语言现在会保存到账号：在顶栏切换语言、登录、注册、忘记密码、重发验证邮件、邀请成员时都会带上；换新设备登录时，会自动使用账号里保存的语言。
+  *The interface language you choose is now saved to your account: it is sent when you switch language in the top bar, sign in, sign up, request a password reset, resend the verification email or invite a teammate; on a new device the language saved on the account is used after sign-in.*
+- 邮件里的姓名、公司名等内容现在会做 HTML 转义，避免特殊字符破坏邮件版式。
+  *Names, company names and similar values in emails are now HTML-escaped, so special characters can no longer break the layout.*
+- 冒烟测试新增“语言”检查（共 33 项）：四种语言的邮件和通知文案都齐全，语言能保存、校验，通知按语言发出。
+  *The smoke test gains a language check (33 in total): every email and notification message exists in all four languages, the language is saved and validated, and notifications follow it.*
 - 本地开发环境一条命令启动：根目录新增 `docker-compose.yml` 和 `.env.example`，`docker compose up` 会一起启动数据库（PostgreSQL 16）、API 和网站，自动安装依赖并执行迁移；密码从 `.env` 读取，仓库里没有任何写死的密码，所有端口只绑定本机。用法见 README。
   *One-command local development: a new `docker-compose.yml` and `.env.example` in the repo root; `docker compose up` starts the database (PostgreSQL 16), the API and the web app together, installs dependencies and applies migrations. Passwords come from `.env`, nothing is hard-coded in the repo, and every port is bound to localhost. See the README.*
 

@@ -72,8 +72,7 @@ export async function onTransactionStatusChange(tx: Transaction, previous: strin
 
     await createNotification(
         tx.agentId, tx.orgId, 'TRANSACTION_UPDATE',
-        'Deal status updated',
-        `Deal moved to ${tx.status.replace(/_/g, ' ').toLowerCase()}.`,
+        { key: 'dealStatus', params: { status: tx.status } }, undefined,
         '/transactions',
     );
 }

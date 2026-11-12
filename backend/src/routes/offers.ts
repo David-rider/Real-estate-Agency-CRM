@@ -57,8 +57,8 @@ router.post('/', async (req: AuthRequest, res) => {
     // Tell the listing agent (if it's someone else) that an offer came in
     const listingAgent = offer.property.agentId;
     await createNotification(
-        listingAgent, user.orgId, 'OFFER_RECEIVED', 'New offer received',
-        `An offer of $${amount.toLocaleString()} was submitted for ${offer.property.address}.`, '/transactions',
+        listingAgent, user.orgId, 'OFFER_RECEIVED',
+        { key: 'offerReceived', params: { amount, address: offer.property.address } }, undefined, '/transactions',
     );
     await prisma.client.updateMany({
         where: { id: clientId, funnelStage: { in: ['LEAD', 'QUALIFIED', 'SHOWING'] } },
@@ -101,8 +101,8 @@ router.patch('/:id', async (req: AuthRequest, res) => {
     if (status && status !== offer.status) {
         const type = status === 'ACCEPTED' ? 'OFFER_ACCEPTED' : status === 'REJECTED' ? 'OFFER_REJECTED' : 'SYSTEM';
         await createNotification(
-            offer.agentId, offer.orgId, type, `Offer ${status.toLowerCase()}`,
-            `Your offer of $${offer.amount.toLocaleString()} on ${offer.property.address} was ${status.toLowerCase()}.`,
+            offer.agentId, offer.orgId, type,
+            { key: 'offerStatus', params: { status, amount: offer.amount, address: offer.property.address } }, undefined,
             '/transactions',
         );
 

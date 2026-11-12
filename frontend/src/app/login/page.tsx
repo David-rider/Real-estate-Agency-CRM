@@ -102,7 +102,7 @@ export default function LoginPage() {
                           await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/auth/resend-verification`, {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ email }),
+                            body: JSON.stringify({ email, language }),
                           });
                         } catch { /* response is uniform (anti-enumeration) either way */ }
                         setResent(true);

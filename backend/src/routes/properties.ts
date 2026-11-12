@@ -162,8 +162,7 @@ router.post('/public/:id/inquiry', inquiryLimiter, async (req, res) => {
     });
     await createNotification(
         targetAgentId, property.orgId, 'NEW_CLIENT',
-        isNew ? `New ${source.toLowerCase()} lead` : `Returning lead: ${name}`,
-        `${name} asked about ${property.address}. Reach out within 5 minutes.`,
+        { key: 'leadInquiry', params: { isNew, name, address: property.address, openHouse: source === 'Open House' } }, undefined,
         `/crm/${client.id}`,
     );
     res.status(201).json({ ok: true });

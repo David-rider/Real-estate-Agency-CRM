@@ -55,6 +55,7 @@ function SignupForm() {
             email:       formData.email || inviteEmail,
             password:    formData.password,
             inviteToken, // org membership & role are resolved server-side from this token
+            language,
           }),
         });
       } else {
@@ -63,7 +64,7 @@ function SignupForm() {
           method:  "POST",
           credentials: "include",
           headers: { "Content-Type": "application/json", "X-CSRF-Protection": "1" },
-          body:    JSON.stringify(formData),
+          body:    JSON.stringify({ ...formData, language }),
         });
       }
 

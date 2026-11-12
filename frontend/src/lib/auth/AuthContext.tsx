@@ -3,6 +3,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { resetSettingsCache } from '@/lib/settings/useSettings';
+import { saveLanguageToAccount } from '@/lib/i18n/I18nContext';
+import type { Language } from '@/lib/i18n/translations';
 
 interface User {
     id: string;
@@ -29,6 +31,26 @@ const AuthContext = createContext<AuthContextType>({
     updateUser: () => { },
     isLoading: true,
 });
+
+// Keep the account language and this browser's language in step right after signing in:
+// a language chosen on this device is saved to the account; on a device that has never chosen one,
+// the language saved on the account is used.
+function syncLanguage(token: string) {
+    const local = localStorage.getItem('preferredLanguage');
+    if (local) {
+        saveLanguageToAccount(local as Language, token);
+        return;
+    }
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/settings/profile`, {
+        headers: { Authorization: `Bearer ${token}` },
+        credentials: 'include',
+    })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((p) => {
+            if (p?.preferredLanguage) window.dispatchEvent(new CustomEvent('crm:language', { detail: p.preferredLanguage }));
+        })
+        .catch(() => {});
+}
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [user, setUser] = useState<User | null>(null);
@@ -71,6 +93,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setUser(newUser);
         localStorage.setItem('token', newToken);
         localStorage.setItem('user', JSON.stringify(newUser));
+        syncLanguage(newToken);
         router.push('/dashboard');
     };
 

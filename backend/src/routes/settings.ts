@@ -2,7 +2,8 @@ import { Router } from 'express';
 import { prisma } from '../server';
 import { AuthRequest, authorizeRole, authenticateToken, clearAccountCache } from '../middleware/authMiddleware';
 import crypto from 'crypto';
-import { sendEmail } from '../lib/email';
+import { sendEmail, inviteEmail } from '../lib/email';
+import { EMAIL, Lang, isLang, normalizeLang } from '../lib/messages';
 import { getSeatUsage } from '../lib/seats';
 import { audit, diffFields } from '../lib/audit';
 import { resolveLeadAssignee } from '../lib/routing';
@@ -28,7 +29,7 @@ const PROFILE_SELECT = {
     id: true, name: true, email: true, role: true, tier: true,
     title: true, phone: true, licenseNumber: true, linkedIn: true,
     bio: true, timezone: true, avatarUrl: true,
-    acceptingLeads: true, maxActiveLeads: true, notificationPrefs: true,
+    acceptingLeads: true, maxActiveLeads: true, notificationPrefs: true, preferredLanguage: true,
 } as const;
 
 // GET /api/settings/team — colleague directory (any member): names and roles only,
@@ -60,7 +61,11 @@ router.get('/profile', async (req: AuthRequest, res) => {
 router.patch('/profile', async (req: AuthRequest, res) => {
     try {
         if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
-        const { name, title, phone, licenseNumber, linkedIn, bio, timezone, acceptingLeads, maxActiveLeads } = req.body;
+        const { name, title, phone, licenseNumber, linkedIn, bio, timezone, acceptingLeads, maxActiveLeads, preferredLanguage } = req.body;
+
+        if (preferredLanguage !== undefined && !isLang(preferredLanguage)) {
+            return res.status(400).json({ error: 'Unsupported language' });
+        }
 
         if (name !== undefined && !String(name).trim()) {
             return res.status(400).json({ error: 'Name cannot be empty' });
@@ -76,6 +81,7 @@ router.patch('/profile', async (req: AuthRequest, res) => {
                 linkedIn:      clean(linkedIn, 300),
                 bio:           clean(bio, 2000),
                 ...(timezone ? { timezone: String(timezone).slice(0, 60) } : {}),
+                ...(preferredLanguage !== undefined ? { preferredLanguage } : {}),
                 ...(typeof acceptingLeads === 'boolean' ? { acceptingLeads } : {}),
                 ...(maxActiveLeads !== undefined ? { maxActiveLeads: maxActiveLeads === null || maxActiveLeads === '' ? null : Math.max(0, Math.round(Number(maxActiveLeads))) } : {}),
             },
@@ -467,28 +473,22 @@ router.post('/invite', authorizeRole(['SUPERADMIN', 'FIRMADMIN', 'MANAGER']), as
         // Token is a credential — never write it to the audit trail
         await audit(req, 'INVITE_MEMBER', 'Invitation', invitation.id, undefined, { email: normalizedEmail, role: inviteRole });
 
-        const inviter = await prisma.user.findUnique({ where: { id: req.user.userId }, select: { name: true, email: true } });
+        const inviter = await prisma.user.findUnique({ where: { id: req.user.userId }, select: { name: true, email: true, preferredLanguage: true } });
         const inviterName = inviter?.name || inviter?.email || 'A team member';
         const org = await prisma.organization.findUnique({ where: { id: req.user.orgId } });
         const appUrl = process.env.APP_URL || 'http://localhost:3000';
+        // The invitee has no account yet, so the email follows the language of the person who invites
+        const lang: Lang = isLang(req.body.language) ? req.body.language : normalizeLang(inviter?.preferredLanguage);
 
         // Send invite email
         try {
             await sendEmail({
                 to:      email.trim().toLowerCase(),
-                subject: `You've been invited to join ${org?.name || 'our team'} on Real Estate CRM`,
-                html: `
-                    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-                        <h2>You're invited!</h2>
-                        <p><strong>${inviterName}</strong> has invited you to join <strong>${org?.name || 'their team'}</strong> as a <strong>${inviteRole}</strong>.</p>
-                        <p>Click below to accept the invitation and set up your account:</p>
-                        <a href="${appUrl}/signup?invite=${inviteToken}&email=${encodeURIComponent(normalizedEmail)}&org=${req.user.orgId}&role=${inviteRole}"
-                           style="display: inline-block; padding: 12px 24px; background: #B8977E; color: white; text-decoration: none; border-radius: 6px; margin: 16px 0;">
-                            Accept Invitation
-                        </a>
-                        <p style="color: #666; font-size: 12px;">This invitation expires in 7 days.</p>
-                    </div>
-                `,
+                subject: EMAIL[lang].invite.subject(org?.name || 'our team'),
+                html: inviteEmail(
+                    `${appUrl}/signup?invite=${inviteToken}&email=${encodeURIComponent(normalizedEmail)}&org=${req.user.orgId}&role=${inviteRole}`,
+                    inviterName, org?.name || 'their team', inviteRole, lang,
+                ),
             });
         } catch (emailError) {
             console.error('Failed to send invite email:', emailError);

@@ -40,7 +40,7 @@ const DEFAULT_MKT_PREF   = { emailSignature: "", defaultListingTemplate: "", pre
 
 // ─── Main component ──────────────────────────────────────────────────────────────
 export default function SettingsPage() {
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   const { user, updateUser } = useAuth();
   const { theme, setTheme } = useTheme();
   const toast = useToast();
@@ -287,7 +287,7 @@ export default function SettingsPage() {
       const res = await fetch(`${API_BASE}/api/auth/forgot-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "X-CSRF-Protection": "1" },
-        body: JSON.stringify({ email: user.email }),
+        body: JSON.stringify({ email: user.email, language }),
       });
       if (res.ok) toast.success(XS.secResetSent);
       else toast.error(XS.secResetFailed);
@@ -364,7 +364,7 @@ export default function SettingsPage() {
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/api/settings/invite`, {
         method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("token")}` },
-        body: JSON.stringify({ email: inviteEmail, role: inviteRole }),
+        body: JSON.stringify({ email: inviteEmail, role: inviteRole, language }),
       });
       if (res.ok) { toast.success(XS.inviteSent.replace("{email}", inviteEmail)); setInviteEmail(""); }
       else { const d = await res.json(); toast.error(d.error || XE.common.error); }
