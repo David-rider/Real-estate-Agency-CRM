@@ -1,5 +1,7 @@
 "use client";
 
+import TwoFactorPanel from "@/components/settings/TwoFactorPanel";
+import { api } from "@/lib/api";
 import React from "react";
 import { useI18n } from "@/lib/i18n/I18nContext";
 import { useAuth } from "@/lib/auth/AuthContext";
@@ -366,6 +368,15 @@ export default function SettingsPage() {
       if (res.ok) { setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, isActive: false } : u))); toast.success(XS.userDeactivated); }
       else { const d = await res.json(); toast.error(d.error || XE.common.error); }
     } catch { toast.error(t.login.serverError); }
+  };
+
+  const handleReset2fa = async (userId: string, userName: string) => {
+    if (!window.confirm(XE.twoFactor.resetConfirm.replace("{name}", userName))) return;
+    try {
+      await api(`/api/settings/2fa/users/${userId}/reset`, { method: "POST" });
+      setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, totpEnabled: false } : u)));
+      toast.success(XE.twoFactor.resetDone);
+    } catch (err) { toast.error(err instanceof Error ? err.message : XE.common.error); }
   };
 
   const handleReactivate = async (userId: string) => {
@@ -778,9 +789,16 @@ export default function SettingsPage() {
                             {U.reactivate ?? "Reactivate"}
                           </button>
                         ) : (
+                          <>
+                          {isFirmAdmin && u.totpEnabled && (
+                            <button className="text-xs text-foreground/60 hover:text-foreground transition-colors mr-3" onClick={() => handleReset2fa(u.id, u.name)}>
+                              {XE.twoFactor.reset}
+                            </button>
+                          )}
                           <button className="text-xs text-red-400 hover:text-red-300 transition-colors" onClick={() => handleDeactivate(u.id, u.name)}>
                             {U.deactivate ?? "Deactivate"}
                           </button>
+                          </>
                         )
                       )}
                     </td>
@@ -809,7 +827,7 @@ export default function SettingsPage() {
           <SettingRow label={SC.changePassword ?? "Change Password"}>
             <button className="px-3 py-1.5 bg-surface border border-border rounded-lg text-xs text-foreground hover:bg-background" onClick={sendPasswordResetLink}>{SC.sendResetLink ?? "Send Reset Link"}</button>
           </SettingRow>
-          <SettingRow label={SC.twoFA ?? "Two-Factor Authentication"} description={XS.secNotYet}>{soonBadge}</SettingRow>
+          <SettingRow label={SC.twoFA ?? "Two-Factor Authentication"} description={XE.twoFactor.desc}><TwoFactorPanel /></SettingRow>
           <SettingRow label={SC.loginAlerts ?? "Login Alerts"} description={XS.secLoginAlertsDesc}>
             <Toggle checked={loginAlerts} onChange={saveLoginAlerts} />
           </SettingRow>

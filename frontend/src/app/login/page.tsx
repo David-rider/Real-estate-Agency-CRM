@@ -14,6 +14,8 @@ export default function LoginPage() {
   const [needsVerification, setNeedsVerification] = useState(false);
   const [resent, setResent] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [challenge, setChallenge] = useState("");
+  const [code, setCode] = useState("");
   const router = useRouter();
   const { login } = useAuth();
   const { t, language, setLanguage } = useI18n();
@@ -34,7 +36,10 @@ export default function LoginPage() {
 
       const data = await res.json();
 
-      if (res.ok && data.token) {
+      if (res.ok && data.twoFactorRequired) {
+        setChallenge(data.challenge);
+        setCode("");
+      } else if (res.ok && data.token) {
         login(data.token, data.user);
       } else {
         setNeedsVerification(data.code === "EMAIL_NOT_VERIFIED");
@@ -46,6 +51,30 @@ export default function LoginPage() {
         );
       }
     } catch (err) {
+      setError(t.login.serverError);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const submitCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setIsLoading(true);
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/auth/login/2fa`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json", "X-CSRF-Protection": "1" },
+        body: JSON.stringify({ challenge, code }),
+      });
+      const data = await res.json();
+      if (res.ok && data.token) login(data.token, data.user);
+      else {
+        if (data.code === "CHALLENGE_EXPIRED") setChallenge("");
+        setError(data.error || t.login.invalidCredentials);
+      }
+    } catch {
       setError(t.login.serverError);
     } finally {
       setIsLoading(false);
@@ -88,6 +117,29 @@ export default function LoginPage() {
               </p>
             </div>
 
+            {challenge ? (
+              <form onSubmit={submitCode} className="space-y-4">
+                <h2 className="text-lg font-semibold text-foreground">{X.twoFactor.loginTitle}</h2>
+                <p className="text-sm text-foreground/60">{X.twoFactor.loginDesc}</p>
+                {error && <div className="px-4 py-2.5 bg-red-500/10 border border-red-500/20 text-red-500 text-sm">{error}</div>}
+                <input
+                  autoFocus
+                  required
+                  autoComplete="one-time-code"
+                  aria-label={X.twoFactor.loginCode}
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  className="w-full px-0 py-2.5 bg-transparent border-b border-border focus:border-primary outline-none text-2xl tracking-[0.4em] text-foreground"
+                  placeholder="123456"
+                />
+                <button type="submit" disabled={isLoading || !code.trim()} className="w-full py-2.5 bg-primary text-background rounded-lg text-sm uppercase tracking-widest font-semibold disabled:opacity-50">
+                  {X.twoFactor.loginVerify}
+                </button>
+                <button type="button" onClick={() => { setChallenge(""); setError(""); setPassword(""); }} className="text-xs text-foreground/50 hover:text-primary">
+                  {X.twoFactor.loginBack}
+                </button>
+              </form>
+            ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
               {error && (
                 <div className="px-4 py-2.5 bg-red-500/10 border border-red-500/20 text-red-500 font-sans text-sm">
@@ -202,6 +254,7 @@ export default function LoginPage() {
                 </button>
               </div>
             </form>
+            )}
 
             <div className="mt-5 pt-5 border-t border-border font-sans text-sm text-foreground/50">
               <p>

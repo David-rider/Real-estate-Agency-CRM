@@ -296,7 +296,7 @@ router.get('/users', authorizeRole(['SUPERADMIN', 'FIRMADMIN', 'MANAGER']), asyn
                 id: true, name: true, email: true, role: true, tier: true,
                 phone: true, title: true, licenseNumber: true, avatarUrl: true,
                 emailVerified: true, isActive: true, acceptingLeads: true, maxActiveLeads: true,
-                lastLoginAt: true, createdAt: true,
+                lastLoginAt: true, createdAt: true, totpEnabled: true,
             },
             orderBy: { createdAt: 'desc' },
         });

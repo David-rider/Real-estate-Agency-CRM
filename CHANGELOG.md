@@ -22,6 +22,10 @@
 ## [未发布]
 
 #### 安全 / Security
+- 两步验证（2FA）：在“设置 → 安全”里用验证器 App（Google Authenticator、Microsoft Authenticator、1Password 等）扫码开启。开启后，输入密码还要再输入 App 中的 6 位验证码。开启时会给出 10 个一次性恢复码，手机丢失时可以用它们登录；每个验证码和恢复码只能用一次。关闭需要密码加验证码。公司管理员可以在“团队与角色”里为丢了手机的同事重置两步验证。
+  *Two-factor authentication (2FA): turn it on in Settings → Security by scanning a QR code with an authenticator app (Google Authenticator, Microsoft Authenticator, 1Password…). After that, signing in asks for the app's 6-digit code after the password. Turning it on gives 10 one-time recovery codes for signing in if the phone is lost; each code and recovery code works only once. Turning it off needs the password plus a code. Firm admins can reset 2FA for a colleague who lost their phone under Team & Roles.*
+- 数据库：新增 `User.totpEnabled`、`totpSecret`（加密存储）、`totpRecoveryCodes`（只存哈希）、`totpLastStep`（幂等迁移 `20261113000100_two_factor`）。
+  *Database: new `User.totpEnabled`, `totpSecret` (stored encrypted), `totpRecoveryCodes` (hashes only) and `totpLastStep` (idempotent migration `20261113000100_two_factor`).*
 - 登录提醒：你的账号在新的设备或网络上登录时，会收到一封邮件，写明设备、IP 和时间，并附“重置密码”按钮；同一台电脑重复登录不会提醒。在“设置 → 安全”里可以随时关闭（默认开启）。
   *Login alerts: when your account signs in from a new device or network, you get an email with the device, IP address and time, plus a "Reset password" button; repeat sign-ins from the same computer don't trigger it. Turn it off any time in Settings → Security (on by default).*
 - 数据库：新增 `User.loginAlerts`、`User.knownDevices`（幂等迁移 `20261113000000_login_alerts`）。

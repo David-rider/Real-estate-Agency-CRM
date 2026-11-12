@@ -1,3 +1,4 @@
+import { signChallenge } from '../lib/totp';
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import rateLimit from 'express-rate-limit';
@@ -102,6 +103,8 @@ router.post('/google', async (req, res) => {
         if (!user.isActive) {
             return res.status(403).json({ error: 'This account has been deactivated. Contact your administrator.' });
         }
+
+        if (user.totpEnabled) return res.json({ twoFactorRequired: true, challenge: signChallenge(user.id) });
 
         const token = generateToken(user);
         setAuthCookie(res, token);
