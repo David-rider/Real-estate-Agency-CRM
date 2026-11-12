@@ -21,6 +21,13 @@
 
 ## [未发布]
 
+---
+
+## [1.2.1.0] — 2026-11-12 · 多语言补全（邮件与通知按收件人语言、西班牙语设置页补齐）、一键本地开发环境、GitHub 仓库安全设置 / Language completion (emails and notifications in the recipient's language, Spanish Settings page completed), one-command local development, GitHub repository security settings
+
+- 数据库：无迁移。环境变量：生产无新增（`DEV_*` 仅用于本地 Docker）。
+  *Database: no migration. Environment variables: none new in production (`DEV_*` are for local Docker only).*
+
 #### 新增 / Added
 - 邮件和站内通知现在按收件人的语言发送（English、简体中文、繁體中文、Español）：邀请、验证邮箱、重置密码，以及新线索、报价、预约、任务逾期、佣金等提醒。以前这些全是英文。
   *Emails and in-app notifications are now sent in the recipient's language (English, Simplified Chinese, Traditional Chinese, Spanish): invitations, email verification, password reset, and the new-lead, offer, appointment, overdue-task and commission alerts. Before, all of these were English only.*
