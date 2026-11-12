@@ -11,6 +11,7 @@ import { EMAIL, Lang, isLang, normalizeLang } from '../lib/messages';
 import { getSeatUsage } from '../lib/seats';
 import { orgSlug } from '../lib/slug';
 import { recordLogin } from '../lib/loginAlert';
+import { signChallenge, readChallenge, verifyTotp, decryptSecret, useRecoveryCode } from '../lib/totp';
 
 // Org subscription level → member tier (subscription is org-wide)
 const ORG_SUB_TO_TIER: Record<string, 'CORE' | 'PRO' | 'ELITE'> = {
@@ -91,30 +92,60 @@ router.post('/login', authLimiter, async (req, res) => {
             });
         }
 
-        // Generate JWT
-        const token = jwt.sign(
-            { userId: user.id, role: user.role, tier: user.tier, orgId: user.orgId },
-            JWT_SECRET,
-            { expiresIn: '24h' }
-        );
+        // Two-factor: the password was right, now ask for the authenticator code. No session yet.
+        if (user.totpEnabled) {
+            return res.json({ twoFactorRequired: true, challenge: signChallenge(user.id) });
+        }
 
-        setAuthCookie(res, token);
-        void recordLogin(prisma, user.id, String(req.headers['user-agent'] ?? ''), req.ip ?? '');
-
-        res.json({
-            message: 'Login successful',
-            token,
-            user: {
-                id: user.id,
-                name: user.name,
-                email: user.email,
-                role: user.role,
-                tier: user.tier,
-                orgId: user.orgId
-            }
-        });
+        finishLogin(req, res, user);
     } catch (error) {
         console.error('Login error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Issue the session for a fully authenticated user (password, plus 2FA when on)
+function finishLogin(req: express.Request, res: express.Response, user: { id: string; name: string; email: string; role: string; tier: string; orgId: string }) {
+    const token = jwt.sign(
+        { userId: user.id, role: user.role, tier: user.tier, orgId: user.orgId },
+        JWT_SECRET,
+        { expiresIn: '24h' }
+    );
+    setAuthCookie(res, token);
+    void recordLogin(prisma, user.id, String(req.headers['user-agent'] ?? ''), req.ip ?? '');
+    res.json({
+        message: 'Login successful',
+        token,
+        user: { id: user.id, name: user.name, email: user.email, role: user.role, tier: user.tier, orgId: user.orgId },
+    });
+}
+
+// POST /api/auth/login/2fa { challenge, code } — second step: a 6-digit code or a one-time recovery code
+router.post('/login/2fa', authLimiter, async (req, res) => {
+    try {
+        const userId = readChallenge(req.body?.challenge);
+        if (!userId) return res.status(401).json({ error: 'The sign-in took too long. Please enter your password again.', code: 'CHALLENGE_EXPIRED' });
+        const user = await prisma.user.findUnique({ where: { id: userId } });
+        if (!user || !user.isActive || !user.totpEnabled || !user.totpSecret) return res.status(401).json({ error: 'Invalid credentials' });
+
+        const code = String(req.body?.code ?? '').trim();
+        const step = verifyTotp(decryptSecret(user.totpSecret), code);
+        if (step !== null) {
+            // A code can be used once: reject the step that was already accepted (or an older one)
+            if (user.totpLastStep !== null && step <= user.totpLastStep) {
+                return res.status(401).json({ error: 'That code was already used. Wait for the next one.', code: 'INVALID_2FA_CODE' });
+            }
+            await prisma.user.update({ where: { id: user.id }, data: { totpLastStep: step } });
+            return finishLogin(req, res, user);
+        }
+        const remaining = useRecoveryCode(Array.isArray(user.totpRecoveryCodes) ? (user.totpRecoveryCodes as string[]) : [], code);
+        if (remaining) {
+            await prisma.user.update({ where: { id: user.id }, data: { totpRecoveryCodes: remaining } });
+            return finishLogin(req, res, user);
+        }
+        res.status(401).json({ error: 'That code is not correct.', code: 'INVALID_2FA_CODE' });
+    } catch (error) {
+        console.error('2FA login error:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });

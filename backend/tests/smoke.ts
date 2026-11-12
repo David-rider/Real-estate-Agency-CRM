@@ -6,6 +6,7 @@
  * Creates two fresh brokerages (unique emails each run) and walks through the
  * main agent workflows, plus checks that one brokerage cannot touch the other's data.
  */
+import { totpAt, base32Encode, currentStep } from '../src/lib/totp';
 import assert from 'node:assert/strict';
 import { PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken';
@@ -826,6 +827,55 @@ async function main() {
         assert.equal(prof.body.loginAlerts, true, 'alerts are on by default');
         assert.equal((await call('PATCH', '/api/settings/profile', token, { loginAlerts: false })).status, 200);
         assert.equal((await call('GET', '/api/settings/profile', token)).body.loginAlerts, false);
+    });
+
+    await step('two-factor authentication: setup, sign-in with a code or recovery code, no replay, turning it off', async () => {
+        // RFC 6238 test vector (SHA-1, T = 59 s → step 1)
+        assert.equal(totpAt(base32Encode(Buffer.from('12345678901234567890')), 1), '287082');
+
+        const owner = await register('twofa');
+        const email = `twofa-${run}@smoke.test`;
+        const password = 'SmokeTest123!';
+        const setup = await call('POST', '/api/settings/2fa/setup', owner);
+        assert.equal(setup.status, 200, JSON.stringify(setup.body));
+        assert.ok(setup.body.otpauthUrl.startsWith('otpauth://totp/'));
+        const secret = setup.body.secret as string;
+        assert.equal((await call('POST', '/api/settings/2fa/enable', owner, { code: '000000' })).status, 400);
+        const step0 = currentStep();
+        const en = await call('POST', '/api/settings/2fa/enable', owner, { code: totpAt(secret, step0) });
+        assert.equal(en.status, 200, JSON.stringify(en.body));
+        assert.equal(en.body.recoveryCodes.length, 10);
+        const row = await db().user.findUnique({ where: { email }, select: { totpSecret: true, totpRecoveryCodes: true } });
+        assert.ok(row!.totpSecret && !row!.totpSecret.includes(secret), 'secret is stored encrypted');
+        assert.ok(!(row!.totpRecoveryCodes as string[]).includes(en.body.recoveryCodes[0]), 'recovery codes are stored hashed');
+
+        // Password alone no longer signs in
+        const first = await call('POST', '/api/auth/login', undefined, { email, password });
+        assert.equal(first.status, 200);
+        assert.equal(first.body.twoFactorRequired, true);
+        assert.equal(first.body.token, undefined, 'no session before the code');
+        assert.equal((await call('GET', '/api/settings/profile', first.body.challenge)).status, 401, 'a challenge is not a session token');
+        assert.equal((await call('POST', '/api/auth/login/2fa', undefined, { challenge: first.body.challenge, code: '000000' })).status, 401);
+        assert.equal((await call('POST', '/api/auth/login/2fa', undefined, { challenge: first.body.challenge, code: totpAt(secret, step0) })).status, 401, 'a used code cannot be replayed');
+        const ok = await call('POST', '/api/auth/login/2fa', undefined, { challenge: first.body.challenge, code: totpAt(secret, step0 + 1) });
+        assert.equal(ok.status, 200, JSON.stringify(ok.body));
+        assert.ok(ok.body.token);
+
+        // Recovery code works once
+        const rc = en.body.recoveryCodes[3] as string;
+        const second = await call('POST', '/api/auth/login', undefined, { email, password });
+        assert.equal((await call('POST', '/api/auth/login/2fa', undefined, { challenge: second.body.challenge, code: rc.toLowerCase() })).status, 200);
+        assert.equal((await call('POST', '/api/auth/login/2fa', undefined, { challenge: second.body.challenge, code: rc })).status, 401, 'a recovery code is one-time');
+        assert.equal((await call('GET', '/api/settings/2fa', owner)).body.recoveryCodesLeft, 9);
+
+        // An agent cannot reset someone else's 2FA; turning it off needs the password
+        const agent = await joinOrg(owner, 'twofa-agent', 'AGENT');
+        const me = await db().user.findUnique({ where: { email }, select: { id: true } });
+        assert.equal((await call('POST', `/api/settings/2fa/users/${me!.id}/reset`, agent.token)).status, 403);
+        assert.equal((await call('POST', '/api/settings/2fa/disable', owner, { password: 'wrong-password', code: en.body.recoveryCodes[5] })).status, 400);
+        assert.equal((await call('POST', '/api/settings/2fa/disable', owner, { password, code: en.body.recoveryCodes[5] })).status, 200);
+        const plain = await call('POST', '/api/auth/login', undefined, { email, password });
+        assert.ok(plain.body.token, 'password alone works again once 2FA is off');
     });
 
     await step('security policy is saved and enforced', async () => {

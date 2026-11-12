@@ -58,8 +58,12 @@ happen; note anything that doesn't.
       *经理和经纪人能看到安全规则，但不能保存修改。*
 - [ ] **Login alerts** (on by default): sign in from a different browser or your phone — you receive a "New sign-in to your account" email with the device, IP and time. Signing in again from the same browser sends nothing. Turn the switch off and the alert stops.
       *登录提醒（默认开启）：换一个浏览器或用手机登录，会收到“你的账号有新的登录”邮件，写明设备、IP 和时间；同一浏览器再次登录不会发送。关闭开关后不再提醒。*
-- [ ] Two-factor authentication and the IP whitelist show **Coming soon** and do nothing yet.
-      *双因素认证和 IP 白名单显示“即将推出”，目前不起作用。*
+- [ ] **Two-factor authentication**: Settings → Security → Set up, scan the QR code with an authenticator app, enter the code — 10 recovery codes are shown. Sign out and back in: after the password you are asked for the 6-digit code. A wrong code is refused; a recovery code works once.
+      *两步验证：设置 → 安全 → 设置，用验证器 App 扫码并输入验证码，会显示 10 个恢复码。退出后重新登录：输完密码会要求输入 6 位验证码；错误的验证码会被拒绝，恢复码只能用一次。*
+- [ ] Turning 2FA off asks for your password and a code. A firm admin sees **Reset 2FA** next to a teammate who has it on (Team & Roles).
+      *关闭两步验证需要输入密码和验证码。公司管理员在“团队与角色”里，会在已开启两步验证的同事旁边看到“重置两步验证”。*
+- [ ] The IP whitelist shows **Coming soon** and does nothing yet.
+      *IP 白名单显示“即将推出”，目前不起作用。*
 
 ## 9. Settings: CRM, Properties, Finance, Appointments, Documents / 设置：CRM、房源、财务、预约、文档
 - [ ] **Settings → CRM** (firm admin): make *Email* a required field, save, then add a client without an email — it is refused with a clear message; the add form shows a red asterisk on Email. Set the client limit to 1 and try adding a second open client as an agent — refused.

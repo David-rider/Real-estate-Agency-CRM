@@ -92,6 +92,11 @@ model User {
   loginAlerts       Boolean      @default(true)
   // Hashed browser+network keys already seen (most recent first, max 10)
   knownDevices      Json?
+  // Two-factor authentication with an authenticator app
+  totpEnabled       Boolean      @default(false)
+  totpSecret        String?      // AES-256-GCM encrypted
+  totpRecoveryCodes Json?        // SHA-256 hashes of the unused one-time codes
+  totpLastStep      Int?         // last accepted 30 s step, so a code can't be replayed
 
   // Profile fields
   avatarUrl     String?
