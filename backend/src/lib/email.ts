@@ -1,3 +1,4 @@
+import { EMAIL, Lang, roleLabel } from './messages';
 /**
  * Email service abstraction — supports Resend and SendGrid.
  * Set EMAIL_PROVIDER, EMAIL_API_KEY, EMAIL_FROM in environment.
@@ -72,40 +73,55 @@ export async function sendEmail(options: EmailOptions): Promise<void> {
 
 // ── Pre-built email templates ─────────────────────────────────────────────────
 
-export function passwordResetEmail(resetUrl: string, userName: string): EmailOptions['html'] {
-    return `
-<!DOCTYPE html>
+export function escapeHtml(v: string): string {
+    return String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+const SHELL_HEAD = `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background:#f9fafb; margin:0; padding:40px 20px;">
-  <div style="max-width:560px; margin:0 auto; background:#fff; border:1px solid #e5e7eb; border-radius:8px; padding:40px;">
-    <div style="font-size:24px; font-weight:700; color:#111; margin-bottom:8px;">Reset your password</div>
-    <p style="color:#6b7280; margin:0 0 24px;">Hi ${userName}, we received a request to reset your password. Click the button below. This link expires in 1 hour.</p>
-    <a href="${resetUrl}" style="display:inline-block; background:#111; color:#fff; text-decoration:none; padding:12px 28px; border-radius:6px; font-size:14px; font-weight:600; letter-spacing:0.05em;">Reset Password</a>
-    <p style="color:#9ca3af; font-size:12px; margin-top:24px;">If you didn't request this, ignore this email. Your password won't change.</p>
-    <hr style="border:none; border-top:1px solid #e5e7eb; margin:24px 0">
-    <p style="color:#9ca3af; font-size:11px; margin:0;">Real Estate Brokerage CRM · New York</p>
+  <div style="max-width:560px; margin:0 auto; background:#fff; border:1px solid #e5e7eb; border-radius:8px; padding:40px;">`;
+
+function shellFoot(lang: Lang): string {
+    return `    <hr style="border:none; border-top:1px solid #e5e7eb; margin:24px 0">
+    <p style="color:#9ca3af; font-size:11px; margin:0;">${EMAIL[lang].footerNote}</p>
   </div>
 </body>
 </html>`;
 }
 
-export function welcomeEmail(verifyUrl: string, userName: string): EmailOptions['html'] {
-    return `
-<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head>
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background:#f9fafb; margin:0; padding:40px 20px;">
-  <div style="max-width:560px; margin:0 auto; background:#fff; border:1px solid #e5e7eb; border-radius:8px; padding:40px;">
-    <div style="font-size:24px; font-weight:700; color:#111; margin-bottom:8px;">Welcome, ${userName}!</div>
-    <p style="color:#6b7280; margin:0 0 24px;">Your account has been created. Please verify your email address to activate it.</p>
-    <a href="${verifyUrl}" style="display:inline-block; background:#111; color:#fff; text-decoration:none; padding:12px 28px; border-radius:6px; font-size:14px; font-weight:600; letter-spacing:0.05em;">Verify Email</a>
-    <p style="color:#9ca3af; font-size:12px; margin-top:24px;">This link expires in 24 hours.</p>
-    <hr style="border:none; border-top:1px solid #e5e7eb; margin:24px 0">
-    <p style="color:#9ca3af; font-size:11px; margin:0;">Real Estate Brokerage CRM · New York</p>
-  </div>
-</body>
-</html>`;
+const BUTTON = 'display:inline-block; background:#111; color:#fff; text-decoration:none; padding:12px 28px; border-radius:6px; font-size:14px; font-weight:600; letter-spacing:0.05em;';
+
+export function passwordResetEmail(resetUrl: string, userName: string, lang: Lang = 'en'): EmailOptions['html'] {
+    const t = EMAIL[lang].reset;
+    return `${SHELL_HEAD}
+    <div style="font-size:24px; font-weight:700; color:#111; margin-bottom:8px;">${t.title}</div>
+    <p style="color:#6b7280; margin:0 0 24px;">${t.body(escapeHtml(userName))}</p>
+    <a href="${resetUrl}" style="${BUTTON}">${t.button}</a>
+    <p style="color:#9ca3af; font-size:12px; margin-top:24px;">${t.ignore}</p>
+${shellFoot(lang)}`;
+}
+
+export function welcomeEmail(verifyUrl: string, userName: string, lang: Lang = 'en'): EmailOptions['html'] {
+    const t = EMAIL[lang].verify;
+    return `${SHELL_HEAD}
+    <div style="font-size:24px; font-weight:700; color:#111; margin-bottom:8px;">${t.title(escapeHtml(userName))}</div>
+    <p style="color:#6b7280; margin:0 0 24px;">${t.body}</p>
+    <a href="${verifyUrl}" style="${BUTTON}">${t.button}</a>
+    <p style="color:#9ca3af; font-size:12px; margin-top:24px;">${t.expires}</p>
+${shellFoot(lang)}`;
+}
+
+export function inviteEmail(acceptUrl: string, inviterName: string, orgName: string, role: string, lang: Lang = 'en'): EmailOptions['html'] {
+    const t = EMAIL[lang].invite;
+    return `${SHELL_HEAD}
+    <div style="font-size:24px; font-weight:700; color:#111; margin-bottom:8px;">${t.title}</div>
+    <p style="color:#374151; margin:0 0 12px;">${t.body(escapeHtml(inviterName), escapeHtml(orgName), escapeHtml(roleLabel(role, lang)))}</p>
+    <p style="color:#6b7280; margin:0 0 24px;">${t.instruction}</p>
+    <a href="${acceptUrl}" style="${BUTTON}">${t.button}</a>
+    <p style="color:#9ca3af; font-size:12px; margin-top:24px;">${t.expires}</p>
+${shellFoot(lang)}`;
 }
 
 export function appointmentReminderEmail(details: { clientName: string; date: string; address: string; agentName: string }): EmailOptions['html'] {

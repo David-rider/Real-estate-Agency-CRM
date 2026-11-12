@@ -7,6 +7,7 @@ import rateLimit from 'express-rate-limit';
 import { sendEmail, passwordResetEmail, welcomeEmail } from '../lib/email';
 import { authenticateToken, AuthRequest, setAuthCookie, clearAuthCookie, invalidateAccount } from '../middleware/authMiddleware';
 import { passwordPolicyError, orgPasswordPolicy } from '../lib/passwordPolicy';
+import { EMAIL, Lang, isLang, normalizeLang } from '../lib/messages';
 import { getSeatUsage } from '../lib/seats';
 import { orgSlug } from '../lib/slug';
 
@@ -120,6 +121,7 @@ router.post('/login', authLimiter, async (req, res) => {
 router.post('/register', authLimiter, async (req, res) => {
     try {
         const { name, email, password, orgName } = req.body;
+        const lang: Lang = normalizeLang(req.body.language);
 
         if (!name || !email || !password) {
             return res.status(400).json({ error: 'Name, email, and password are required' });
@@ -159,6 +161,7 @@ router.post('/register', authLimiter, async (req, res) => {
                 role: newRole as any,
                 tier: 'CORE',
                 orgId: org.id,
+                preferredLanguage: lang,
                 // No email service → nothing to click, auto-verify so login isn't blocked
                 emailVerified: !emailServiceConfigured(),
             }
@@ -169,7 +172,7 @@ router.post('/register', authLimiter, async (req, res) => {
             await (prisma as any).$executeRaw`UPDATE "User" SET "emailVerifyToken" = ${verifyToken} WHERE id = ${newUser.id}`;
             const appUrl = process.env.APP_URL || 'http://localhost:3000';
             const verifyUrl = `${appUrl}/verify-email?token=${verifyToken}`;
-            sendEmail({ to: newUser.email, subject: 'Verify your email', html: welcomeEmail(verifyUrl, newUser.name) }).catch(console.error);
+            sendEmail({ to: newUser.email, subject: EMAIL[lang].verify.subject, html: welcomeEmail(verifyUrl, newUser.name, lang) }).catch(console.error);
         } catch (emailErr) {
             console.error('Verification email / token setup failed (non-blocking):', emailErr);
         }
@@ -211,6 +214,8 @@ router.post('/forgot-password', authLimiter, async (req, res) => {
 
         // Always respond 200 to prevent email enumeration
         if (!user) return res.status(200).json({ message: 'If that email exists, a reset link has been sent.' });
+        // The language chosen on the page wins; otherwise the one saved on the account
+        const lang: Lang = isLang(req.body.language) ? req.body.language : normalizeLang(user.preferredLanguage);
 
         const token = crypto.randomBytes(32).toString('hex');
         const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
@@ -226,9 +231,9 @@ router.post('/forgot-password', authLimiter, async (req, res) => {
 
         await sendEmail({
             to: email,
-            subject: 'Reset your password',
-            html: passwordResetEmail(resetUrl, user.name),
-            text: `Reset your password: ${resetUrl}`
+            subject: EMAIL[lang].reset.subject,
+            html: passwordResetEmail(resetUrl, user.name, lang),
+            text: `${EMAIL[lang].reset.title}: ${resetUrl}`
         });
 
         res.status(200).json({ message: 'If that email exists, a reset link has been sent.' });
@@ -330,6 +335,7 @@ router.post('/accept-invite', authLimiter, async (req, res) => {
                 tier: ORG_SUB_TO_TIER[seats.subscription] || 'CORE', // members inherit the org-wide plan
                 orgId: invitation.orgId,
                 emailVerified: true, // arriving via emailed link proves mailbox ownership
+                preferredLanguage: normalizeLang(req.body.language),
             },
         });
 
@@ -381,10 +387,11 @@ router.post('/resend-verification', authLimiter, async (req, res) => {
         await prisma.user.update({ where: { id: user.id }, data: { emailVerifyToken: verifyToken } });
 
         const appUrl = process.env.APP_URL || 'http://localhost:3000';
+        const lang: Lang = isLang(req.body.language) ? req.body.language : normalizeLang(user.preferredLanguage);
         await sendEmail({
             to: user.email,
-            subject: 'Verify your email',
-            html: welcomeEmail(`${appUrl}/verify-email?token=${verifyToken}`, user.name),
+            subject: EMAIL[lang].verify.subject,
+            html: welcomeEmail(`${appUrl}/verify-email?token=${verifyToken}`, user.name, lang),
         });
 
         res.status(200).json(okMsg);

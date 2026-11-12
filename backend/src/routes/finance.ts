@@ -234,8 +234,8 @@ router.post('/commissions/:id/approve', authorizeRole(['SUPERADMIN', 'FIRMADMIN'
 
         const updated = await prisma.commission.findUnique({ where: { id: commId } });
         await audit(req, 'APPROVE_PAYOUT', 'Commission', commId, { status: 'REQUESTED' }, { status: 'PAID', netPayout: commission.netPayout, agentId: commission.agentId });
-        await createNotification(commission.agentId, commission.orgId, 'COMMISSION_PAID', 'Payout approved',
-            `Your commission payout of $${commission.netPayout.toLocaleString()} was approved.`, '/finance');
+        await createNotification(commission.agentId, commission.orgId, 'COMMISSION_PAID',
+            { key: 'payoutApproved', params: { amount: commission.netPayout } }, undefined, '/finance');
         res.json(updated);
     } catch (error) {
         console.error('Error approving payout:', error);
@@ -268,8 +268,8 @@ router.post('/commissions/:id/reject', authorizeRole(['SUPERADMIN', 'FIRMADMIN',
 
         const updated = await prisma.commission.findUnique({ where: { id: commId } });
         await audit(req, 'REJECT_PAYOUT', 'Commission', commId, { status: 'REQUESTED' }, { status: 'PENDING', agentId: commission.agentId });
-        await createNotification(commission.agentId, commission.orgId, 'SYSTEM', 'Payout request returned',
-            'Your payout request was not approved. Check with your manager.', '/finance');
+        await createNotification(commission.agentId, commission.orgId, 'SYSTEM',
+            { key: 'payoutReturned' }, undefined, '/finance');
         res.json(updated);
     } catch (error) {
         console.error('Error rejecting payout:', error);

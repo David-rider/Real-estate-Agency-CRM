@@ -191,8 +191,8 @@ router.post('/', async (req: AuthRequest, res) => {
     });
 
     if (agentId !== user.userId) {
-        await createNotification(agentId, user.orgId, 'NEW_CLIENT', 'New client assigned to you',
-            `${client.firstName} ${client.lastName} was assigned to you.`, `/crm/${client.id}`);
+        await createNotification(agentId, user.orgId, 'NEW_CLIENT',
+            { key: 'clientAssigned', params: { isNew: true, name: `${client.firstName} ${client.lastName}` } }, undefined, `/crm/${client.id}`);
     }
     res.status(201).json(client);
 });
@@ -399,8 +399,8 @@ router.patch('/:id', async (req: AuthRequest, res) => {
     const client = await prisma.client.update({ where: { id }, data: data as any });
     if (data.agentId) {
         await audit(req, 'REASSIGN_CLIENT', 'Client', id, { agentId: existing.agentId }, { agentId: data.agentId });
-        await createNotification(String(data.agentId), user.orgId, 'NEW_CLIENT', 'Client assigned to you',
-            `${client.firstName} ${client.lastName} was assigned to you.`, `/crm/${client.id}`);
+        await createNotification(String(data.agentId), user.orgId, 'NEW_CLIENT',
+            { key: 'clientAssigned', params: { isNew: false, name: `${client.firstName} ${client.lastName}` } }, undefined, `/crm/${client.id}`);
     }
     res.json(client);
 });

@@ -121,9 +121,8 @@ router.post('/', async (req: AuthRequest, res) => {
         data: { ...data, status, agentId: user.userId, orgId: user.orgId },
     });
 
-    const when = appointment.date.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
-    await createNotification(user.userId, user.orgId, 'APPOINTMENT_REMINDER', 'Appointment scheduled',
-        `"${appointment.title}" is scheduled for ${when}.`, '/appointments');
+    await createNotification(user.userId, user.orgId, 'APPOINTMENT_REMINDER',
+        { key: 'appointmentScheduled', params: { title: appointment.title, date: appointment.date } }, undefined, '/appointments');
     if (appointment.clientId && appointment.type === 'SHOWING') {
         await prisma.client.updateMany({
             where: { id: appointment.clientId, funnelStage: { in: ['LEAD', 'QUALIFIED'] } },

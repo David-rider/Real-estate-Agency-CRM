@@ -77,4 +77,14 @@ happen; note anything that doesn't.
 - [ ] Marketing, Access Control and Integrations still show **Coming soon**. A manager or agent sees the company rules but cannot save them.
       *营销、访问控制、集成仍显示“即将推出”。经理和经纪人能看到公司规则，但不能保存。*
 
+## 9. Language / 语言
+- [ ] Choose **Español** on the login page, sign in, then request a password reset and invite a teammate — both emails arrive in Spanish.
+      *在登录页选 Español，登录后申请重置密码、邀请一位同事——两封邮件都是西班牙语。*
+- [ ] Switch the language in the top bar to 简体中文, then create an appointment — the new notification is in Chinese. Switch to 繁體中文 and check again.
+      *在顶栏把语言切到简体中文，再创建一个预约——新通知是中文的；切到繁體中文再看一次。*
+- [ ] Sign out, clear the browser's site data (or use another browser), sign in again — the interface opens in the language you used last.
+      *退出登录，清除浏览器网站数据（或换一个浏览器），再登录——界面会使用你上次用的语言。*
+- [ ] Notifications created *before* the language was saved stay in the language they were created in.
+      *在保存语言之前生成的旧通知，保持生成时的语言，不会被改写。*
+
 Report problems with: the page, what you clicked, what you expected, what happened, and a screenshot.

@@ -39,7 +39,7 @@ router.post('/', async (req: AuthRequest, res) => {
             status: 'PENDING', orgId: user.orgId,
         },
     });
-    await createNotification(refereeId, user.orgId, 'SYSTEM', 'New referral', 'A colleague sent you a referral.', '/services');
+    await createNotification(refereeId, user.orgId, 'SYSTEM', { key: 'referralReceived' }, undefined, '/services');
     res.status(201).json(referral);
 });
 

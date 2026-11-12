@@ -9,6 +9,7 @@
 import assert from 'node:assert/strict';
 import { PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken';
+import { EMAIL, LANGS, notificationText } from '../src/lib/messages';
 
 const API = process.env.API_URL || 'http://localhost:4000';
 const run = Date.now().toString(36);
@@ -588,6 +589,50 @@ async function main() {
         assert.deepEqual(JSON.parse(upd.before), { price: 500000 });
         assert.deepEqual(JSON.parse(upd.after), { price: 510000 });
         assert.ok(!JSON.stringify(log.body.logs).includes('secret-link-token-123'), 'document links must never be written to the audit trail');
+    });
+
+    await step('language: saved per user, validated, and notifications follow it; every message exists in all 4 languages', async () => {
+        // Catalog completeness (pure functions, no server needed)
+        for (const lang of LANGS) {
+            const e = EMAIL[lang];
+            for (const text of [e.footerNote, e.reset.subject, e.reset.body('Ana'), e.verify.title('Ana'), e.invite.subject('Org'), e.invite.body('A', 'Org', 'Agent'), e.notification.greeting('Ana'), e.notification.button]) {
+                assert.ok(text && !text.includes('undefined'), `${lang}: empty or broken email text`);
+            }
+            for (const key of ['dealStatus', 'appointmentUpcoming', 'taskOverdue', 'appointmentScheduled', 'clientAssigned', 'payoutApproved', 'payoutReturned', 'offerReceived', 'offerStatus', 'leadInquiry', 'referralReceived'] as const) {
+                const n = notificationText(lang, key, { status: 'ACCEPTED', title: 'T', who: 'W', where: 'H', date: new Date(), name: 'N', amount: 1000, address: 'A', isNew: true });
+                assert.ok(n.title && n.message && !`${n.title}${n.message}`.includes('undefined'), `${lang}/${key}: empty or broken notification`);
+            }
+        }
+
+        // The language chosen at sign-up is stored, and can be changed and read back
+        const reg = await call('POST', '/api/auth/register', undefined, { name: 'Lang Owner', email: `lang-${run}@smoke.test`, password: 'SmokeTest123!', orgName: `Lang Realty ${run}`, language: 'es' });
+        assert.equal(reg.status, 201, JSON.stringify(reg.body));
+        const tok = reg.body.token as string;
+        assert.equal((await call('GET', '/api/settings/profile', tok)).body.preferredLanguage, 'es');
+        assert.equal((await call('PATCH', '/api/settings/profile', tok, { preferredLanguage: 'fr' })).status, 400, 'unsupported language is refused');
+        const plain = await register('langdefault');
+        assert.equal((await call('GET', '/api/settings/profile', plain)).body.preferredLanguage, 'en', 'default stays English');
+
+        // In-app notifications are worded in the recipient's language
+        const latestTitle = async (token: string) => {
+            const r = await call('GET', '/api/notifications?limit=1', token);
+            assert.equal(r.status, 200);
+            return r.body.notifications[0]?.title as string;
+        };
+        const schedule = async (token: string) => {
+            const r = await call('POST', '/api/appointments', token, { title: 'Lang showing', type: 'SHOWING', date: new Date(Date.now() + 86400000).toISOString(), force: true });
+            assert.equal(r.status, 201, JSON.stringify(r.body));
+        };
+        await schedule(tok);
+        assert.equal(await latestTitle(tok), 'Cita programada');
+        assert.equal((await call('PATCH', '/api/settings/profile', tok, { preferredLanguage: 'zh-CN' })).status, 200);
+        await schedule(tok);
+        assert.equal(await latestTitle(tok), '预约已创建');
+        assert.equal((await call('PATCH', '/api/settings/profile', tok, { preferredLanguage: 'zh-TW' })).status, 200);
+        await schedule(tok);
+        assert.equal(await latestTitle(tok), '預約已建立');
+        await schedule(plain);
+        assert.equal(await latestTitle(plain), 'Appointment scheduled');
     });
 
     // Security policy: the settings are saved AND enforced (session length, password rules, sign-out on password change, expiry).
