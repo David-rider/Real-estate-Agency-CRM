@@ -21,6 +21,10 @@
 
 ## [未发布]
 
+---
+
+## [1.4.2.0] — 2026-11-12 · 错误提示与过户清单多语言、移除访问控制栏目、数据库结构说明同步 / Localized error messages and checklist titles, Access Control section removed, schema description synced
+
 #### 新增 / Added
 - 标准过户清单的任务标题现在使用负责经纪人的语言（简中、繁中、西语）；“过户清单模板”编辑器里的标准清单也按你的语言显示。公司自己写的模板保持原样。已经生成的旧任务不变。
   *Standard closing-checklist task titles now use the deal agent's language (Simplified Chinese, Traditional Chinese, Spanish), and the standard list in the "Checklist template" editor appears in your language. A brokerage's own template keeps its wording. Tasks already created stay as they are.*
@@ -38,6 +42,8 @@
 ---
 
 ## [1.4.1.0] — 2026-11-12 · Prisma 升级到 6.19.3、Vercel 部署减量（跳过无前端改动的构建、删除重复的 Deploy Hook）/ Prisma upgraded to 6.19.3, leaner Vercel deploys (skip builds without frontend changes, duplicate Deploy Hook removed)
+
+已部署，线上已确认（`/api/health` → `1.4.1.0`）。/ *Deployed, confirmed live.*
 
 #### 变更 / Changed
 - 部署：删除重复的 Vercel Deploy Hook（GitHub Action `deploy.yml`）。Vercel 的 GitHub 集成本来就会在合并到 `main` 时自动部署生产，以前每次合并可能部署两次。
