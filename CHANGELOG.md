@@ -28,6 +28,8 @@
   *Removed three misleading “fake features”: the “Send via DocuSign” button on deal cards said the document was sent for signature and showed a fake envelope ID while sending nothing; “Auto-fill from Zillow” in the new-listing form filled in made-up listing data; “Sync with Google” on Appointments spun as if working. The DocuSign and Zillow buttons are gone, the Google sync button now shows “Coming soon” and cannot be clicked, and the backend endpoints say plainly that they are not available yet. The three integrations remain on the roadmap (3.1, 3.2, 3.3b).*
 
 #### 新增 / Added
+- 浏览器标签页标题和页面语言属性（`<html lang>`）会跟随所选语言切换，换页后也保持；读屏软件会按正确的语言朗读。搜索引擎抓取的英文标题不变。
+  *The browser tab title and the page language attribute (`<html lang>`) now follow the chosen language and stay that way across pages, so screen readers use the right language. The English titles that search engines see are unchanged.*
 - 年度佣金目标：在仪表盘的“年度佣金”卡片上点“设定目标”，填写自己的年度目标（净佣金），进度条按真实的已发放佣金显示完成比例；经理的公司视图显示团队目标之和。
   *Annual commission goal: click "Set goal" on the dashboard's commission card to enter your own yearly target (net commission); the progress bar shows real progress based on paid commissions, and a manager's brokerage view shows the team's goals added up.*
 - 报表新增“业绩”页签：本财年的线索来源及转化率、成交笔数和总额、平均成交周期；经理还能看到经纪人对比（新客户、成交、佣金）。可一键导出为 Excel 能直接打开的 CSV（中文和重音字符不乱码）。
