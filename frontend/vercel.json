@@ -3,5 +3,8 @@
   "buildCommand": "next build",
   "outputDirectory": ".next",
   "installCommand": "npm install",
-  "regions": ["iad1"]
+  "regions": [
+    "iad1"
+  ],
+  "ignoreCommand": "bash scripts/vercel-ignore.sh"
 }
