@@ -22,8 +22,8 @@ This file lists what to do after the trial launch, in priority order by stage. E
 
 ## 版本规划与进度跟踪 / Version plan and progress tracking
 
-当前版本：**1.3.0.0**（2026-11-12，四段式版本号 `X.Y.Z.W`）。每开始或完成一项，就更新下表的状态和对应版本；实际改动记录在 `CHANGELOG.md`。
-*Current version: **1.3.0.0** (2026-11-12, 4-segment version `X.Y.Z.W`). Whenever an item starts or finishes, update its status and version in the table below; actual changes are recorded in `CHANGELOG.md`.*
+当前版本：**1.4.0.0**（2026-11-12，四段式版本号 `X.Y.Z.W`）。每开始或完成一项，就更新下表的状态和对应版本；实际改动记录在 `CHANGELOG.md`。
+*Current version: **1.4.0.0** (2026-11-12, 4-segment version `X.Y.Z.W`). Whenever an item starts or finishes, update its status and version in the table below; actual changes are recorded in `CHANGELOG.md`.*
 *Status: ⬜ not started · 🟡 in progress · ✅ done · ⏸ postponed*
 状态：⬜ 待开始 · 🟡 进行中 · ✅ 已完成 · ⏸ 暂缓
 
