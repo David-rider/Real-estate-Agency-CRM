@@ -49,11 +49,11 @@ Existing Chinese-only records get their English added the next time they are edi
 ## Lessons Learned & Operational Guardrails (from `v1.1.0.0`) / 经验教训与操作护栏
 
 1. **四段版本号与 Prisma CLI 的 semver 限制 / 4-segment version vs Prisma CLI semver**
-   Prisma 4.16.2 用严格的三段 SemVer 解析 `package.json` 的 `"version"`，四段会报 `Invalid version`。**规则**：四段版本号存在 `"appVersion"`（如 `"1.1.0.0"`），`"version"` 只保留前三段（`"1.1.0"`），后端和前端的 `package.json` 都一样；`backend/src/server.ts` 读 `pkg.appVersion || pkg.version` 作为 `/api/health` 的版本。
-   Prisma 4.16.2 parses `"version"` with a strict 3-segment SemVer parser and throws `Invalid version` on 4 segments. **Rule**: keep the 4-segment version in `"appVersion"` and `"version"` as the first 3 segments, in both `package.json` files; `server.ts` reads `pkg.appVersion || pkg.version` for `/api/health`.
-2. **Prisma 4 的 `Bytes` 字段 / Prisma 4 `Bytes` fields**
-   `Bytes` 列（`UploadedFile.data`）必须传 Node.js `Buffer`，不能传 `Uint8Array`。
-   Always pass a Node.js `Buffer` (not `Uint8Array`) for `Bytes` columns.
+   Prisma（当时 4.16.2）用严格的三段 SemVer 解析 `package.json` 的 `"version"`，四段会报 `Invalid version`。**规则**：四段版本号存在 `"appVersion"`（如 `"1.1.0.0"`），`"version"` 只保留前三段（`"1.1.0"`），后端和前端的 `package.json` 都一样；`backend/src/server.ts` 读 `pkg.appVersion || pkg.version` 作为 `/api/health` 的版本。
+   Prisma (4.16.2 at the time) parses `"version"` with a strict 3-segment SemVer parser and throws `Invalid version` on 4 segments. **Rule**: keep the 4-segment version in `"appVersion"` and `"version"` as the first 3 segments, in both `package.json` files; `server.ts` reads `pkg.appVersion || pkg.version` for `/api/health`.
+2. **Prisma 6 的 `Bytes` 字段 / Prisma 6 `Bytes` fields**（1.4.0.0 之后从 Prisma 4 升级到 6.19 / upgraded from Prisma 4 to 6.19 after 1.4.0.0）
+   `Bytes` 列（`UploadedFile.data`）写入时传普通 `Uint8Array`（`new Uint8Array(buffer)`），读出来也是 `Uint8Array`，需要 `Buffer` 时用 `Buffer.from(...)` 包一层。`prisma` CLI 在生产依赖里（Render 启动时要跑 `migrate deploy`），它带的 `deepmerge-ts` 用 `package.json` 的 `overrides` 固定在 `^8`，去掉会出现 3 个高危审计告警。`package.json#prisma`（种子配置）在 Prisma 7 会被移除，届时改用 `prisma.config.ts`。
+   Write `Bytes` columns (`UploadedFile.data`) as a plain `Uint8Array` (`new Uint8Array(buffer)`); reads also return `Uint8Array`, so wrap with `Buffer.from(...)` when a `Buffer` is needed. The `prisma` CLI is a production dependency (Render runs `migrate deploy` on start); its `deepmerge-ts` is pinned to `^8` via `overrides` in `package.json`, and removing that brings back 3 high-severity audit findings. `package.json#prisma` (seed config) goes away in Prisma 7; move it to `prisma.config.ts` then.
 3. **Express 静态路由要在参数路由之前 / Express static before parameterized routes**
    `clients.ts`、`properties.ts` 里 `POST /import` 这类静态子路径必须注册在 `/:id` 之前，否则 `import` 会被当成 `:id`。
    Static sub-paths such as `POST /import` MUST be registered before `/:id` routes.

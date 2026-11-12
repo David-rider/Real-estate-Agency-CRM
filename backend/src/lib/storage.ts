@@ -164,7 +164,7 @@ export async function storeUploadedFile(params: {
             mimeType: params.mimeType,
             sizeBytes,
             r2Key: null,
-            data: params.buffer,
+            data: new Uint8Array(params.buffer), // Prisma 6: Bytes is a plain Uint8Array
         },
     });
 
