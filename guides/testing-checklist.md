@@ -80,8 +80,8 @@ happen; note anything that doesn't.
       *设置 → 财务：关闭“经纪人可看同事佣金总额”——经纪人的排行榜里他人显示“—”，经理仍可见全部金额。修改财年起始月份，“年初至今”数字随之变化。*
 - [ ] Personal preferences (any user) — default client type/stage, compact list, hide budget, default listing status, default appointment length, auto-confirm, hide leaderboard / dashboard income — apply on the matching pages and only for that user.
       *个人偏好（任何用户）：默认客户类型和阶段、紧凑列表、隐藏预算、新房源默认状态、预约默认时长、自动确认、隐藏排行榜和仪表盘收入——在对应页面生效，且只影响本人。*
-- [ ] Marketing, Access Control and Integrations still show **Coming soon**. A manager or agent sees the company rules but cannot save them.
-      *营销、访问控制、集成仍显示“即将推出”。经理和经纪人能看到公司规则，但不能保存。*
+- [ ] Marketing and Integrations still show **Coming soon**; there is no Access Control section. A manager or agent sees the company rules but cannot save them.
+      *营销、集成仍显示“即将推出”；已没有“访问控制”栏目。经理和经纪人能看到公司规则，但不能保存。*
 
 ## 9. Language / 语言
 - [ ] Choose **Español** on the login page, sign in, then request a password reset and invite a teammate — both emails arrive in Spanish.

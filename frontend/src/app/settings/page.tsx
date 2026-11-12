@@ -20,19 +20,8 @@ import { INPUT_CLS, SELECT_CLS, TEXTAREA_CLS, LOCKED_BADGE, Toggle, SectionHeade
 import { CrmSettings, PropertiesSettings, FinanceSettings, AppointmentsSettings, DocumentsSettings } from "./PolicySections";
 
 // ─── Permission level types ─────────────────────────────────────────────────────
-type PermLevel = "full" | "team" | "own" | "read" | "none";
 const MATRIX_ROLES = ["MANAGER", "AGENT", "OFFICE_SUPPORT", "MARKETING", "ATTORNEY", "LENDER", "TITLECO"];
 
-const DEFAULT_ACCESS: Record<string, Record<string, PermLevel>> = {
-  crm:          { MANAGER: "team", AGENT: "own",  OFFICE_SUPPORT: "read", MARKETING: "read", ATTORNEY: "read", LENDER: "none", TITLECO: "none" },
-  properties:   { MANAGER: "team", AGENT: "own",  OFFICE_SUPPORT: "read", MARKETING: "full", ATTORNEY: "read", LENDER: "none", TITLECO: "none" },
-  transactions: { MANAGER: "team", AGENT: "own",  OFFICE_SUPPORT: "read", MARKETING: "none", ATTORNEY: "read", LENDER: "read", TITLECO: "read" },
-  finance:      { MANAGER: "team", AGENT: "own",  OFFICE_SUPPORT: "none", MARKETING: "none", ATTORNEY: "none", LENDER: "none", TITLECO: "none" },
-  appointments: { MANAGER: "full", AGENT: "own",  OFFICE_SUPPORT: "full", MARKETING: "own",  ATTORNEY: "read", LENDER: "none", TITLECO: "none" },
-  documents:    { MANAGER: "team", AGENT: "own",  OFFICE_SUPPORT: "full", MARKETING: "own",  ATTORNEY: "full", LENDER: "read", TITLECO: "full" },
-  marketing:    { MANAGER: "team", AGENT: "own",  OFFICE_SUPPORT: "read", MARKETING: "full", ATTORNEY: "none", LENDER: "none", TITLECO: "none" },
-  reports:      { MANAGER: "team", AGENT: "own",  OFFICE_SUPPORT: "none", MARKETING: "read", ATTORNEY: "none", LENDER: "none", TITLECO: "none" },
-};
 
 // ─── Default state ───────────────────────────────────────────────────────────────
 const DEFAULT_PROFILE    = { name: "", phone: "", title: "", timezone: "America/New_York", bio: "", licenseNumber: "", linkedIn: "" };
@@ -56,7 +45,7 @@ export default function SettingsPage() {
   // Remove a key from this set when its backend enforcement ships.
   // (Profile, Notifications, Org Settings, Team & Roles, Lead Routing, Security, CRM, Properties, Finance, Appointments, Documents
   // and the theme picker are real and server-backed.)
-  const COMING_SOON = new Set(["access-control", "integrations", "marketing"]);
+  const COMING_SOON = new Set(["integrations", "marketing"]);
   const soonLabel = Sc.comingSoon ?? "Coming soon";
   const soonShort = Sc.comingSoonShort ?? "Soon"; // compact form for the narrow sidebar
   const soonBanner = () => (
@@ -79,26 +68,6 @@ export default function SettingsPage() {
   // Translated role labels (fall back to key)
   const roleLabel = (role: string) => R[role] ?? role;
 
-  // Translated perm options
-  const PERM_OPTIONS: { value: PermLevel; label: string; color: string }[] = [
-    { value: "full",  label: S.accessControl?.permFull  ?? "Full",  color: "text-green-500" },
-    { value: "team",  label: S.accessControl?.permTeam  ?? "Team",  color: "text-blue-500" },
-    { value: "own",   label: S.accessControl?.permOwn   ?? "Own",   color: "text-primary" },
-    { value: "read",  label: S.accessControl?.permRead  ?? "Read",  color: "text-foreground/50" },
-    { value: "none",  label: S.accessControl?.permNone  ?? "None",  color: "text-red-400" },
-  ];
-
-  // Translated module names
-  const MATRIX_MODULES = [
-    { key: "crm",          label: S.accessControl?.modules?.crm          ?? "CRM / Clients" },
-    { key: "properties",   label: S.accessControl?.modules?.properties   ?? "Properties" },
-    { key: "transactions", label: S.accessControl?.modules?.transactions ?? "Transactions" },
-    { key: "finance",      label: S.accessControl?.modules?.finance      ?? "Finance" },
-    { key: "appointments", label: S.accessControl?.modules?.appointments ?? "Appointments" },
-    { key: "documents",    label: S.accessControl?.modules?.documents    ?? "Documents" },
-    { key: "marketing",    label: S.accessControl?.modules?.marketing    ?? "Marketing" },
-    { key: "reports",      label: S.accessControl?.modules?.reports      ?? "Reports" },
-  ];
 
   // ── Nav definition (translated) ─────────────────────────────────────────────
   const NAV = [
@@ -113,7 +82,6 @@ export default function SettingsPage() {
       group: S.nav?.groupOrganization ?? "Organization",
       items: [
         { key: "org-settings",   label: S.nav?.orgSettings   ?? "Org Settings",   icon: "🏢", adminOnly: true },
-        { key: "access-control", label: S.nav?.accessControl ?? "Access Control", icon: "🛡️", adminOnly: true },
         { key: "users",          label: S.nav?.users         ?? "Team & Roles",   icon: "👥", adminOnly: true },
         { key: "lead-routing",   label: useExtra().leadRouting.navLabel,          icon: "🎯", adminOnly: true },
         { key: "security",       label: S.nav?.security      ?? "Security",       icon: "🔐" },
@@ -149,10 +117,6 @@ export default function SettingsPage() {
   const [simInput, setSimInput]         = React.useState({ source: "Open House", city: "New York", price: "1500000" });
   const [simResult, setSimResult]       = React.useState<any>(null);
 
-  // ── Access matrix ────────────────────────────────────────────────────────────
-  const loadMatrix = () => { try { return JSON.parse(localStorage.getItem("settings_access_matrix") || "null") || DEFAULT_ACCESS; } catch { return DEFAULT_ACCESS; } };
-  const [accessMatrix, setAccessMatrix] = React.useState<Record<string, Record<string, PermLevel>>>(loadMatrix);
-  const setMatrixCell = (mod: string, role: string, val: PermLevel) => setAccessMatrix((prev) => ({ ...prev, [mod]: { ...prev[mod], [role]: val } }));
 
   // ── Feature state ────────────────────────────────────────────────────────────
   const ls = <T,>(key: string, def: T): T => { try { return { ...def, ...JSON.parse(localStorage.getItem(key) || "{}") }; } catch { return def; } };
@@ -611,70 +575,6 @@ export default function SettingsPage() {
           </div>
         )}
         {isFirmAdmin && <SaveBtn label={saving ? "…" : (O.save ?? "Save Org Settings")} onClick={saveOrg} />}
-      </div>
-    );
-  };
-
-  const renderAccessControl = () => {
-    const AC = S.accessControl ?? {};
-    return (
-      <div>
-        <SectionHeader title={AC.title ?? "Access Control"} description={AC.desc ?? "Define what each role can see and do in each module."} badge={Sc.firmAdminBadge} />
-        {!isFirmAdmin && <PolicyLockNotice minRole="FIRMADMIN" />}
-        <div className="text-xs text-foreground/50 mb-4">
-          {AC.permNote ?? "Permission levels:"}{" "}
-          <strong className="text-green-500">{AC.permFull}</strong> = {AC.permFullDesc} ·{" "}
-          <strong className="text-blue-500">{AC.permTeam}</strong> = {AC.permTeamDesc} ·{" "}
-          <strong className="text-primary">{AC.permOwn}</strong> = {AC.permOwnDesc} ·{" "}
-          <strong className="text-foreground/50">{AC.permRead}</strong> = {AC.permReadDesc} ·{" "}
-          <strong className="text-red-400">{AC.permNone}</strong> = {AC.permNoneDesc}
-        </div>
-        <div className="overflow-x-auto rounded-lg border border-border">
-          <table className="w-full text-sm min-w-[640px]">
-            <thead>
-              <tr className="border-b border-border bg-surface">
-                <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-widest text-foreground/40 w-36">{AC.moduleHeader ?? "Module"}</th>
-                {MATRIX_ROLES.map((role) => (
-                  <th key={role} className="text-center px-2 py-3 text-xs font-semibold uppercase tracking-widest text-foreground/40">{roleLabel(role)}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {MATRIX_MODULES.map((mod, idx) => (
-                <tr key={mod.key} className={`border-b border-border/50 ${idx % 2 === 0 ? "" : "bg-surface/40"}`}>
-                  <td className="px-4 py-3 text-sm font-medium text-foreground whitespace-nowrap">{mod.label}</td>
-                  {MATRIX_ROLES.map((role) => {
-                    const val = accessMatrix[mod.key]?.[role] ?? "none";
-                    const opt = PERM_OPTIONS.find((o) => o.value === val);
-                    return (
-                      <td key={role} className="px-2 py-3 text-center">
-                        <select value={val} disabled={!isFirmAdmin} onChange={(e) => setMatrixCell(mod.key, role, e.target.value as PermLevel)}
-                          className={`text-xs px-1.5 py-1 rounded border border-border bg-background outline-none cursor-pointer disabled:cursor-default ${opt?.color ?? ""}`}>
-                          {PERM_OPTIONS.map((o) => <option key={o.value} value={o.value} className={o.color}>{o.label}</option>)}
-                        </select>
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <div className="mt-4 p-3 bg-surface rounded-lg border border-border/60 text-xs text-foreground/50">
-          <strong>{AC.noteTitle ?? "Note:"}</strong> {AC.noteDesc ?? "SUPERADMIN and FIRMADMIN always have full access to all modules."}
-        </div>
-        {isFirmAdmin && (
-          <div className="mt-6 flex gap-3">
-            <button className="px-4 py-2 bg-primary text-background rounded-lg text-sm font-medium hover:bg-primary/90"
-              onClick={() => { localStorage.setItem("settings_access_matrix", JSON.stringify(accessMatrix)); toast.success(Sc.saveChanges ?? "Saved"); }}>
-              {AC.saveMatrix ?? "Save Access Matrix"}
-            </button>
-            <button className="px-4 py-2 bg-surface border border-border rounded-lg text-sm text-foreground hover:bg-background"
-              onClick={() => { setAccessMatrix(DEFAULT_ACCESS); toast.info(Sc.resetToDefaults ?? "Reset to defaults"); }}>
-              {AC.resetDefaults ?? "Reset to Defaults"}
-            </button>
-          </div>
-        )}
       </div>
     );
   };
@@ -1305,7 +1205,6 @@ export default function SettingsPage() {
       case "profile":        return renderProfile();
       case "notifications":  return renderNotifications();
       case "org-settings":   return renderOrgSettings();
-      case "access-control": return renderAccessControl();
       case "users":          return renderUsers();
       case "lead-routing":   return renderLeadRouting();
       case "security":       return renderSecurity();
