@@ -181,6 +181,7 @@ export default function SettingsPage() {
   }, [activeSection]);
 
   // ── Load server-backed profile & organization ────────────────────────────────
+  const [loginAlerts, setLoginAlerts] = React.useState(true);
   const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
   const authHeaders = () => ({ "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("token")}` });
 
@@ -189,6 +190,7 @@ export default function SettingsPage() {
       .then((r) => (r.ok ? r.json() : null))
       .then((p) => {
         if (!p) return;
+        setLoginAlerts(p.loginAlerts !== false);
         setProfile({
           name: p.name ?? "", title: p.title ?? "", phone: p.phone ?? "", licenseNumber: p.licenseNumber ?? "",
           linkedIn: p.linkedIn ?? "", bio: p.bio ?? "", timezone: p.timezone ?? "America/New_York",
@@ -278,6 +280,23 @@ export default function SettingsPage() {
       toast.error(t.login.serverError);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const saveLoginAlerts = async (v: boolean) => {
+    setLoginAlerts(v);
+    try {
+      const res = await fetch(`${API_BASE}/api/settings/profile`, {
+        method: "PATCH",
+        headers: { ...authHeaders(), "X-CSRF-Protection": "1" },
+        credentials: "include",
+        body: JSON.stringify({ loginAlerts: v }),
+      });
+      if (!res.ok) throw new Error();
+      toast.success(XS.secSaved);
+    } catch {
+      setLoginAlerts(!v);
+      toast.error(XS.secSaveFailed);
     }
   };
 
@@ -791,7 +810,9 @@ export default function SettingsPage() {
             <button className="px-3 py-1.5 bg-surface border border-border rounded-lg text-xs text-foreground hover:bg-background" onClick={sendPasswordResetLink}>{SC.sendResetLink ?? "Send Reset Link"}</button>
           </SettingRow>
           <SettingRow label={SC.twoFA ?? "Two-Factor Authentication"} description={XS.secNotYet}>{soonBadge}</SettingRow>
-          <SettingRow label={SC.loginAlerts ?? "Login Alerts"} description={XS.secNotYet}>{soonBadge}</SettingRow>
+          <SettingRow label={SC.loginAlerts ?? "Login Alerts"} description={XS.secLoginAlertsDesc}>
+            <Toggle checked={loginAlerts} onChange={saveLoginAlerts} />
+          </SettingRow>
         </div>
         <div className="text-xs font-semibold uppercase tracking-widest text-foreground/40 mb-1">{SC.orgPolicy ?? "Org Security Policy"}</div>
         <div className="text-xs text-foreground/50 mb-2">{XS.secRulesNote}</div>

@@ -10,6 +10,7 @@ import { passwordPolicyError, orgPasswordPolicy } from '../lib/passwordPolicy';
 import { EMAIL, Lang, isLang, normalizeLang } from '../lib/messages';
 import { getSeatUsage } from '../lib/seats';
 import { orgSlug } from '../lib/slug';
+import { recordLogin } from '../lib/loginAlert';
 
 // Org subscription level → member tier (subscription is org-wide)
 const ORG_SUB_TO_TIER: Record<string, 'CORE' | 'PRO' | 'ELITE'> = {
@@ -98,6 +99,7 @@ router.post('/login', authLimiter, async (req, res) => {
         );
 
         setAuthCookie(res, token);
+        void recordLogin(prisma, user.id, String(req.headers['user-agent'] ?? ''), req.ip ?? '');
 
         res.json({
             message: 'Login successful',

@@ -31,7 +31,7 @@ const PROFILE_SELECT = {
     id: true, name: true, email: true, role: true, tier: true,
     title: true, phone: true, licenseNumber: true, linkedIn: true,
     bio: true, timezone: true, avatarUrl: true,
-    acceptingLeads: true, maxActiveLeads: true, notificationPrefs: true, preferredLanguage: true, annualCommissionGoal: true,
+    acceptingLeads: true, maxActiveLeads: true, notificationPrefs: true, preferredLanguage: true, annualCommissionGoal: true, loginAlerts: true,
 } as const;
 
 // GET /api/settings/team — colleague directory (any member): names and roles only,
@@ -95,6 +95,7 @@ router.patch('/profile', async (req: AuthRequest, res) => {
                 ...(preferredLanguage !== undefined ? { preferredLanguage } : {}),
                 ...(annualCommissionGoal !== undefined ? { annualCommissionGoal } : {}),
                 ...(typeof acceptingLeads === 'boolean' ? { acceptingLeads } : {}),
+                ...(typeof req.body.loginAlerts === 'boolean' ? { loginAlerts: req.body.loginAlerts } : {}),
                 ...(maxActiveLeads !== undefined ? { maxActiveLeads: maxActiveLeads === null || maxActiveLeads === '' ? null : Math.max(0, Math.round(Number(maxActiveLeads))) } : {}),
             },
             select: PROFILE_SELECT,
