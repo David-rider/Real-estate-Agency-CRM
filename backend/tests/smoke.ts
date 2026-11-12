@@ -232,6 +232,14 @@ async function main() {
         assert.ok(hours > 23 && hours < 25, `due about a day later, got ${hours.toFixed(1)}h`);
     });
 
+    await step('unbuilt integrations say so instead of faking success or data', async () => {
+        for (const [method, path] of [['POST', '/api/integrations/docusign/send'], ['POST', '/api/integrations/google/connect'], ['GET', '/api/integrations/zillow/fetch?zpid=1']] as const) {
+            const r = await call(method, path, a, method === 'POST' ? {} : undefined);
+            assert.equal(r.status, 501, `${path}: ${JSON.stringify(r.body)}`);
+            assert.equal(r.body.code, 'NOT_AVAILABLE');
+        }
+    });
+
     await step('gifts and documents with real records', async () => {
         const g = await call('POST', '/api/gifts', a, { item: 'Champagne', clientId });
         assert.equal(g.status, 201, JSON.stringify(g.body));

@@ -46,8 +46,6 @@ export default function ListingsPage() {
     description: "",
   });
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const [zillowId, setZillowId] = React.useState("");
-  const [isZillowLoading, setIsZillowLoading] = React.useState(false);
 
   // Media Modal State
   const [isMediaModalOpen, setIsMediaModalOpen] = React.useState(false);
@@ -188,43 +186,6 @@ export default function ListingsPage() {
     }
   };
 
-  const handleZillowAutofill = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (!zillowId) { toast.error("Please enter a Zillow Property ID (zpid)."); return; }
-    
-    setIsZillowLoading(true);
-    try {
-      const token = localStorage.getItem("token");
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/integrations/zillow/fetch?zpid=${zillowId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      if (res.ok) {
-        const { data } = await res.json();
-        const addressParts = data.address.split(", ");
-        
-        setFormData(prev => ({
-          ...prev,
-          address: addressParts[0] || "",
-          city: addressParts[1] || "",
-          state: addressParts[2]?.split(" ")[0] || "",
-          zip: addressParts[2]?.split(" ")[1] || "",
-          price: data.price ? String(data.price) : prev.price,
-          beds: data.beds ? String(data.beds) : prev.beds,
-          baths: data.baths ? String(data.baths) : prev.baths,
-          sqft: data.sqft ? String(data.sqft) : prev.sqft
-        }));
-        // alert(`Autofilled data from Zillow for property ID: ${zillowId}`);
-      } else {
-        toast.error("Failed to fetch property details from Zillow.");
-      }
-    } catch (error) {
-      console.error(error);
-      toast.error("Network error. Could not reach Zillow integration.");
-    } finally {
-      setIsZillowLoading(false);
-    }
-  };
 
   const handleAddMedia = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -575,28 +536,6 @@ export default function ListingsPage() {
               className="p-8 overflow-y-auto space-y-6"
             >
               
-              <div className="bg-blue-50/50 border border-blue-100 rounded-2xl p-6 mb-8 flex flex-col md:flex-row gap-4 items-end animate-in fade-in duration-500">
-                <div className="flex-1 w-full">
-                  <label className="block font-sans text-sm font-semibold text-blue-900/60 mb-2">
-                    Auto-fill from Zillow (ZPID)
-                  </label>
-                  <input
-                    type="text"
-                    value={zillowId}
-                    onChange={(e) => setZillowId(e.target.value)}
-                    className="w-full px-4 py-3 bg-white border border-blue-200 rounded-xl text-base text-blue-900 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 outline-none transition-all placeholder:text-blue-900/30 shadow-sm"
-                    placeholder="e.g. 20790691"
-                  />
-                </div>
-                <button
-                  onClick={handleZillowAutofill}
-                  disabled={isZillowLoading}
-                  type="button"
-                  className="w-full md:w-auto px-6 py-3 bg-blue-600 text-white rounded-xl text-base font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 shadow-md whitespace-nowrap flex-shrink-0"
-                >
-                  {isZillowLoading ? "Fetching..." : "Auto-fill Data"}
-                </button>
-              </div>
 
               <div>
                 <label className="block font-sans text-sm font-semibold text-foreground/60 mb-2">

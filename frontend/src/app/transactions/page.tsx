@@ -52,7 +52,6 @@ export default function TransactionsPage() {
   const [activeTab, setActiveTab] = React.useState<"PIPELINE" | "OFFERS">(
     "PIPELINE",
   );
-  const [sendingDocuSign, setSendingDocuSign] = React.useState<string | null>(null);
 
   // Fetch lists for select dropdowns
   const [properties, setProperties] = React.useState<any[]>([]);
@@ -206,29 +205,6 @@ export default function TransactionsPage() {
       }));
   };
 
-  const handleSendDocuSign = async (e: React.MouseEvent, dealId: string) => {
-    e.stopPropagation();
-    setSendingDocuSign(dealId);
-    try {
-      const token = localStorage.getItem("token");
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/integrations/docusign/send`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ transactionId: dealId, documentType: "contract" })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        toast.success(`${data.message} — Envelope: ${data.envelopeId}`);
-      } else {
-        toast.error("Failed to send DocuSign envelope.");
-      }
-    } catch (error) {
-      console.error(error);
-      toast.error("Network error. Please try again.");
-    } finally {
-      setSendingDocuSign(null);
-    }
-  };
 
   const columns = [
     {
@@ -381,18 +357,6 @@ export default function TransactionsPage() {
                             A
                           </div>
                         </div>
-                      </div>
-                      <div className="mt-4 pt-4 border-t border-border/50">
-                        <button
-                          onClick={(e) => handleSendDocuSign(e, deal.raw.id)}
-                          disabled={sendingDocuSign === deal.raw.id}
-                          className="w-full flex items-center justify-center gap-2 py-2 text-xs uppercase tracking-widest font-sans border border-blue-600/30 text-blue-600 bg-blue-600/5 hover:bg-blue-600 hover:text-white transition-colors duration-300 disabled:opacity-50"
-                        >
-                          <svg viewBox="0 0 24 24" fill="currentColor" className="w-3 h-3">
-                            <path d="M11.644 1.545a.735.735 0 01.712 0l10.355 6.007a.735.735 0 01.368.636v12.016a.735.735 0 01-.368.636l-10.355 6.006a.735.735 0 01-.712 0L1.289 20.84A.735.735 0 01.921 20.204V8.188a.735.735 0 01.368-.636l10.355-6.007zM2.392 8.783v10.603l9.252 5.367 9.25-5.367V8.783l-9.25 5.367-9.252-5.367zm9.252-7.208L3.253 6.442l8.391 4.868 8.392-4.868-8.392-4.867z" />
-                          </svg>
-                          {sendingDocuSign === deal.raw.id ? t.transactions.offers.docuSignSending : t.transactions.offers.docuSignSend}
-                        </button>
                       </div>
                     </div>
                   ))}

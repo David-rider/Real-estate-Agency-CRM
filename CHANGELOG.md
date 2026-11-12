@@ -21,6 +21,10 @@
 
 ## [未发布]
 
+#### 修复 / Fixed
+- 去掉三处会误导用户的“假功能”：交易卡片上的“DocuSign 发送”按钮以前会提示“已发送签署”并给出一个假的信封编号，实际什么都没发；新建房源里的“从 Zillow 自动填充”会填入虚构的房源数据；预约页的“同步 Google”会先转圈再提示。现在 DocuSign 和 Zillow 按钮已移除，Google 同步按钮显示为“即将推出”且不可点击；对应的后端接口明确返回“尚未开放”。这三项集成仍在路线图上（3.1、3.2、3.3b）。
+  *Removed three misleading “fake features”: the “Send via DocuSign” button on deal cards said the document was sent for signature and showed a fake envelope ID while sending nothing; “Auto-fill from Zillow” in the new-listing form filled in made-up listing data; “Sync with Google” on Appointments spun as if working. The DocuSign and Zillow buttons are gone, the Google sync button now shows “Coming soon” and cannot be clicked, and the backend endpoints say plainly that they are not available yet. The three integrations remain on the roadmap (3.1, 3.2, 3.3b).*
+
 #### 新增 / Added
 - 开放日签到增强：签到表单新增“是否已有经纪人”“预算”“计划购房时间”，以及必须勾选的“同意被联系”（记录同意时间）。签到的访客会自动成为客户线索，回答写进客户备注；已有经纪人的访客标为“温”而非“热”。开放日线索会生成“24 小时内跟进”任务，网站咨询仍是“15 分钟内回电”。
   *Open-house sign-in improvements: the form adds "working with an agent?", budget and purchase timeline, plus a required "agree to be contacted" box (the time of consent is recorded). Visitors become leads automatically with their answers in the client notes; visitors who already have an agent are marked warm rather than hot. Open-house leads get a "follow up within 24 hours" task, while website inquiries keep the 15-minute call-back.*
