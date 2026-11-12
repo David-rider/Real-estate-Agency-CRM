@@ -21,6 +21,10 @@
 
 ## [未发布]
 
+---
+
+## [1.4.1.0] — 2026-11-12 · Prisma 升级到 6.19.3、Vercel 部署减量（跳过无前端改动的构建、删除重复的 Deploy Hook）/ Prisma upgraded to 6.19.3, leaner Vercel deploys (skip builds without frontend changes, duplicate Deploy Hook removed)
+
 #### 变更 / Changed
 - 部署：删除重复的 Vercel Deploy Hook（GitHub Action `deploy.yml`）。Vercel 的 GitHub 集成本来就会在合并到 `main` 时自动部署生产，以前每次合并可能部署两次。
   *Deployment: removed the duplicate Vercel Deploy Hook (the `deploy.yml` GitHub Action). Vercel's GitHub integration already deploys production on every merge to `main`; before, a merge could deploy twice.*
@@ -32,6 +36,8 @@
 ---
 
 ## [1.4.0.0] — 2026-11-12 · 账号安全：两步验证、登录提醒、IP 白名单 / Account security: two-factor authentication, login alerts, IP whitelist
+
+已部署，线上已确认（`/api/health` → `1.4.0.0`）。/ *Deployed, confirmed live.*
 
 #### 安全 / Security
 - IP 白名单：公司管理员可以在“设置 → 安全”里填写允许的 IP 地址或网段（如 `203.0.113.0/24`）。填写后，成员只能从这些网络登录和使用系统，其他地方会被拒绝并提示联系管理员；留空表示不限制。保存时名单必须包含你当前的 IP，页面会显示你的 IP 并提供“添加我的 IP”按钮，避免把自己锁在外面。

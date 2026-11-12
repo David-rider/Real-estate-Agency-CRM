@@ -22,8 +22,8 @@ This file lists what to do after the trial launch, in priority order by stage. E
 
 ## 版本规划与进度跟踪 / Version plan and progress tracking
 
-当前版本：**1.4.0.0**（2026-11-12，四段式版本号 `X.Y.Z.W`）。每开始或完成一项，就更新下表的状态和对应版本；实际改动记录在 `CHANGELOG.md`。
-*Current version: **1.4.0.0** (2026-11-12, 4-segment version `X.Y.Z.W`). Whenever an item starts or finishes, update its status and version in the table below; actual changes are recorded in `CHANGELOG.md`.*
+当前版本：**1.4.1.0**（2026-11-12，四段式版本号 `X.Y.Z.W`）。每开始或完成一项，就更新下表的状态和对应版本；实际改动记录在 `CHANGELOG.md`。
+*Current version: **1.4.1.0** (2026-11-12, 4-segment version `X.Y.Z.W`). Whenever an item starts or finishes, update its status and version in the table below; actual changes are recorded in `CHANGELOG.md`.*
 *Status: ⬜ not started · 🟡 in progress · ✅ done · ⏸ postponed*
 状态：⬜ 待开始 · 🟡 进行中 · ✅ 已完成 · ⏸ 暂缓
 
@@ -37,7 +37,7 @@ This file lists what to do after the trial launch, in priority order by stage. E
 | 1.1.0.0 | S1 开启 GitHub Dependabot / 安全告警<br>*Enable GitHub Dependabot / security alerts* | ✅ | `.github/dependabot.yml`（前后端 npm + GitHub Actions 每周巡检）<br>*`.github/dependabot.yml` (weekly scans of frontend/backend npm + GitHub Actions)* |
 | 1.1.0.0 | S2 登录令牌改为 httpOnly Cookie + CSRF 防护<br>*Move the login token to an httpOnly cookie + CSRF protection* | ✅ | `crm_session` HttpOnly Cookie + `X-CSRF-Protection` 校验 + `/api/auth/logout`<br>*`crm_session` HttpOnly cookie + `X-CSRF-Protection` check + `/api/auth/logout`* |
 | 1.1.0.0 | S3 前端 CSP（先只报告，再正式启用）<br>*Frontend CSP (report-only first, then enforced)* | ✅ | `frontend/next.config.ts`（默认 Report-Only，`NEXT_PUBLIC_CSP_ENFORCE=true` 开启强制）<br>*`frontend/next.config.ts` (Report-Only by default; `NEXT_PUBLIC_CSP_ENFORCE=true` enforces)* |
-| 1.2.0.0 | S4 Prisma 4 → 当前版本<br>*Prisma 4 → current version* | ✅ | 升级到 6.19.3（2026-11-12，未发版）：全量冒烟测试、旧库迁移兼容、生产构建与启动均已验证；Prisma 7 需要改用驱动适配器，另行评估<br>*Upgraded to 6.19.3 (2026-11-12, unreleased): full smoke test, compatibility with databases migrated by Prisma 4, production build and start all verified; Prisma 7 needs driver adapters and is evaluated separately* |
+| 1.2.0.0 | S4 Prisma 4 → 当前版本<br>*Prisma 4 → current version* | ✅ | 升级到 6.19.3（2026-11-12，随 1.4.1.0 发布）：全量冒烟测试、旧库迁移兼容、生产构建与启动均已验证；Prisma 7 需要改用驱动适配器，另行评估<br>*Upgraded to 6.19.3 (2026-11-12, shipped in 1.4.1.0): full smoke test, compatibility with databases migrated by Prisma 4, production build and start all verified; Prisma 7 needs driver adapters and is evaluated separately* |
 | 1.1.0.0 | 0.4 Sentry 错误监控<br>*Sentry error monitoring* | ✅ | `backend/src/lib/sentry.ts` + `frontend/src/lib/sentry.ts`（零外部依赖，按需启用）<br>*`backend/src/lib/sentry.ts` + `frontend/src/lib/sentry.ts` (no external dependency, enabled on demand)* |
 | 1.1.0.0 | 0.5 遗留 lint 错误 / 硬编码文案<br>*Leftover lint errors / hard-coded strings* | ✅ | ESLint 0 errors；公开房源页/验证页/财务/设置/升级页四语种补全<br>*ESLint 0 errors; public listing / verify / finance / settings / upgrade pages completed in four languages* |
 | 1.1.0.x | 0.6 `SECURITY.md`（说明如何私下报告漏洞）<br>*`SECURITY.md` (how to report a vulnerability privately)* | ✅ | `SECURITY.md` 已添加；仍需管理员开启私下报告（见 0.7）<br>*`SECURITY.md` added; the admin still has to turn on private reporting (see 0.7)* |
