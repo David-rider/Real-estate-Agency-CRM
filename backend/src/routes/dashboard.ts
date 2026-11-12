@@ -82,6 +82,13 @@ router.get('/', async (req: AuthRequest, res) => {
     const ytdCommission = paidCommissions
         .filter(c => c.paidAt && c.paidAt >= startOfYear)
         .reduce((s, c) => s + c.netPayout, 0);
+    // Annual goal behind the progress bar: your own, or the team's goals added up in the brokerage view
+    const goals = await prisma.user.findMany({
+        where: mine ? { id: user.userId } : { orgId, isActive: true, annualCommissionGoal: { not: null } },
+        select: { annualCommissionGoal: true },
+    });
+    const goalTotal = goals.reduce((s, g) => s + (g.annualCommissionGoal ?? 0), 0);
+    const annualGoal = goalTotal > 0 ? goalTotal : null;
 
     const funnelData = [
         { name: 'Total Leads', value: totalClients },
@@ -122,7 +129,7 @@ router.get('/', async (req: AuthRequest, res) => {
     res.json({
         scope: mine ? 'me' : 'org',
         activeListings, newLeads, pendingOffers, hotLeads, inContract,
-        chartData, funnelData, ytdCommission, actionItems,
+        chartData, funnelData, ytdCommission, annualGoal, goalScope: mine ? 'me' : 'team', actionItems,
         overdueTasks, todaysAppointments, staleLeads,
     });
 });

@@ -31,7 +31,7 @@ const PROFILE_SELECT = {
     id: true, name: true, email: true, role: true, tier: true,
     title: true, phone: true, licenseNumber: true, linkedIn: true,
     bio: true, timezone: true, avatarUrl: true,
-    acceptingLeads: true, maxActiveLeads: true, notificationPrefs: true, preferredLanguage: true,
+    acceptingLeads: true, maxActiveLeads: true, notificationPrefs: true, preferredLanguage: true, annualCommissionGoal: true,
 } as const;
 
 // GET /api/settings/team — colleague directory (any member): names and roles only,
@@ -68,6 +68,15 @@ router.patch('/profile', async (req: AuthRequest, res) => {
         if (preferredLanguage !== undefined && !isLang(preferredLanguage)) {
             return res.status(400).json({ error: 'Unsupported language' });
         }
+        let annualCommissionGoal: number | null | undefined;
+        if (req.body.annualCommissionGoal !== undefined) {
+            if (req.body.annualCommissionGoal === null || req.body.annualCommissionGoal === '') annualCommissionGoal = null;
+            else {
+                const n = Number(req.body.annualCommissionGoal);
+                if (!Number.isFinite(n) || n <= 0 || n > 1e9) return res.status(400).json({ error: 'The goal must be a positive amount' });
+                annualCommissionGoal = Math.round(n);
+            }
+        }
 
         if (name !== undefined && !String(name).trim()) {
             return res.status(400).json({ error: 'Name cannot be empty' });
@@ -84,6 +93,7 @@ router.patch('/profile', async (req: AuthRequest, res) => {
                 bio:           clean(bio, 2000),
                 ...(timezone ? { timezone: String(timezone).slice(0, 60) } : {}),
                 ...(preferredLanguage !== undefined ? { preferredLanguage } : {}),
+                ...(annualCommissionGoal !== undefined ? { annualCommissionGoal } : {}),
                 ...(typeof acceptingLeads === 'boolean' ? { acceptingLeads } : {}),
                 ...(maxActiveLeads !== undefined ? { maxActiveLeads: maxActiveLeads === null || maxActiveLeads === '' ? null : Math.max(0, Math.round(Number(maxActiveLeads))) } : {}),
             },

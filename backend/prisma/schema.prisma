@@ -86,6 +86,8 @@ model User {
   organization      Organization @relation(fields: [orgId], references: [id])
   // Set when the password is reset; null = never changed since the account was created
   passwordChangedAt DateTime?
+  // Personal goal for net commission paid in the fiscal year; null = not set
+  annualCommissionGoal Float?
 
   // Profile fields
   avatarUrl     String?

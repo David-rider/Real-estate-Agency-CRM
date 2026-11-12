@@ -22,10 +22,18 @@
 ## [未发布]
 
 #### 修复 / Fixed
+- 仪表盘上的“已完成年度目标的 75%”和进度条以前是写死的，所有人都一样；现在只显示真实的目标进度，没设目标时提示“设定目标”。
+  *The dashboard's "75% to annual goal" and its progress bar were hard-coded and identical for everyone; they now show only real progress, and prompt you to set a goal when none exists.*
 - 去掉三处会误导用户的“假功能”：交易卡片上的“DocuSign 发送”按钮以前会提示“已发送签署”并给出一个假的信封编号，实际什么都没发；新建房源里的“从 Zillow 自动填充”会填入虚构的房源数据；预约页的“同步 Google”会先转圈再提示。现在 DocuSign 和 Zillow 按钮已移除，Google 同步按钮显示为“即将推出”且不可点击；对应的后端接口明确返回“尚未开放”。这三项集成仍在路线图上（3.1、3.2、3.3b）。
   *Removed three misleading “fake features”: the “Send via DocuSign” button on deal cards said the document was sent for signature and showed a fake envelope ID while sending nothing; “Auto-fill from Zillow” in the new-listing form filled in made-up listing data; “Sync with Google” on Appointments spun as if working. The DocuSign and Zillow buttons are gone, the Google sync button now shows “Coming soon” and cannot be clicked, and the backend endpoints say plainly that they are not available yet. The three integrations remain on the roadmap (3.1, 3.2, 3.3b).*
 
 #### 新增 / Added
+- 年度佣金目标：在仪表盘的“年度佣金”卡片上点“设定目标”，填写自己的年度目标（净佣金），进度条按真实的已发放佣金显示完成比例；经理的公司视图显示团队目标之和。
+  *Annual commission goal: click "Set goal" on the dashboard's commission card to enter your own yearly target (net commission); the progress bar shows real progress based on paid commissions, and a manager's brokerage view shows the team's goals added up.*
+- 报表新增“业绩”页签：本财年的线索来源及转化率、成交笔数和总额、平均成交周期；经理还能看到经纪人对比（新客户、成交、佣金）。可一键导出为 Excel 能直接打开的 CSV（中文和重音字符不乱码）。
+  *Reports gain a "Performance" tab: lead sources and conversion, deals closed and volume, and average time to close for the fiscal year; managers also see an agent comparison (new clients, closings, commission). One click exports a CSV that Excel opens directly, with Chinese and accented characters intact.*
+- 数据库：新增 `User.annualCommissionGoal`（幂等迁移 `20261112000200_annual_goal`）。
+  *Database: new `User.annualCommissionGoal` (idempotent migration `20261112000200_annual_goal`).*
 - 自定义过户清单模板：经理和管理员可在“交易”页点“过户清单模板”，编辑本公司的过户任务（标题、相对签约日或过户日的天数、优先级、顺序），之后新开的交易都按这份清单生成任务；已开的交易不受影响，随时可以恢复标准清单。经纪人只能查看，不能修改。
   *Custom closing-checklist template: managers and admins can click "Checklist template" on Transactions to edit the brokerage's own closing tasks (title, days relative to the contract or closing date, priority, order); new deals then get that checklist, existing deals are unaffected, and the standard list can be restored at any time. Agents can view it but not change it.*
 - 数据库：新增 `Organization.checklistTemplate`（幂等迁移 `20261112000100_checklist_template`）。
