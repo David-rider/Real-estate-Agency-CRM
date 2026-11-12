@@ -106,14 +106,14 @@ export default function AiAssistantPanel({ onSaved }: { onSaved?: () => void }) 
             type="button"
             onClick={() => enabled && setSkillId(s.id)}
             disabled={!enabled}
-            title={s.description}
+            title={X.ai.skills[s.id]?.desc ?? s.description}
             className={`text-left px-3 py-2 rounded-lg border text-sm transition-colors ${
               enabled && skillId === s.id ? "border-primary bg-primary/10 text-primary" : "border-border" + (enabled ? " hover:border-foreground/30" : " cursor-default")
             } ${enabled && s.unlocked ? "" : "opacity-60"}`}
           >
-            <div className="font-semibold">{s.name}</div>
+            <div className="font-semibold">{X.ai.skills[s.id]?.name ?? s.name}</div>
             <div className="text-xs text-foreground/50 mt-0.5 line-clamp-2">
-              {!enabled || s.unlocked ? s.description : `🔒 ${fmt(X.ai.locked, { tier: s.minTier })}`}
+              {!enabled || s.unlocked ? (X.ai.skills[s.id]?.desc ?? s.description) : `🔒 ${fmt(X.ai.locked, { tier: s.minTier })}`}
             </div>
           </button>
         ))}

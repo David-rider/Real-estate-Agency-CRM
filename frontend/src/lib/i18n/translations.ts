@@ -1,6 +1,7 @@
 export type Language = "en" | "zh-CN" | "zh-TW" | "es";
+import { esSettings } from "./es-settings";
 
-export const translations = {
+const base = {
   en: {
     sidebar: {
       brandName: "Real Estate CRM",
@@ -3274,7 +3275,7 @@ export const translations = {
       ytdCommission: "Comisión Estimada (Año a la Fecha)",
       annualGoal: "75% de la meta anual",
       salesPipeline: "Tubería de Ventas",
-      actionItems: "Objetos de Acción",
+      actionItems: "Acciones pendientes",
       liveData: "Datos en vivo",
       thisMonth: "Este Mes",
       lastQuarter: "Último Trimestre",
@@ -3933,5 +3934,22 @@ export const translations = {
     },
   },
 } as const;
+
+// Fill what the Spanish Settings page is still missing from es-settings.ts; text already in translations.es wins.
+function mergeMissing(fill: Record<string, unknown>, own: Record<string, unknown> | undefined): Record<string, unknown> {
+    const out: Record<string, unknown> = { ...fill };
+    for (const [k, v] of Object.entries(own ?? {})) {
+        const f = out[k];
+        out[k] = v && typeof v === "object" && f && typeof f === "object"
+            ? mergeMissing(f as Record<string, unknown>, v as Record<string, unknown>)
+            : v;
+    }
+    return out;
+}
+
+export const translations = {
+    ...base,
+    es: { ...base.es, settings: mergeMissing(esSettings, base.es.settings as unknown as Record<string, unknown>) },
+} as unknown as typeof base;
 
 export type TranslationKeys = typeof translations.en;

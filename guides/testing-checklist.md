@@ -84,6 +84,8 @@ happen; note anything that doesn't.
       *在顶栏把语言切到简体中文，再创建一个预约——新通知是中文的；切到繁體中文再看一次。*
 - [ ] Sign out, clear the browser's site data (or use another browser), sign in again — the interface opens in the language you used last.
       *退出登录，清除浏览器网站数据（或换一个浏览器），再登录——界面会使用你上次用的语言。*
+- [ ] In Español, open **Settings** and click through every section, then the **Dashboard** action cards and the **Marketing** AI skills — no English is left (place names and brand names excepted).
+      *切到西班牙语，逐个点开“设置”的每个栏目，再看仪表盘的待办卡片和营销页的 AI 技能——不应再有英文（地名和品牌名除外）。*
 - [ ] Notifications created *before* the language was saved stay in the language they were created in.
       *在保存语言之前生成的旧通知，保持生成时的语言，不会被改写。*
 

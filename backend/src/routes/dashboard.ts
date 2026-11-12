@@ -95,11 +95,13 @@ router.get('/', async (req: AuthRequest, res) => {
             id: t.id, type: 'TASK', title: `Overdue: ${t.title}`,
             subtitle: t.dueDate ? `Was due ${t.dueDate.toISOString().slice(0, 10)}` : '',
             actionLabel: 'Open Tasks', link: '/tasks',
+            params: { title: t.title, due: t.dueDate ? t.dueDate.toISOString().slice(0, 10) : null },
         })),
         ...pendingOffersList.map(o => ({
             id: o.id, type: 'OFFER', title: `Review Offer: $${o.amount.toLocaleString()}`,
             subtitle: `${o.property.address} (Client: ${o.client.firstName} ${o.client.lastName})`,
             actionLabel: 'Review & Respond', link: '/transactions',
+            params: { amount: o.amount, address: o.property.address, client: `${o.client.firstName} ${o.client.lastName}` },
         })),
         ...staleLeads.slice(0, 2).map(c => ({
             id: c.id, type: 'FOLLOW_UP', title: `Follow up: ${c.firstName} ${c.lastName}`,
@@ -107,11 +109,13 @@ router.get('/', async (req: AuthRequest, res) => {
                 ? `No contact for ${Math.floor((now.getTime() - c.lastContactedAt.getTime()) / DAY)} days`
                 : 'Never contacted',
             actionLabel: 'Open Client', link: `/crm/${c.id}`,
+            params: { name: `${c.firstName} ${c.lastName}`, days: c.lastContactedAt ? Math.floor((now.getTime() - c.lastContactedAt.getTime()) / DAY) : null },
         })),
         ...pendingGifts.map(g => ({
             id: g.id, type: 'GIFT', title: `Send Gift: ${g.item}`,
             subtitle: `Recipient: ${g.client.firstName} ${g.client.lastName}`,
             actionLabel: 'Order Gift', link: '/services',
+            params: { item: g.item, name: `${g.client.firstName} ${g.client.lastName}` },
         })),
     ].slice(0, 6);
 
