@@ -21,6 +21,10 @@
 
 ## [未发布]
 
+---
+
+## [1.4.0.0] — 2026-11-12 · 账号安全：两步验证、登录提醒、IP 白名单 / Account security: two-factor authentication, login alerts, IP whitelist
+
 #### 安全 / Security
 - IP 白名单：公司管理员可以在“设置 → 安全”里填写允许的 IP 地址或网段（如 `203.0.113.0/24`）。填写后，成员只能从这些网络登录和使用系统，其他地方会被拒绝并提示联系管理员；留空表示不限制。保存时名单必须包含你当前的 IP，页面会显示你的 IP 并提供“添加我的 IP”按钮，避免把自己锁在外面。
   *IP whitelist: firm admins can list allowed IP addresses or ranges (e.g. `203.0.113.0/24`) in Settings → Security. Members can then sign in and use the system only from those networks; elsewhere they are refused and told to contact their administrator. Empty means no restriction. When saving, the list must include your current IP; the page shows your IP and an "Add my IP" button so you can't lock yourself out.*
