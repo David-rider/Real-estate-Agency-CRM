@@ -37,6 +37,8 @@ model Organization {
   requirePasswordSpecialChar Boolean @default(false)
   passwordExpiryDays         Int     @default(0)
   logoutOnPasswordChange     Boolean @default(true)
+  // Custom contract-to-close checklist: [{ title, anchor: CONTRACT|CLOSING, offsetDays, priority }]; null = standard
+  checklistTemplate          Json?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 

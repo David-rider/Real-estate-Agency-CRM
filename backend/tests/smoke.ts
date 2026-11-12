@@ -297,6 +297,45 @@ async function main() {
         }
     });
 
+    await step('custom closing checklist: managers set it, new deals use it, reset restores the standard', async () => {
+        const owner = await register('checklist');
+        const std = await call('GET', '/api/settings/checklist-template', owner);
+        assert.equal(std.status, 200);
+        assert.equal(std.body.isStandard, true);
+        assert.ok(std.body.items.length >= 5);
+
+        assert.equal((await call('PUT', '/api/settings/checklist-template', owner, { items: [] })).status, 400);
+        assert.equal((await call('PUT', '/api/settings/checklist-template', owner, { items: [{ title: '', anchor: 'CONTRACT', offsetDays: 1 }] })).status, 400);
+        assert.equal((await call('PUT', '/api/settings/checklist-template', owner, { items: [{ title: 'X', anchor: 'SOMEDAY', offsetDays: 1 }] })).status, 400);
+        assert.equal((await call('PUT', '/api/settings/checklist-template', owner, { items: [{ title: 'X', anchor: 'CONTRACT', offsetDays: 1.5 }] })).status, 400);
+
+        const mine = [
+            { title: 'Order co-op board package', anchor: 'CONTRACT', offsetDays: 3, priority: 'HIGH' },
+            { title: 'Book the moving elevator', anchor: 'CLOSING', offsetDays: -7, priority: 'LOW' },
+        ];
+        const put = await call('PUT', '/api/settings/checklist-template', owner, { items: mine });
+        assert.equal(put.status, 200, JSON.stringify(put.body));
+        assert.equal(put.body.isStandard, false);
+
+        const prop = await call('POST', '/api/properties', owner, { address: '5 Template Way', city: 'New York', state: 'NY', zip: '10005', price: 700000, beds: 1, baths: 1 });
+        const cl = await call('POST', '/api/clients', owner, { firstName: 'Tpl', lastName: `Buyer${run}` });
+        const contract = new Date(Date.now() + 86400000);
+        const closing = new Date(Date.now() + 40 * 86400000);
+        const tx = await call('POST', '/api/transactions', owner, { propertyId: prop.body.id, clientId: cl.body.id, price: 700000, status: 'IN_CONTRACT', contractDate: contract.toISOString(), closingDate: closing.toISOString() });
+        assert.equal(tx.status, 201, JSON.stringify(tx.body));
+        const detail = await call('GET', `/api/transactions/${tx.body.id}`, owner);
+        const titles = detail.body.checklist.map((t: any) => t.title).sort();
+        assert.deepEqual(titles, ['Book the moving elevator', 'Order co-op board package'], 'the deal gets exactly the custom checklist');
+        const elevator = detail.body.checklist.find((t: any) => t.title === 'Book the moving elevator');
+        const days = Math.round((new Date(elevator.dueDate).getTime() - closing.getTime()) / 86400000);
+        assert.equal(days, -7, 'due 7 days before closing');
+
+        const reset = await call('PUT', '/api/settings/checklist-template', owner, { items: null });
+        assert.equal(reset.status, 200);
+        assert.equal(reset.body.isStandard, true);
+        assert.equal((await call('GET', '/api/settings/checklist-template', owner)).body.isStandard, true);
+    });
+
     await step('gifts and documents with real records', async () => {
         const g = await call('POST', '/api/gifts', a, { item: 'Champagne', clientId });
         assert.equal(g.status, 201, JSON.stringify(g.body));
@@ -862,6 +901,7 @@ async function main() {
             await expectStatus('agent', agent.token, 'PUT', `/api/settings/users/${manager.id}/role`, 403, { role: 'FIRMADMIN' });
             await expectStatus('agent', agent.token, 'DELETE', `/api/settings/users/${manager.id}`, 403);
             await expectStatus('agent', agent.token, 'GET', '/api/settings/lead-routing', 403);
+            await expectStatus('agent', agent.token, 'PUT', '/api/settings/checklist-template', 403, { items: null });
             await expectStatus('agent', agent.token, 'GET', '/api/finance/payout-requests', 403);
             await expectStatus('agent', agent.token, 'POST', '/api/finance/commissions/none/approve', 403);
 
