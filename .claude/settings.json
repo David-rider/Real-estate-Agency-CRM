@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cd frontend && npm run audit:i18n"
+            "command": "cd \"$(git rev-parse --show-toplevel)/frontend\" && npm run audit:i18n"
           }
         ]
       }

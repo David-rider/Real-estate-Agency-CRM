@@ -21,6 +21,10 @@
 
 ## [未发布]
 
+---
+
+## [1.2.0.0] — 2026-11-12 · 设置栏目落地（CRM、房源、财务、预约、文档由服务器强制执行）、安全策略生效、审计日志扩展 / Settings sections made real (CRM, Properties, Finance, Appointments, Documents enforced by the server), security policy enforced, wider audit trail
+
 #### 新增 / Added
 - 设置里的五个栏目现在都是真的：**CRM、房源、财务、预约、文档**。公司管理员定下全公司的规则，每个人再按自己的习惯调整个人偏好；所有规则由服务器强制执行，不是只改界面。
   *Five Settings sections are now real: **CRM, Properties, Finance, Appointments and Documents**. Company admins set the rules for the whole firm and everyone adjusts their own preferences; the server enforces every rule, it is not just a change to the screen.*
