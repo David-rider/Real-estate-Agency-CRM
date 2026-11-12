@@ -22,6 +22,10 @@
 ## [未发布]
 
 #### 安全 / Security
+- IP 白名单：公司管理员可以在“设置 → 安全”里填写允许的 IP 地址或网段（如 `203.0.113.0/24`）。填写后，成员只能从这些网络登录和使用系统，其他地方会被拒绝并提示联系管理员；留空表示不限制。保存时名单必须包含你当前的 IP，页面会显示你的 IP 并提供“添加我的 IP”按钮，避免把自己锁在外面。
+  *IP whitelist: firm admins can list allowed IP addresses or ranges (e.g. `203.0.113.0/24`) in Settings → Security. Members can then sign in and use the system only from those networks; elsewhere they are refused and told to contact their administrator. Empty means no restriction. When saving, the list must include your current IP; the page shows your IP and an "Add my IP" button so you can't lock yourself out.*
+- 数据库：新增 `Organization.ipAllowlist`（幂等迁移 `20261113000200_ip_allowlist`）。新增可选环境变量 `DISABLE_IP_ALLOWLIST`（紧急开关，平时不设置）。
+  *Database: new `Organization.ipAllowlist` (idempotent migration `20261113000200_ip_allowlist`). New optional environment variable `DISABLE_IP_ALLOWLIST` (emergency switch, normally unset).*
 - 两步验证（2FA）：在“设置 → 安全”里用验证器 App（Google Authenticator、Microsoft Authenticator、1Password 等）扫码开启。开启后，输入密码还要再输入 App 中的 6 位验证码。开启时会给出 10 个一次性恢复码，手机丢失时可以用它们登录；每个验证码和恢复码只能用一次。关闭需要密码加验证码。公司管理员可以在“团队与角色”里为丢了手机的同事重置两步验证。
   *Two-factor authentication (2FA): turn it on in Settings → Security by scanning a QR code with an authenticator app (Google Authenticator, Microsoft Authenticator, 1Password…). After that, signing in asks for the app's 6-digit code after the password. Turning it on gives 10 one-time recovery codes for signing in if the phone is lost; each code and recovery code works only once. Turning it off needs the password plus a code. Firm admins can reset 2FA for a colleague who lost their phone under Team & Roles.*
 - 数据库：新增 `User.totpEnabled`、`totpSecret`（加密存储）、`totpRecoveryCodes`（只存哈希）、`totpLastStep`（幂等迁移 `20261113000100_two_factor`）。
@@ -465,7 +469,7 @@
 
 ---
 
-## 环境变量变更汇总（截至 1.0.1，本版无新增） / Environment variable summary (as of 1.0.1; none new in this version)
+## 环境变量变更汇总 / Environment variable summary
 
 | 位置<br>*Where* | 变量<br>*Variable* | 说明<br>*Description* |
 |---|---|---|
@@ -473,6 +477,7 @@
 | 后端<br>*Backend* | `ANTHROPIC_API_KEY` | AI 助手启用后才需要<br>*Needed only once the AI assistant is enabled* |
 | 后端<br>*Backend* | `RUN_MIGRATIONS_ON_START` | 默认开启；设为 `false` 时启动不自动迁移<br>*On by default; `false` disables migrations at start* |
 | 后端<br>*Backend* | `TRUST_PROXY` | 可选，生产环境默认 `1`<br>*Optional; defaults to `1` in production* |
+| 后端<br>*Backend* | `DISABLE_IP_ALLOWLIST` | 可选，紧急开关：设为 `true` 时忽略所有公司的 IP 白名单（管理员被锁在外面时使用），平时不要设置<br>*Optional emergency switch: `true` ignores every brokerage's IP allowlist (for when admins are locked out); leave unset normally* |
 | 后端<br>*Backend* | `DISABLE_JOBS` | 可选，设为 `true` 关闭预约提醒任务<br>*Optional; `true` turns off the appointment-reminder job* |
 | 后端<br>*Backend* | `SEED_PASSWORD` / `ALLOW_SEED` | 仅种子脚本使用<br>*Used only by the seed script* |
 | 前端<br>*Frontend* | `NEXT_PUBLIC_AI_ASSISTANT_ENABLED` | AI 助手开关，默认 `false`<br>*AI assistant switch, default `false`* |

@@ -37,6 +37,8 @@ model Organization {
   requirePasswordSpecialChar Boolean @default(false)
   passwordExpiryDays         Int     @default(0)
   logoutOnPasswordChange     Boolean @default(true)
+  // Members may only sign in / use the API from these IPs or CIDR ranges; empty = anywhere
+  ipAllowlist                String[] @default([])
   // Custom contract-to-close checklist: [{ title, anchor: CONTRACT|CLOSING, offsetDays, priority }]; null = standard
   checklistTemplate          Json?
   createdAt         DateTime @default(now())

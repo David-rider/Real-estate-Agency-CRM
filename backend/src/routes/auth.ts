@@ -11,6 +11,7 @@ import { EMAIL, Lang, isLang, normalizeLang } from '../lib/messages';
 import { getSeatUsage } from '../lib/seats';
 import { orgSlug } from '../lib/slug';
 import { recordLogin } from '../lib/loginAlert';
+import { ipAllowed, IP_BLOCKED } from '../lib/ipAllowlist';
 import { signChallenge, readChallenge, verifyTotp, decryptSecret, useRecoveryCode } from '../lib/totp';
 
 // Org subscription level → member tier (subscription is org-wide)
@@ -73,7 +74,8 @@ router.post('/login', authLimiter, async (req, res) => {
 
         // Password expiry policy. Only enforced when email can be sent: without a working
         // reset flow an expired password would lock the account out for good.
-        const policyOrg = await prisma.organization.findUnique({ where: { id: user.orgId }, select: { passwordExpiryDays: true } });
+        const policyOrg = await prisma.organization.findUnique({ where: { id: user.orgId }, select: { passwordExpiryDays: true, ipAllowlist: true } });
+        if (policyOrg && !ipAllowed(policyOrg.ipAllowlist, req.ip ?? '')) return res.status(403).json(IP_BLOCKED);
         if (policyOrg && policyOrg.passwordExpiryDays > 0 && emailServiceConfigured()) {
             const since = user.passwordChangedAt ?? user.createdAt;
             const ageDays = (Date.now() - since.getTime()) / 86400000;
