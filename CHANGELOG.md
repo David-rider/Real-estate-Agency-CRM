@@ -22,6 +22,8 @@
 ## [未发布]
 
 #### 变更 / Changed
+- 部署：Vercel 只在 `frontend/` 有改动时才构建前端（`frontend/scripts/vercel-ignore.sh`）；只改后端或文档的提交不再生成部署，减少免费团队 10 GB 部署存储的占用。线上网站不受影响。
+  *Deployment: Vercel now builds the frontend only when something under `frontend/` changed (`frontend/scripts/vercel-ignore.sh`); backend-only and docs-only commits no longer create deployments, easing the free team's 10 GB deployment storage. The live site is unaffected.*
 - 后端数据库组件 Prisma 从 4.16（官方已停止维护）升级到 6.19.3。用户不会感到变化，所有功能照常；数据库结构不变，没有新迁移。
   *The backend database layer, Prisma, is upgraded from 4.16 (no longer maintained) to 6.19.3. Users notice no change and everything works as before; the database structure is unchanged, with no new migration.*
 
