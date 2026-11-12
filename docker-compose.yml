@@ -1,0 +1,78 @@
+# Local development stack: db (PostgreSQL 16) + api (Express, auto-reload) + web (Next.js dev server).
+# 本地开发环境：数据库 + 后端 API + 前端网站，一条命令启动。
+#
+# Usage / 用法:
+#   cp .env.example .env     # then fill in DEV_DB_PASSWORD and JWT_SECRET (see .env.example)
+#   docker compose up        # first start installs dependencies and applies migrations (a few minutes)
+#
+# Web http://localhost:3000 · API http://localhost:4000 · Postgres 127.0.0.1:5432
+# Demo data (optional):  docker compose exec -e SEED_PASSWORD='choose-one' api npm run db:seed
+# Reset everything:      docker compose down -v
+#
+# For development only: nothing here is a production setup, and every port is bound to localhost.
+# 仅用于开发：这不是生产配置，所有端口只绑定本机。
+name: real-estate-crm-dev
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${DEV_DB_USER:-crm}
+      POSTGRES_PASSWORD: ${DEV_DB_PASSWORD:?Set DEV_DB_PASSWORD in .env (see .env.example)}
+      POSTGRES_DB: ${DEV_DB_NAME:-crm_dev}
+    ports:
+      - "127.0.0.1:${DEV_DB_PORT:-5432}:5432"
+    volumes:
+      - pg_data_dev:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    image: node:22-bookworm
+    working_dir: /app
+    # Install dependencies, apply the idempotent migrations, then run with auto-reload (-L = polling, needed for bind mounts on Windows/macOS).
+    command: sh -c "npm ci --no-audit --no-fund && npm run release && npx nodemon -L src/server.ts"
+    environment:
+      DATABASE_URL: postgresql://${DEV_DB_USER:-crm}:${DEV_DB_PASSWORD}@db:5432/${DEV_DB_NAME:-crm_dev}?schema=public
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env (see .env.example)}
+      NODE_ENV: development
+      PORT: 4000
+      FRONTEND_URL: http://localhost:${DEV_WEB_PORT:-3000}
+      APP_URL: http://localhost:${DEV_WEB_PORT:-3000}
+      DISABLE_JOBS: ${DISABLE_JOBS:-false}
+    ports:
+      - "127.0.0.1:${DEV_API_PORT:-4000}:4000"
+    volumes:
+      - ./backend:/app
+      # Keep the Linux node_modules inside Docker so they never clash with the ones on your machine.
+      - api_node_modules:/app/node_modules
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    image: node:22-bookworm
+    working_dir: /app
+    command: sh -c "npm ci --no-audit --no-fund && npx next dev -H 0.0.0.0 -p 3000"
+    environment:
+      # The browser (on your machine) calls the API, so this is the host-mapped port.
+      NEXT_PUBLIC_API_URL: http://localhost:${DEV_API_PORT:-4000}
+      NEXT_TELEMETRY_DISABLED: "1"
+      WATCHPACK_POLLING: "true"
+    ports:
+      - "127.0.0.1:${DEV_WEB_PORT:-3000}:3000"
+    volumes:
+      - ./frontend:/app
+      - web_node_modules:/app/node_modules
+      - web_next:/app/.next
+    depends_on:
+      - api
+
+volumes:
+  pg_data_dev: {}
+  api_node_modules: {}
+  web_node_modules: {}
+  web_next: {}

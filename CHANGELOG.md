@@ -21,6 +21,18 @@
 
 ## [未发布]
 
+#### 新增 / Added
+- 本地开发环境一条命令启动：根目录新增 `docker-compose.yml` 和 `.env.example`，`docker compose up` 会一起启动数据库（PostgreSQL 16）、API 和网站，自动安装依赖并执行迁移；密码从 `.env` 读取，仓库里没有任何写死的密码，所有端口只绑定本机。用法见 README。
+  *One-command local development: a new `docker-compose.yml` and `.env.example` in the repo root; `docker compose up` starts the database (PostgreSQL 16), the API and the web app together, installs dependencies and applies migrations. Passwords come from `.env`, nothing is hard-coded in the repo, and every port is bound to localhost. See the README.*
+
+#### 移除 / Removed
+- 删除 `backend/docker-compose.yml`：它只有一个数据库，并且写死了密码，已被根目录的新 `docker-compose.yml` 取代。
+  *Removed `backend/docker-compose.yml`: it held only a database and had a hard-coded password; the new root `docker-compose.yml` replaces it.*
+
+#### 变更 / Changed
+- GitHub 仓库设置（不影响代码）：`main` 分支开启保护（合并前必须通过 CI 的后端和前端两项检查，禁止强制推送和删除）；开启私下报告漏洞、Dependabot 警报和安全更新；合并后自动删除分支；外部贡献者的 PR 需要业主批准后才会运行 CI。机密扫描和推送保护原本已开启。
+  *GitHub repository settings (no code change): `main` is protected (the backend and frontend CI checks must pass before merging; force pushes and deletion are blocked); private vulnerability reporting, Dependabot alerts and security updates are on; branches are deleted after merging; CI on PRs from outside contributors needs the owner's approval first. Secret scanning and push protection were already on.*
+
 ---
 
 ## [1.2.0.0] — 2026-11-12 · 设置栏目落地（CRM、房源、财务、预约、文档由服务器强制执行）、安全策略生效、审计日志扩展 / Settings sections made real (CRM, Properties, Finance, Appointments, Documents enforced by the server), security policy enforced, wider audit trail
@@ -401,6 +413,8 @@
 | 后端<br>*Backend* | `SENTRY_DSN` | 可选：后端 Sentry 错误上报 DSN，未填时静默不启用<br>*Optional: backend Sentry DSN; silently disabled when empty* |
 | 前端<br>*Frontend* | `NEXT_PUBLIC_SENTRY_DSN` | 可选：前端 Sentry 错误上报 DSN，未填时静默不启用<br>*Optional: frontend Sentry DSN; silently disabled when empty* |
 | 前端<br>*Frontend* | `NEXT_PUBLIC_CSP_ENFORCE` | 可选：设为 `true` 时前端 CSP 从仅报告切换为强制拦截，默认 `false`<br>*Optional: `true` switches the frontend CSP from report-only to enforcing; default `false`* |
+| 本地开发<br>*Local dev* | `DEV_DB_PASSWORD` / `JWT_SECRET` | 仅根目录 `docker-compose.yml` 使用，必填；见根目录 `.env.example`，不用于生产<br>*Used only by the root `docker-compose.yml`, required; see the root `.env.example`, not for production* |
+| 本地开发<br>*Local dev* | `DEV_DB_USER` / `DEV_DB_NAME` / `DEV_DB_PORT` / `DEV_API_PORT` / `DEV_WEB_PORT` | 可选，仅本地 Docker 开发环境<br>*Optional, local Docker development only* |
 
 ## 待确认 / To confirm
 

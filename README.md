@@ -38,6 +38,27 @@ https://real-estate-agency-crm.vercel.app
 
 ## Running locally
 
+### Option A: one command with Docker / 方式 A：用 Docker 一条命令启动
+
+Needs Docker Desktop (or Docker Engine with Compose). It starts PostgreSQL, the API and the web app, installs the
+dependencies and applies the migrations for you. 需要安装 Docker；数据库、API 和网站会一起启动，依赖安装和数据库迁移自动完成。
+
+```bash
+cp .env.example .env     # fill in DEV_DB_PASSWORD and JWT_SECRET (the file explains how); .env is git-ignored
+docker compose up        # first start takes a few minutes
+```
+
+Web http://localhost:3000 · API http://localhost:4000. Optional demo data (prints the demo logins):
+
+```bash
+docker compose exec -e SEED_PASSWORD='choose-one' api npm run db:seed
+```
+
+Stop with `docker compose down`; add `-v` to also delete the local database. This stack is for development only and
+every port is bound to localhost. 仅用于开发，所有端口只绑定本机。
+
+### Option B: run each part yourself / 方式 B：分别手动运行
+
 ```bash
 # 1. Database
 cd backend
