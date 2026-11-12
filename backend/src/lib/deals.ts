@@ -1,12 +1,40 @@
 import { Transaction } from '@prisma/client';
 import { prisma } from '../server';
 import { createNotification } from '../routes/notifications';
+import { Lang, normalizeLang } from './messages';
 
 const DAY = 24 * 60 * 60 * 1000;
 
 export type ChecklistAnchor = 'CONTRACT' | 'CLOSING';
 export type ChecklistPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
 export interface ChecklistItem { title: string; anchor: ChecklistAnchor; offsetDays: number; priority: ChecklistPriority }
+
+// Standard checklist titles in the other languages (zh-CN, zh-TW, es). A brokerage's own titles are kept as typed.
+const STANDARD_TITLES: Record<string, [string, string, string]> = {
+    'Collect fully signed contract and earnest-money deposit': ['收取双方签字的合同和定金', '收取雙方簽字的合約和訂金', 'Recoger el contrato firmado por todas las partes y el depósito de garantía'],
+    'Send contract to attorney / title company': ['把合同发给律师 / 产权公司', '把合約寄給律師 / 產權公司', 'Enviar el contrato al abogado / compañía de títulos'],
+    'Schedule home inspection': ['安排验房', '安排驗屋', 'Programar la inspección de la vivienda'],
+    'Confirm mortgage application and commitment letter': ['确认贷款申请和贷款承诺函', '確認貸款申請和貸款承諾函', 'Confirmar la solicitud de hipoteca y la carta de compromiso'],
+    'Confirm appraisal ordered and completed': ['确认已委托并完成估价', '確認已委託並完成估價', 'Confirmar que la tasación se pidió y se completó'],
+    "Track progress on buyer's home sale": ['跟进买方出售自有房产的进度', '追蹤買方出售自有房產的進度', 'Seguir la venta de la vivienda del comprador'],
+    'Prepare and submit board / HOA package (if co-op or condo)': ['准备并提交董事会 / 业主协会资料（合作公寓或共管公寓）', '準備並提交董事會 / 管委會資料（合作公寓或共管公寓）', 'Preparar y enviar el paquete para la junta / HOA (si es co-op o condominio)'],
+    'Order title search and resolve any exceptions': ['委托产权调查并处理例外事项', '委託產權調查並處理例外事項', 'Pedir la búsqueda de título y resolver cualquier excepción'],
+    'Confirm closing date, location and funds with all parties': ['与各方确认过户日期、地点和资金', '與各方確認過戶日期、地點和資金', 'Confirmar con todas las partes la fecha, el lugar y los fondos del cierre'],
+    'Schedule final walk-through': ['安排过户前最后验房', '安排過戶前最後驗屋', 'Programar el recorrido final'],
+    'Send closing gift and ask for a review / referral': ['送上成交礼物，并请客户评价 / 推荐', '送上成交禮物，並請客戶評價 / 推薦', 'Enviar el regalo de cierre y pedir una reseña / referido'],
+};
+const LANG_IDX: Record<Exclude<Lang, 'en'>, number> = { 'zh-CN': 0, 'zh-TW': 1, es: 2 };
+
+/** A standard checklist title in the given language; any other title is returned unchanged. */
+export function standardTitle(title: string, lang: Lang): string {
+    if (lang === 'en') return title;
+    return STANDARD_TITLES[title]?.[LANG_IDX[lang]] ?? title;
+}
+
+/** The standard checklist in a language (for the template editor). */
+export function standardChecklist(lang: Lang): ChecklistItem[] {
+    return STANDARD_CHECKLIST.map(i => ({ ...i, title: standardTitle(i.title, lang) }));
+}
 
 /** The standard checklist, shown as the starting point when a brokerage writes its own. */
 export const STANDARD_CHECKLIST: ChecklistItem[] = [
@@ -50,6 +78,9 @@ export async function createClosingChecklist(tx: Transaction) {
     const start = (tx.contractDate ?? new Date()).getTime();
     const closing = tx.closingDate?.getTime();
     const org = await prisma.organization.findUnique({ where: { id: tx.orgId }, select: { checklistTemplate: true } });
+    // Standard titles are written in the deal agent's language
+    const agent = await prisma.user.findUnique({ where: { id: tx.agentId }, select: { preferredLanguage: true } });
+    const lang = normalizeLang(agent?.preferredLanguage);
     const custom = org?.checklistTemplate ? parseChecklistTemplate(org.checklistTemplate) : null;
 
     let items: { title: string; due: number | null; priority: ChecklistPriority }[];
@@ -86,7 +117,7 @@ export async function createClosingChecklist(tx: Transaction) {
 
     await prisma.task.createMany({
         data: items.map(i => ({
-            title: i.title,
+            title: custom && 'items' in custom ? i.title : standardTitle(i.title, lang),
             priority: i.priority,
             dueDate: i.due ? new Date(i.due) : null,
             linkedTransactionId: tx.id,

@@ -9,7 +9,8 @@ import { getSeatUsage } from '../lib/seats';
 import { audit, diffFields } from '../lib/audit';
 import { parseEntry, ipAllowed, normalizeIp, enforcementDisabled as ipEnforcementDisabled, MAX_ENTRIES as MAX_IP_ENTRIES } from '../lib/ipAllowlist';
 import { resolveLeadAssignee } from '../lib/routing';
-import { STANDARD_CHECKLIST, parseChecklistTemplate } from '../lib/deals';
+import { standardChecklist, parseChecklistTemplate } from '../lib/deals';
+import { requestLang } from '../lib/errorMessages';
 import { normalizeNotificationPrefs } from './notifications';
 import { normalizeOrgPolicies, applyOrgPoliciesPatch, normalizePreferences, applyPreferencesPatch } from '../lib/policies';
 
@@ -708,7 +709,7 @@ router.get('/checklist-template', async (req: AuthRequest, res) => {
     const org = await prisma.organization.findUnique({ where: { id: req.user!.orgId }, select: { checklistTemplate: true } });
     const parsed = org?.checklistTemplate ? parseChecklistTemplate(org.checklistTemplate) : null;
     if (parsed && 'items' in parsed) return res.json({ isStandard: false, items: parsed.items });
-    res.json({ isStandard: true, items: STANDARD_CHECKLIST });
+    res.json({ isStandard: true, items: standardChecklist(requestLang(req)) });
 });
 
 // PUT /api/settings/checklist-template — managers and admins; { items: null } restores the standard checklist
@@ -718,7 +719,7 @@ router.put('/checklist-template', authorizeRole(['SUPERADMIN', 'FIRMADMIN', 'MAN
     if (req.body?.items === null) {
         await prisma.organization.update({ where: { id: orgId }, data: { checklistTemplate: Prisma.DbNull } });
         await audit(req, 'RESET_CHECKLIST_TEMPLATE', 'Organization', orgId, before?.checklistTemplate ?? null, null);
-        return res.json({ isStandard: true, items: STANDARD_CHECKLIST });
+        return res.json({ isStandard: true, items: standardChecklist(requestLang(req)) });
     }
     const parsed = parseChecklistTemplate(req.body?.items);
     if ('error' in parsed) return res.status(400).json({ error: parsed.error });
