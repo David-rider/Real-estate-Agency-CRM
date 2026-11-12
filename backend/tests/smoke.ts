@@ -240,6 +240,63 @@ async function main() {
         }
     });
 
+    await step('co-agent split: commissions are shared at closing, inputs validated', async () => {
+        if (!process.env.DATABASE_URL) {
+            console.log('    (skipped: set DATABASE_URL to run the co-agent split check)');
+            return;
+        }
+        const prisma = new PrismaClient();
+        try {
+            const owner = await register('split');
+            const me = await call('GET', '/api/settings/profile', owner);
+            const ownerId = me.body.id as string;
+            const email = `splitagent-${run}@smoke.test`;
+            assert.equal((await call('POST', '/api/settings/invite', owner, { email, role: 'AGENT' })).status, 200);
+            const inv = await prisma.invitation.findFirst({ where: { email }, orderBy: { createdAt: 'desc' } });
+            const acc = await call('POST', '/api/auth/accept-invite', undefined, { name: 'Split Agent', email, password: 'SmokeTest123!', inviteToken: inv!.token });
+            assert.equal(acc.status, 201, JSON.stringify(acc.body));
+            const coId = acc.body.user.id as string;
+
+            const prop = await call('POST', '/api/properties', owner, { address: '7 Split St', city: 'New York', state: 'NY', zip: '10007', price: 1000000, beds: 2, baths: 2 });
+            const cl = await call('POST', '/api/clients', owner, { firstName: 'Split', lastName: `Buyer${run}` });
+            const tx = await call('POST', '/api/transactions', owner, { propertyId: prop.body.id, clientId: cl.body.id, price: 1000000, status: 'IN_CONTRACT' });
+            assert.equal(tx.status, 201, JSON.stringify(tx.body));
+            const id = tx.body.id as string;
+
+            assert.equal((await call('PATCH', `/api/transactions/${id}`, owner, { coAgentId: ownerId })).status, 400, 'the co-agent must be someone else');
+            assert.equal((await call('PATCH', `/api/transactions/${id}`, owner, { coAgentSplit: 150 })).status, 400);
+            const set = await call('PATCH', `/api/transactions/${id}`, owner, { coAgentId: coId, coAgentSplit: 40, commissionRate: 2, contractDate: new Date().toISOString() });
+            assert.equal(set.status, 200, JSON.stringify(set.body));
+
+            const detail = await call('GET', `/api/transactions/${id}`, owner);
+            assert.equal(detail.body.coAgent?.name, 'Split Agent');
+            assert.equal(detail.body.canEdit, true);
+            assert.ok(Array.isArray(detail.body.checklist) && detail.body.checklist.length > 0, 'closing checklist exists');
+
+            assert.equal((await call('PATCH', `/api/transactions/${id}`, owner, { status: 'CLOSED' })).status, 200);
+            const closed = await call('GET', `/api/transactions/${id}`, owner);
+            const byAgent = Object.fromEntries(closed.body.commissions.map((c: any) => [c.agentId, c]));
+            // $1,000,000 × 2% = $20,000 agent side; 60 / 40 share; then the 30% firm split
+            assert.equal(byAgent[ownerId]?.grossAmount, 12000);
+            assert.equal(byAgent[ownerId]?.netPayout, 8400);
+            assert.equal(byAgent[coId]?.grossAmount, 8000);
+            assert.equal(byAgent[coId]?.netPayout, 5600);
+
+            // Closing again never duplicates commissions
+            await call('PATCH', `/api/transactions/${id}`, owner, { status: 'CLEARED_TO_CLOSE' });
+            await call('PATCH', `/api/transactions/${id}`, owner, { status: 'CLOSED' });
+            const again = await call('GET', `/api/transactions/${id}`, owner);
+            assert.equal(again.body.commissions.length, 2);
+
+            // The co-agent sees the deal and their own commission
+            const coView = await call('GET', `/api/transactions/${id}`, acc.body.token);
+            assert.equal(coView.status, 200);
+            assert.equal(coView.body.canEdit, false, 'a co-agent can view but not edit the deal');
+        } finally {
+            await prisma.$disconnect();
+        }
+    });
+
     await step('gifts and documents with real records', async () => {
         const g = await call('POST', '/api/gifts', a, { item: 'Champagne', clientId });
         assert.equal(g.status, 201, JSON.stringify(g.body));

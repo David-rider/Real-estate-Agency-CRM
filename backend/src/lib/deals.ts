@@ -78,27 +78,40 @@ export async function onTransactionStatusChange(tx: Transaction, previous: strin
 }
 
 export async function ensureCommission(tx: Transaction) {
-    const existing = await prisma.commission.findFirst({ where: { transactionId: tx.id, agentId: tx.agentId } });
-    if (existing) return existing;
-
     const org = await prisma.organization.findUnique({ where: { id: tx.orgId } });
     const rate = tx.commissionRate ?? org?.defaultCommissionRate ?? 3;
     const firmSplit = org?.defaultFirmSplit ?? 30;
     const salePrice = tx.acceptedPrice ?? tx.price;
     const gross = Math.round(salePrice * rate) / 100;
-    const net = Math.round(gross * (100 - firmSplit)) / 100;
 
-    return prisma.commission.create({
-        data: {
-            transactionId: tx.id,
-            agentId: tx.agentId,
-            orgId: tx.orgId,
-            grossAmount: gross,
-            firmSplitPercent: firmSplit,
-            overridePercent: 0,
-            netPayout: net,
-            status: 'PENDING',
-            notes: `Auto-created at closing: ${rate}% of $${salePrice.toLocaleString()}, firm split ${firmSplit}%`,
-        },
-    });
+    // With a co-agent the agent-side commission is shared; each agent then pays the firm split on their part.
+    const coShare = tx.coAgentId && tx.coAgentId !== tx.agentId ? Math.min(100, Math.max(0, tx.coAgentSplit ?? 50)) : 0;
+    const parts: { agentId: string; share: number }[] = [{ agentId: tx.agentId, share: 100 - coShare }];
+    if (coShare > 0 && tx.coAgentId) parts.push({ agentId: tx.coAgentId, share: coShare });
+
+    const created = [];
+    for (const part of parts) {
+        if (part.share <= 0) continue;
+        // Once per deal + agent: re-closing a deal never duplicates a commission
+        const existing = await prisma.commission.findFirst({ where: { transactionId: tx.id, agentId: part.agentId } });
+        if (existing) { created.push(existing); continue; }
+        const partGross = Math.round(gross * part.share) / 100;
+        const net = Math.round(partGross * (100 - firmSplit)) / 100;
+        created.push(await prisma.commission.create({
+            data: {
+                transactionId: tx.id,
+                agentId: part.agentId,
+                orgId: tx.orgId,
+                grossAmount: partGross,
+                firmSplitPercent: firmSplit,
+                overridePercent: 0,
+                netPayout: net,
+                status: 'PENDING',
+                notes: `Auto-created at closing: ${rate}% of $${salePrice.toLocaleString()}`
+                    + (parts.length > 1 ? `, ${part.share}% agent-side share` : '')
+                    + `, firm split ${firmSplit}%`,
+            },
+        }));
+    }
+    return created[0];
 }

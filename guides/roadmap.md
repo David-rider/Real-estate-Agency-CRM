@@ -61,7 +61,7 @@ This file lists what to do after the trial launch, in priority order by stage. E
 | 1.4.0.0 | 3.2 Google 日历同步<br>*Google Calendar sync* | ⬜ | |
 | 1.4.0.0 | 3.3b MLS / StreetEasy 自动同步<br>*MLS / StreetEasy automatic sync* | ⬜ | 需 REBNY RLS / RESO 数据授权<br>*Needs REBNY RLS / RESO data authorisation* |
 | 1.4.0.0 | 3.4 Apple 登录（带校验）<br>*Apple sign-in (with verification)* | ⬜ | |
-| 1.4.0.0 | 3.5 交易流程增强<br>*Deal-flow enhancements* | ⬜ | |
+| 1.4.0.0 | 3.5 交易流程增强<br>*Deal-flow enhancements* | 🟡 | 已完成：交易详情面板（关键日期时间轴、清单勾选、佣金比例）、合作经纪人按比例分佣。未做：按公司自定义过户清单模板<br>*Done: deal detail panel (key-date timeline, checklist ticking, commission rate) and co-agent commission split. Not yet: per-company custom closing-checklist templates* |
 | 1.5.0.0 | 4 AI 助手正式上线<br>*AI assistant goes live* | ⏸ | 代码已有，开关关闭（“正在开发”）<br>*Code exists, switch is off (“in development”)* |
 | 2.x.0.0 | 5.x 团队管理与移动端<br>*Team management and mobile* | ⬜ | 按客户反馈排序<br>*Ordered by customer feedback* |
 
