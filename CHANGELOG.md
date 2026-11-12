@@ -21,6 +21,10 @@
 
 ## [未发布]
 
+---
+
+## [1.3.0.0] — 2026-11-12 · 交易详情与合作经纪人分佣、自定义过户清单、年度目标与业绩报表、开放日二维码签到、移除假集成 / Deal details and co-agent split, custom closing checklist, annual goal and performance report, open-house QR sign-in, fake integrations removed
+
 #### 修复 / Fixed
 - 仪表盘上的“已完成年度目标的 75%”和进度条以前是写死的，所有人都一样；现在只显示真实的目标进度，没设目标时提示“设定目标”。
   *The dashboard's "75% to annual goal" and its progress bar were hard-coded and identical for everyone; they now show only real progress, and prompt you to set a goal when none exists.*
