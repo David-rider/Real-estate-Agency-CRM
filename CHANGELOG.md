@@ -21,6 +21,10 @@
 
 ## [未发布]
 
+#### 新增 / Added
+- 服务器返回的错误提示（如“邮箱或密码不正确”“找不到该客户”“验证码不正确”“你的角色不能创建房源”等约 230 条）现在按你选择的语言显示：English、简体中文、繁體中文、Español。以前这些提示一律是英文。
+  *Error messages from the server (about 230 of them, such as "Invalid credentials", "Client not found", "That code is not correct" or "Your role cannot create listings") now appear in your chosen language: English, Simplified Chinese, Traditional Chinese or Spanish. Before, they were always English.*
+
 ---
 
 ## [1.4.1.0] — 2026-11-12 · Prisma 升级到 6.19.3、Vercel 部署减量（跳过无前端改动的构建、删除重复的 Deploy Hook）/ Prisma upgraded to 6.19.3, leaner Vercel deploys (skip builds without frontend changes, duplicate Deploy Hook removed)

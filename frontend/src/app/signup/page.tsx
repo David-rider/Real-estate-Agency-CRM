@@ -1,5 +1,6 @@
 "use client";
 
+import { langHeader } from "@/lib/api";
 import React, { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/auth/AuthContext";
@@ -51,7 +52,7 @@ function SignupForm() {
         res = await fetch(`${API}/api/auth/accept-invite`, {
           method:  "POST",
           credentials: "include",
-          headers: { "Content-Type": "application/json", "X-CSRF-Protection": "1" },
+          headers: { "Content-Type": "application/json", "X-CSRF-Protection": "1", ...langHeader() },
           body:    JSON.stringify({
             name:        formData.name,
             email:       formData.email || inviteEmail,
@@ -65,7 +66,7 @@ function SignupForm() {
         res = await fetch(`${API}/api/auth/register`, {
           method:  "POST",
           credentials: "include",
-          headers: { "Content-Type": "application/json", "X-CSRF-Protection": "1" },
+          headers: { "Content-Type": "application/json", "X-CSRF-Protection": "1", ...langHeader() },
           body:    JSON.stringify({ ...formData, language }),
         });
       }

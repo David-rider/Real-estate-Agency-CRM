@@ -912,6 +912,51 @@ async function main() {
         await db().organization.update({ where: { id: me!.orgId }, data: { ipAllowlist: [] } });
     });
 
+    await step('error messages follow the caller\'s language; every fixed message is translated or marked developer-only', async () => {
+        const owner = await register('i18nerr');
+        const raw = (path: string, headers: Record<string, string>, method = 'GET', body?: unknown) => fetch(`${API}${path}`, {
+            method, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${owner}`, ...headers },
+            body: body === undefined ? undefined : JSON.stringify(body),
+        }).then(async (r) => ({ status: r.status, body: await r.json() }));
+
+        const en = await raw('/api/transactions/no-such-deal', {});
+        assert.equal(en.status, 404);
+        assert.equal(en.body.error, 'Transaction not found', 'English by default');
+        assert.equal((await raw('/api/transactions/no-such-deal', { 'X-Lang': 'zh-CN' })).body.error, '找不到该交易');
+        assert.equal((await raw('/api/transactions/no-such-deal', { 'X-Lang': 'zh-TW' })).body.error, '找不到該交易');
+        // The language saved on the account is used when the request does not say
+        assert.equal((await call('PATCH', '/api/settings/profile', owner, { preferredLanguage: 'zh-TW' })).status, 200);
+        assert.equal((await raw('/api/transactions/no-such-deal', {})).body.error, '找不到該交易');
+        assert.equal((await raw('/api/transactions/no-such-deal', { 'X-Lang': 'en' })).body.error, 'Transaction not found', 'X-Lang wins over the account');
+        // A message with values (pattern) and a signed-out request
+        const bad = await fetch(`${API}/api/auth/login`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Lang': 'es' }, body: JSON.stringify({ email: `nobody-${run}@smoke.test`, password: 'x' }) });
+        assert.equal((await bad.json()).error, 'Correo o contraseña incorrectos');
+        const signedOut = await fetch(`${API}/api/auth/login`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept-Language': 'zh-TW,zh;q=0.9' }, body: JSON.stringify({ email: `nobody-${run}@smoke.test`, password: 'x' }) });
+        assert.equal((await signedOut.json()).error, '信箱或密碼不正確', 'signed out: the browser language is the fallback');
+        const { translateError, ERROR_TEXT, DEV_ONLY_ERRORS } = await import('../src/lib/errorMessages');
+        assert.equal(translateError('Password must be at least 12 characters', 'zh-CN'), '密码至少需要 12 个字符');
+        assert.equal(translateError('Some new message', 'es'), 'Some new message', 'unknown text passes through');
+
+        // Guard: every fixed error string in the routes is translated (all 3 languages) or deliberately English
+        const fs = await import('fs');
+        const path = await import('path');
+        const files: string[] = [];
+        const walk = (d: string) => { for (const f of fs.readdirSync(d)) { const full = path.join(d, f); if (fs.statSync(full).isDirectory()) walk(full); else if (f.endsWith('.ts')) files.push(full); } };
+        walk(path.join(__dirname, '..', 'src'));
+        const missing: string[] = [];
+        for (const f of files) {
+            const text = fs.readFileSync(f, 'utf8');
+            const rx = /error: '([^']+)'|error: "([^"]+)"/g;
+            let m: RegExpExecArray | null;
+            while ((m = rx.exec(text)) !== null) {
+                const msg = m[1] ?? m[2];
+                if (!ERROR_TEXT[msg] && DEV_ONLY_ERRORS.indexOf(msg) === -1 && missing.indexOf(msg) === -1) missing.push(msg);
+            }
+        }
+        assert.deepEqual(missing, [], 'add these to backend/src/lib/errorMessages.ts');
+        for (const [k, v] of Object.entries(ERROR_TEXT)) assert.ok(v.length === 3 && v.every((t) => t && t.trim()), `incomplete translation: ${k}`);
+    });
+
     await step('security policy is saved and enforced', async () => {
         if (!process.env.DATABASE_URL || !process.env.JWT_SECRET) {
             console.log('    (skipped: set DATABASE_URL and JWT_SECRET to run the security policy checks)');

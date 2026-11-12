@@ -71,13 +71,15 @@ export interface AuthRequest extends Request {
         orgId: string;
         // The brokerage's Settings policies (cached for 30 s with the rest of the account)
         policies: OrgPolicies;
+        // Language saved on the account (used for translated error messages)
+        lang?: string;
     }
 }
 
 // Short cache so every request doesn't hit the database
 const ACCOUNT_CACHE_MS = 30 * 1000;
 interface CachedAccount {
-    role: string; tier: string; orgId: string;
+    role: string; tier: string; orgId: string; lang: string;
     passwordChangedAtSec: number | null;
     sessionTimeoutMinutes: number;
     logoutOnPasswordChange: boolean;
@@ -102,12 +104,12 @@ async function currentAccount(userId: string) {
     const u = await prisma.user.findUnique({
         where: { id: userId },
         select: {
-            role: true, tier: true, orgId: true, isActive: true, passwordChangedAt: true,
+            role: true, tier: true, orgId: true, isActive: true, passwordChangedAt: true, preferredLanguage: true,
             organization: { select: { sessionTimeoutMinutes: true, logoutOnPasswordChange: true, ipAllowlist: true, policies: true } },
         },
     });
     const user: CachedAccount | null = u && u.isActive ? {
-        role: u.role, tier: u.tier, orgId: u.orgId,
+        role: u.role, tier: u.tier, orgId: u.orgId, lang: u.preferredLanguage,
         passwordChangedAtSec: u.passwordChangedAt ? Math.floor(u.passwordChangedAt.getTime() / 1000) : null,
         sessionTimeoutMinutes: u.organization.sessionTimeoutMinutes,
         logoutOnPasswordChange: u.organization.logoutOnPasswordChange,
@@ -173,7 +175,7 @@ export const authenticateToken = async (req: AuthRequest, res: Response, next: N
                 return res.status(401).json({ error: 'Your password was changed. Please sign in again.', code: 'PASSWORD_CHANGED' });
             }
         }
-        req.user = { userId: decoded.userId, role: account.role, tier: account.tier, orgId: account.orgId, policies: account.policies };
+        req.user = { userId: decoded.userId, role: account.role, tier: account.tier, orgId: account.orgId, policies: account.policies, lang: account.lang };
         next();
     } catch (err) {
         next(err);

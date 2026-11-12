@@ -1,5 +1,6 @@
 "use client";
 
+import { langHeader } from "@/lib/api";
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth/AuthContext";
@@ -30,7 +31,7 @@ export default function LoginPage() {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/auth/login`, {
         method: "POST",
         credentials: "include",
-        headers: { "Content-Type": "application/json", "X-CSRF-Protection": "1" },
+        headers: { "Content-Type": "application/json", "X-CSRF-Protection": "1", ...langHeader() },
         body: JSON.stringify({ email, password }),
       });
 
@@ -65,7 +66,7 @@ export default function LoginPage() {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/auth/login/2fa`, {
         method: "POST",
         credentials: "include",
-        headers: { "Content-Type": "application/json", "X-CSRF-Protection": "1" },
+        headers: { "Content-Type": "application/json", "X-CSRF-Protection": "1", ...langHeader() },
         body: JSON.stringify({ challenge, code }),
       });
       const data = await res.json();
