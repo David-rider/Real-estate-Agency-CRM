@@ -120,10 +120,10 @@ const N: Record<string, Record<Lang, Tpl>> = {
         es: (p) => ({ title: `Oferta ${label(OFFER_STATUS, p.status, 'es')}`, message: `Su oferta de ${money(p.amount)} por ${p.address} fue ${label(OFFER_STATUS, p.status, 'es')}.` }),
     },
     leadInquiry: {
-        en: (p) => ({ title: p.isNew ? `New ${p.openHouse ? 'open house' : 'website'} lead` : `Returning lead: ${p.name}`, message: `${p.name} asked about ${p.address}. Reach out within 5 minutes.` }),
-        'zh-CN': (p) => ({ title: p.isNew ? `新的${p.openHouse ? '开放日' : '网站'}线索` : `回访线索：${p.name}`, message: `${p.name} 咨询了 ${p.address}，请在 5 分钟内联系。` }),
-        'zh-TW': (p) => ({ title: p.isNew ? `新的${p.openHouse ? '開放日' : '網站'}線索` : `回訪線索：${p.name}`, message: `${p.name} 詢問了 ${p.address}，請在 5 分鐘內聯絡。` }),
-        es: (p) => ({ title: p.isNew ? `Nuevo contacto (${p.openHouse ? 'jornada de puertas abiertas' : 'sitio web'})` : `Contacto recurrente: ${p.name}`, message: `${p.name} preguntó por ${p.address}. Comuníquese en los próximos 5 minutos.` }),
+        en: (p) => ({ title: p.isNew ? `New ${p.openHouse ? 'open house' : 'website'} lead` : `Returning lead: ${p.name}`, message: p.openHouse ? `${p.name} signed in at the open house for ${p.address}. Follow up within 24 hours.` : `${p.name} asked about ${p.address}. Reach out within 5 minutes.` }),
+        'zh-CN': (p) => ({ title: p.isNew ? `新的${p.openHouse ? '开放日' : '网站'}线索` : `回访线索：${p.name}`, message: p.openHouse ? `${p.name} 在 ${p.address} 的开放日签到，请在 24 小时内跟进。` : `${p.name} 咨询了 ${p.address}，请在 5 分钟内联系。` }),
+        'zh-TW': (p) => ({ title: p.isNew ? `新的${p.openHouse ? '開放日' : '網站'}線索` : `回訪線索：${p.name}`, message: p.openHouse ? `${p.name} 在 ${p.address} 的開放日簽到，請在 24 小時內跟進。` : `${p.name} 詢問了 ${p.address}，請在 5 分鐘內聯絡。` }),
+        es: (p) => ({ title: p.isNew ? `Nuevo contacto (${p.openHouse ? 'jornada de puertas abiertas' : 'sitio web'})` : `Contacto recurrente: ${p.name}`, message: p.openHouse ? `${p.name} se registró en la jornada de puertas abiertas de ${p.address}. Dé seguimiento en las próximas 24 horas.` : `${p.name} preguntó por ${p.address}. Comuníquese en los próximos 5 minutos.` }),
     },
     referralReceived: {
         en: () => ({ title: 'New referral', message: 'A colleague sent you a referral.' }),

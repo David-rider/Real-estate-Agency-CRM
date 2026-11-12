@@ -89,4 +89,12 @@ happen; note anything that doesn't.
 - [ ] Notifications created *before* the language was saved stay in the language they were created in.
       *在保存语言之前生成的旧通知，保持生成时的语言，不会被改写。*
 
+## 10. Open house / 开放日
+- [ ] On **Listings**, click **QR** on a listing — a printable sign opens with a large QR code; print it (or save as PDF) and scan it with a phone.
+      *在“房源”页点某个房源的 QR——会打开可打印的签到海报；打印（或存为 PDF）后用手机扫码。*
+- [ ] On the sign-in form, try to submit without ticking "agree to be contacted" — it is refused. Tick it, answer the questions and submit.
+      *在签到表单里不勾“同意被联系”直接提交——无法提交；勾选并填写问题后提交。*
+- [ ] The visitor appears in **CRM** with source "Open House", the budget filled in and the answers in the notes; a "follow up within 24 hours" task appears for the listing agent.
+      *访客出现在客户列表，来源为“开放日”，预算已填，回答在备注里；挂牌经纪人收到“24 小时内跟进”的任务。*
+
 Report problems with: the page, what you clicked, what you expected, what happened, and a screenshot.

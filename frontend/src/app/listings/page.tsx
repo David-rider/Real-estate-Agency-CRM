@@ -496,8 +496,10 @@ export default function ListingsPage() {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        navigator.clipboard.writeText(`${window.location.origin}/public-listings/${prop.id}?openhouse=1`);
+                        // Opens the printable open-house sign; the sign-in link is copied too, for texting or email
+                        navigator.clipboard.writeText(`${window.location.origin}/public-listings/${prop.id}?openhouse=1`).catch(() => {});
                         toast.success(X.listings.linkCopied);
+                        window.open(`/public-listings/${prop.id}/sign`, "_blank", "noopener");
                       }}
                       title={X.listings.openHouseLink}
                       className="font-sans text-sm font-medium text-foreground/60 hover:text-foreground transition-colors duration-300"
