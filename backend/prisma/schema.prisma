@@ -285,6 +285,7 @@ model Transaction {
   contingencies     String?   // comma-separated: FINANCING, INSPECTION, APPRAISAL, SALE_OF_HOME
   notes             String?
   coAgentId         String?   // co-broker agent
+  coAgentSplit      Float?    // percent of the agent-side commission paid to the co-agent; null = 50
   commissionRate    Float?    // percent of sale price; falls back to org default
 
   createdAt DateTime @default(now())

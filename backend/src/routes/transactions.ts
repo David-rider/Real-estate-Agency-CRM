@@ -84,7 +84,10 @@ router.get('/:id', async (req: AuthRequest, res) => {
         where: { linkedTransactionId: transaction.id, orgId: user.orgId },
         orderBy: [{ dueDate: 'asc' }, { createdAt: 'asc' }],
     });
-    res.json({ ...transaction, checklist });
+    const coAgent = transaction.coAgentId
+        ? await prisma.user.findFirst({ where: { id: transaction.coAgentId, orgId: user.orgId }, select: { id: true, name: true } })
+        : null;
+    res.json({ ...transaction, coAgent, checklist, canEdit: canEdit(user, transaction) });
 });
 
 // POST /api/transactions
@@ -160,6 +163,24 @@ router.patch('/:id', async (req: AuthRequest, res) => {
     }
     for (const f of ['contingencies', 'notes']) {
         if (req.body[f] !== undefined) data[f] = req.body[f] === null ? null : String(req.body[f]);
+    }
+    if (req.body.coAgentId !== undefined) {
+        if (req.body.coAgentId === null || req.body.coAgentId === '') data.coAgentId = null;
+        else {
+            const coAgentId = String(req.body.coAgentId);
+            if (coAgentId === existing.agentId) return res.status(400).json({ error: 'The co-agent must be a different person' });
+            const err = await checkRefs(user.orgId, { userId: coAgentId });
+            if (err) return res.status(400).json({ error: 'Co-agent not found' });
+            data.coAgentId = coAgentId;
+        }
+    }
+    if (req.body.coAgentSplit !== undefined) {
+        if (req.body.coAgentSplit === null || req.body.coAgentSplit === '') data.coAgentSplit = null;
+        else {
+            const n = optNumber(req.body.coAgentSplit);
+            if (n === undefined || n < 0 || n > 100) return res.status(400).json({ error: 'Co-agent share must be between 0 and 100' });
+            data.coAgentSplit = n;
+        }
     }
 
     const updated = await prisma.transaction.update({ where: { id }, data });

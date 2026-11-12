@@ -26,6 +26,12 @@
   *Removed three misleading “fake features”: the “Send via DocuSign” button on deal cards said the document was sent for signature and showed a fake envelope ID while sending nothing; “Auto-fill from Zillow” in the new-listing form filled in made-up listing data; “Sync with Google” on Appointments spun as if working. The DocuSign and Zillow buttons are gone, the Google sync button now shows “Coming soon” and cannot be clicked, and the backend endpoints say plainly that they are not available yet. The three integrations remain on the roadmap (3.1, 3.2, 3.3b).*
 
 #### 新增 / Added
+- 交易详情面板：在“交易”页点任一交易卡片，会打开详情面板。可以查看和修改关键日期（签约、验房、董事会 / 业主协会资料、可以过户、过户，并显示“还有 N 天 / N 天前”），设置该交易的佣金比例，勾选过户清单任务。以前这些在界面上都无法查看或修改。
+  *Deal detail panel: clicking any deal card on Transactions opens a detail panel to view and edit the key dates (contract, inspection, board / HOA package, clear to close, closing, with "in N days / N days ago"), set the deal's commission rate and tick off closing-checklist tasks. None of this could be seen or changed in the UI before.*
+- 合作经纪人分佣：可以给交易指定一位合作经纪人和他的分成比例（默认 50%）。成交时系统会为两位经纪人各生成一条佣金记录，每人的部分再按公司分成结算；重复标记成交不会重复生成。合作经纪人能看到这笔交易，但不能修改。
+  *Co-agent split: a deal can have a co-agent with a share (50% by default). At closing the system creates a commission record for each of the two agents, each part then subject to the firm split; marking the deal closed again never duplicates them. The co-agent can see the deal but not edit it.*
+- 数据库：新增 `Transaction.coAgentSplit`（幂等迁移 `20261112000000_co_agent_split`）。
+  *Database: new `Transaction.coAgentSplit` (idempotent migration `20261112000000_co_agent_split`).*
 - 开放日签到增强：签到表单新增“是否已有经纪人”“预算”“计划购房时间”，以及必须勾选的“同意被联系”（记录同意时间）。签到的访客会自动成为客户线索，回答写进客户备注；已有经纪人的访客标为“温”而非“热”。开放日线索会生成“24 小时内跟进”任务，网站咨询仍是“15 分钟内回电”。
   *Open-house sign-in improvements: the form adds "working with an agent?", budget and purchase timeline, plus a required "agree to be contacted" box (the time of consent is recorded). Visitors become leads automatically with their answers in the client notes; visitors who already have an agent are marked warm rather than hot. Open-house leads get a "follow up within 24 hours" task, while website inquiries keep the 15-minute call-back.*
 - 可打印的开放日二维码签到页：在“房源”卡片上点 “QR” 会打开该房源的签到海报（大号二维码、地址、经纪公司名，四种语言），可直接打印放在门口；同时复制签到链接，方便发短信或邮件。二维码在浏览器本地生成，不经过第三方。

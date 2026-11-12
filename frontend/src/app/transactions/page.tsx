@@ -5,6 +5,7 @@ import { useI18n } from "@/lib/i18n/I18nContext";
 import { useToast } from "@/components/ui/Toast";
 import { useExtra } from "@/lib/i18n/extra";
 import { api } from "@/lib/api";
+import DealDrawer from "@/components/deals/DealDrawer";
 
 export default function TransactionsPage() {
   const { t } = useI18n();
@@ -33,6 +34,7 @@ export default function TransactionsPage() {
   const [offers, setOffers] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = React.useState(false);
+  const [openDealId, setOpenDealId] = React.useState<string | null>(null);
   const [isAddOfferModalOpen, setIsAddOfferModalOpen] = React.useState(false);
   const [formData, setFormData] = React.useState({
     propertyId: "",
@@ -327,6 +329,7 @@ export default function TransactionsPage() {
                   {col.deals.map((deal) => (
                     <div
                       key={deal.id}
+                      onClick={() => setOpenDealId(deal.raw.id)}
                       className="bg-surface p-6 border border-border hover:border-primary/50 transition-colors duration-300 cursor-pointer group flex flex-col gap-4 relative"
                     >
                       <div className="flex justify-between items-start">
@@ -685,6 +688,7 @@ export default function TransactionsPage() {
           </div>
         </div>
       )}
+      {openDealId && <DealDrawer dealId={openDealId} onClose={() => setOpenDealId(null)} onSaved={fetchTransactions} />}
     </div>
   );
 }

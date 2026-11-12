@@ -97,4 +97,12 @@ happen; note anything that doesn't.
 - [ ] The visitor appears in **CRM** with source "Open House", the budget filled in and the answers in the notes; a "follow up within 24 hours" task appears for the listing agent.
       *访客出现在客户列表，来源为“开放日”，预算已填，回答在备注里；挂牌经纪人收到“24 小时内跟进”的任务。*
 
+## 11. Deal details / 交易详情
+- [ ] On **Transactions**, click a deal card — a panel opens with key dates, commission and the closing checklist. Change the closing date and save; the "in N days" label updates.
+      *在“交易”页点一张交易卡片——会打开详情面板（关键日期、佣金、过户清单）。修改过户日期并保存，“还有 N 天”随之更新。*
+- [ ] Pick a co-agent with a 40% share, then move the deal to **Closed** — **Finance** shows two commissions (60% and 40% of the agent side, each after the firm split).
+      *选一位合作经纪人并设 40% 分成，再把交易移到“已成交”——财务页出现两条佣金（经纪人一方的 60% 和 40%，各自扣除公司分成）。*
+- [ ] Tick a checklist task that is yours — it is marked done. Tasks assigned to someone else cannot be ticked.
+      *勾选属于自己的清单任务——标记为完成；分配给别人的任务不能勾选。*
+
 Report problems with: the page, what you clicked, what you expected, what happened, and a screenshot.
