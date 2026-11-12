@@ -21,6 +21,10 @@
 
 ## [未发布]
 
+#### 变更 / Changed
+- 后端数据库组件 Prisma 从 4.16（官方已停止维护）升级到 6.19.3。用户不会感到变化，所有功能照常；数据库结构不变，没有新迁移。
+  *The backend database layer, Prisma, is upgraded from 4.16 (no longer maintained) to 6.19.3. Users notice no change and everything works as before; the database structure is unchanged, with no new migration.*
+
 ---
 
 ## [1.4.0.0] — 2026-11-12 · 账号安全：两步验证、登录提醒、IP 白名单 / Account security: two-factor authentication, login alerts, IP whitelist
