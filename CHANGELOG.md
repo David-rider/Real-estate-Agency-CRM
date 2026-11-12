@@ -22,6 +22,8 @@
 ## [未发布]
 
 #### 新增 / Added
+- 标准过户清单的任务标题现在使用负责经纪人的语言（简中、繁中、西语）；“过户清单模板”编辑器里的标准清单也按你的语言显示。公司自己写的模板保持原样。已经生成的旧任务不变。
+  *Standard closing-checklist task titles now use the deal agent's language (Simplified Chinese, Traditional Chinese, Spanish), and the standard list in the "Checklist template" editor appears in your language. A brokerage's own template keeps its wording. Tasks already created stay as they are.*
 - 服务器返回的错误提示（如“邮箱或密码不正确”“找不到该客户”“验证码不正确”“你的角色不能创建房源”等约 230 条）现在按你选择的语言显示：English、简体中文、繁體中文、Español。以前这些提示一律是英文。
   *Error messages from the server (about 230 of them, such as "Invalid credentials", "Client not found", "That code is not correct" or "Your role cannot create listings") now appear in your chosen language: English, Simplified Chinese, Traditional Chinese or Spanish. Before, they were always English.*
 

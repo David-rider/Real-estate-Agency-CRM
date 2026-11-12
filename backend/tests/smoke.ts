@@ -957,6 +957,29 @@ async function main() {
         for (const [k, v] of Object.entries(ERROR_TEXT)) assert.ok(v.length === 3 && v.every((t) => t && t.trim()), `incomplete translation: ${k}`);
     });
 
+    await step('standard closing-checklist titles follow the agent\'s language; custom titles stay as typed', async () => {
+        const owner = await register('cltitles');
+        assert.equal((await call('PATCH', '/api/settings/profile', owner, { preferredLanguage: 'zh-CN' })).status, 200);
+        const prop = await call('POST', '/api/properties', owner, { address: '9 Title Pl', city: 'New York', state: 'NY', zip: '10009', price: 500000, beds: 1, baths: 1 });
+        const client = await call('POST', '/api/clients', owner, { firstName: 'Lang', lastName: `Buyer${run}` });
+        const tx = await call('POST', '/api/transactions', owner, { propertyId: prop.body.id, clientId: client.body.id, price: 500000, status: 'IN_CONTRACT', contractDate: new Date().toISOString(), closingDate: new Date(Date.now() + 30 * 86400000).toISOString() });
+        assert.equal(tx.status, 201, JSON.stringify(tx.body));
+        const tasks = await db().task.findMany({ where: { linkedTransactionId: tx.body.id }, select: { title: true } });
+        assert.ok(tasks.length >= 8);
+        assert.ok(tasks.some((t) => t.title === '安排验房'), 'standard titles in Chinese');
+        assert.ok(!tasks.some((t) => t.title === 'Schedule home inspection'));
+
+        const tpl = await fetch(`${API}/api/settings/checklist-template`, { headers: { Authorization: `Bearer ${owner}`, 'X-Lang': 'es' } }).then((r) => r.json());
+        assert.equal(tpl.isStandard, true);
+        assert.ok(tpl.items.some((i: any) => i.title === 'Programar la inspección de la vivienda'), 'template editor shows the standard list in the reader\'s language');
+
+        // A custom template keeps its own wording
+        assert.equal((await call('PUT', '/api/settings/checklist-template', owner, { items: [{ title: 'Schedule home inspection', anchor: 'CONTRACT', offsetDays: 3, priority: 'HIGH' }] })).status, 200);
+        const tx2 = await call('POST', '/api/transactions', owner, { propertyId: prop.body.id, clientId: client.body.id, price: 510000, status: 'IN_CONTRACT', contractDate: new Date().toISOString() });
+        const t2 = await db().task.findMany({ where: { linkedTransactionId: tx2.body.id }, select: { title: true } });
+        assert.deepEqual(t2.map((t) => t.title), ['Schedule home inspection']);
+    });
+
     await step('security policy is saved and enforced', async () => {
         if (!process.env.DATABASE_URL || !process.env.JWT_SECRET) {
             console.log('    (skipped: set DATABASE_URL and JWT_SECRET to run the security policy checks)');

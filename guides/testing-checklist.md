@@ -117,6 +117,8 @@ happen; note anything that doesn't.
       *用经理账号在“交易”页点“过户清单模板”，删掉几项，添加“预约搬家电梯”（相对过户日 -7 天）并保存，再新开一个有过户日期的交易——它的清单正好是你的清单，电梯任务在过户前一周到期。测完点“恢复标准清单”。*
 - [ ] An agent does not see the **Checklist template** button.
       *经纪人看不到“过户清单模板”按钮。*
+- [ ] Switch your language to 简体中文 (standard checklist, no custom template) and open a new deal — its closing tasks are in Chinese. Open **Checklist template** in Español — the standard list is in Spanish.
+      *把语言切到简体中文（使用标准清单、没有自定义模板），新开一个交易——过户任务是中文的；切到西班牙语打开“过户清单模板”——标准清单是西班牙语。*
 
 ## 12. Goals & performance / 目标与业绩
 - [ ] On the **Dashboard**, the commission card says "No annual goal set yet". Click **Set goal**, enter an amount — the bar and percentage reflect your paid commission against that goal.
