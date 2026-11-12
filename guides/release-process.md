@@ -93,6 +93,7 @@ The project uses a **4-segment version** (`major.minor.patch.build`, e.g. `1.0.1
 
 | 版本<br>*Version* | 日期<br>*Date* | 概括<br>*Summary* | git 标签<br>*git tag* |
 |---|---|---|---|
+| 1.2.0.0 | 2026-11-12 | 设置栏目落地（CRM、房源、财务、预约、文档由服务器强制执行）、安全策略生效、审计日志扩展；新增迁移 `20261110000000_security_policy`、`20261111000000_settings_policies_preferences`<br>*Settings sections made real (CRM, Properties, Finance, Appointments, Documents enforced by the server), security policy enforced, wider audit trail; new migrations `20261110000000_security_policy` and `20261111000000_settings_policies_preferences`* | `v1.2.0.0` |
 | 1.1.0.0 | 2026-10-26 | 核心痛点闭环（文件直传、线索自动分配、邮件提醒、品牌短链、CSV 批量导入）与安全加固（httpOnly Cookie/CSRF、CSP、CI、Sentry）<br>*Core pain points closed (direct file upload, automatic lead routing, email reminders, branded short links, CSV bulk import) plus security hardening (httpOnly cookie/CSRF, CSP, CI, Sentry)* | `v1.1.0.0` |
 | 1.0.1.0 | 2026-10-22 | 安全加固（依赖升级、密码重置令牌哈希、安全响应头等）与版本管理<br>*Security hardening (dependency upgrades, hashed password-reset tokens, security headers) and version management* | `v1.0.1.0`（原 `1.0.1`）<br>*(was `1.0.1`)* |
 | 1.0.0.0 | 2026-10-22 | 试用版首发：安全修复、自动迁移、网站获客、交易自动化<br>*First trial release: security fixes, automatic migrations, website lead capture, deal automation* | `v1.0.0.0` → `a892a82`（原 `1.0.0`）<br>*(was `1.0.0`)* |
