@@ -147,6 +147,7 @@ export interface EmailStrings {
     verify: { subject: string; title: (name: string) => string; body: string; button: string; expires: string };
     invite: { subject: (org: string) => string; title: string; body: (inviter: string, org: string, role: string) => string; instruction: string; button: string; expires: string };
     notification: { greeting: (name: string) => string; button: string; footer: string; subject: (title: string) => string };
+    loginAlert: { subject: string; title: string; body: (name: string) => string; device: string; ip: string; time: string; notYou: string; button: string; turnOff: string };
 }
 
 export const EMAIL: Record<Lang, EmailStrings> = {
@@ -171,6 +172,13 @@ export const EMAIL: Record<Lang, EmailStrings> = {
             greeting: (n) => `Hi ${n},`, button: 'Open in CRM',
             footer: 'You can manage your email alert preferences in CRM Settings → Notifications.', subject: (t) => `[CRM] ${t}`,
         },
+        loginAlert: {
+            subject: 'New sign-in to your account', title: 'New sign-in detected',
+            body: (n) => `Hi ${n}, your CRM account was just signed in from a device or network we haven't seen before.`,
+            device: 'Device', ip: 'IP address', time: 'Time',
+            notYou: "If this was you, there's nothing to do. If not, reset your password right away.",
+            button: 'Reset Password', turnOff: 'You can turn these alerts off in Settings → Security.',
+        },
     },
     'zh-CN': {
         footerNote: '房产经纪 CRM · 纽约',
@@ -192,6 +200,13 @@ export const EMAIL: Record<Lang, EmailStrings> = {
         notification: {
             greeting: (n) => `${n}，你好！`, button: '在 CRM 中打开',
             footer: '你可以在 CRM 的“设置 → 通知”中管理邮件提醒。', subject: (t) => `[CRM] ${t}`,
+        },
+        loginAlert: {
+            subject: '你的账号有新的登录', title: '检测到新的登录',
+            body: (n) => `${n}，你好！你的 CRM 账号刚刚在一台新的设备或网络上登录。`,
+            device: '设备', ip: 'IP 地址', time: '时间',
+            notYou: '如果是你本人，无需任何操作；如果不是，请立即重置密码。',
+            button: '重置密码', turnOff: '你可以在“设置 → 安全”中关闭此提醒。',
         },
     },
     'zh-TW': {
@@ -215,6 +230,13 @@ export const EMAIL: Record<Lang, EmailStrings> = {
             greeting: (n) => `${n}，你好！`, button: '在 CRM 中開啟',
             footer: '你可以在 CRM 的「設定 → 通知」中管理郵件提醒。', subject: (t) => `[CRM] ${t}`,
         },
+        loginAlert: {
+            subject: '你的帳號有新的登入', title: '偵測到新的登入',
+            body: (n) => `${n}，你好！你的 CRM 帳號剛剛在一台新的裝置或網路上登入。`,
+            device: '裝置', ip: 'IP 位址', time: '時間',
+            notYou: '如果是你本人，無需任何操作；如果不是，請立即重設密碼。',
+            button: '重設密碼', turnOff: '你可以在「設定 → 安全」中關閉此提醒。',
+        },
     },
     es: {
         footerNote: 'CRM para corredurías inmobiliarias · Nueva York',
@@ -236,6 +258,13 @@ export const EMAIL: Record<Lang, EmailStrings> = {
         notification: {
             greeting: (n) => `Hola ${n},`, button: 'Abrir en el CRM',
             footer: 'Puede administrar sus alertas por correo en Configuración → Notificaciones del CRM.', subject: (t) => `[CRM] ${t}`,
+        },
+        loginAlert: {
+            subject: 'Nuevo inicio de sesión en su cuenta', title: 'Se detectó un nuevo inicio de sesión',
+            body: (n) => `Hola ${n}, alguien acaba de iniciar sesión en su cuenta del CRM desde un dispositivo o red que no habíamos visto.`,
+            device: 'Dispositivo', ip: 'Dirección IP', time: 'Hora',
+            notYou: 'Si fue usted, no tiene que hacer nada. Si no, restablezca su contraseña de inmediato.',
+            button: 'Restablecer contraseña', turnOff: 'Puede desactivar estas alertas en Configuración → Seguridad.',
         },
     },
 };

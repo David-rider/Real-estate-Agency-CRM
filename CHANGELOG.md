@@ -21,6 +21,12 @@
 
 ## [未发布]
 
+#### 安全 / Security
+- 登录提醒：你的账号在新的设备或网络上登录时，会收到一封邮件，写明设备、IP 和时间，并附“重置密码”按钮；同一台电脑重复登录不会提醒。在“设置 → 安全”里可以随时关闭（默认开启）。
+  *Login alerts: when your account signs in from a new device or network, you get an email with the device, IP address and time, plus a "Reset password" button; repeat sign-ins from the same computer don't trigger it. Turn it off any time in Settings → Security (on by default).*
+- 数据库：新增 `User.loginAlerts`、`User.knownDevices`（幂等迁移 `20261113000000_login_alerts`）。
+  *Database: new `User.loginAlerts` and `User.knownDevices` (idempotent migration `20261113000000_login_alerts`).*
+
 ---
 
 ## [1.3.0.0] — 2026-11-12 · 交易详情与合作经纪人分佣、自定义过户清单、年度目标与业绩报表、开放日二维码签到、移除假集成 / Deal details and co-agent split, custom closing checklist, annual goal and performance report, open-house QR sign-in, fake integrations removed

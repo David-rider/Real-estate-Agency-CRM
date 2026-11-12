@@ -804,6 +804,30 @@ async function main() {
 
     // Security policy: the settings are saved AND enforced (session length, password rules, sign-out on password change, expiry).
     // Needs DATABASE_URL and JWT_SECRET (to mint an older token and to back-date a password change).
+    await step('login alerts: new devices are remembered and the switch is saved on the profile', async () => {
+        await register('alerts');
+        const email = `alerts-${run}@smoke.test`;
+        const login = (ua: string) => fetch(`${API}/api/auth/login`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'User-Agent': ua },
+            body: JSON.stringify({ email, password: 'SmokeTest123!' }),
+        });
+        const chrome = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36';
+        const iphone = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1';
+        const first = await login(chrome);
+        assert.equal(first.status, 200);
+        const token = (await first.json()).token as string;
+        await login(chrome);
+        await login(iphone);
+        await new Promise((r) => setTimeout(r, 300)); // the device is recorded after the response
+        const row = await db().user.findUnique({ where: { email }, select: { knownDevices: true } });
+        assert.equal((row!.knownDevices as string[]).length, 2, 'same browser twice counts once, the phone is new');
+
+        const prof = await call('GET', '/api/settings/profile', token);
+        assert.equal(prof.body.loginAlerts, true, 'alerts are on by default');
+        assert.equal((await call('PATCH', '/api/settings/profile', token, { loginAlerts: false })).status, 200);
+        assert.equal((await call('GET', '/api/settings/profile', token)).body.loginAlerts, false);
+    });
+
     await step('security policy is saved and enforced', async () => {
         if (!process.env.DATABASE_URL || !process.env.JWT_SECRET) {
             console.log('    (skipped: set DATABASE_URL and JWT_SECRET to run the security policy checks)');

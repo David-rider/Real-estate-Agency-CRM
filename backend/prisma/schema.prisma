@@ -88,6 +88,10 @@ model User {
   passwordChangedAt DateTime?
   // Personal goal for net commission paid in the fiscal year; null = not set
   annualCommissionGoal Float?
+  // Email me when my account signs in from a new device
+  loginAlerts       Boolean      @default(true)
+  // Hashed browser+network keys already seen (most recent first, max 10)
+  knownDevices      Json?
 
   // Profile fields
   avatarUrl     String?

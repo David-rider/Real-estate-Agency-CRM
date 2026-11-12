@@ -56,8 +56,10 @@ happen; note anything that doesn't.
       *“发送重置链接”会发出真实的重置邮件；重设密码后，另一台设备上已打开的会话会被退出（开启“改密码后退出”时）。*
 - [ ] A manager or agent sees the security rules but cannot save changes.
       *经理和经纪人能看到安全规则，但不能保存修改。*
-- [ ] Two-factor authentication, login alerts and the IP whitelist show **Coming soon** and do nothing yet.
-      *双因素认证、登录提醒和 IP 白名单显示“即将推出”，目前不起作用。*
+- [ ] **Login alerts** (on by default): sign in from a different browser or your phone — you receive a "New sign-in to your account" email with the device, IP and time. Signing in again from the same browser sends nothing. Turn the switch off and the alert stops.
+      *登录提醒（默认开启）：换一个浏览器或用手机登录，会收到“你的账号有新的登录”邮件，写明设备、IP 和时间；同一浏览器再次登录不会发送。关闭开关后不再提醒。*
+- [ ] Two-factor authentication and the IP whitelist show **Coming soon** and do nothing yet.
+      *双因素认证和 IP 白名单显示“即将推出”，目前不起作用。*
 
 ## 9. Settings: CRM, Properties, Finance, Appointments, Documents / 设置：CRM、房源、财务、预约、文档
 - [ ] **Settings → CRM** (firm admin): make *Email* a required field, save, then add a client without an email — it is refused with a clear message; the add form shows a red asterisk on Email. Set the client limit to 1 and try adding a second open client as an agent — refused.
