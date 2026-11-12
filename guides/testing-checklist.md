@@ -105,4 +105,9 @@ happen; note anything that doesn't.
 - [ ] Tick a checklist task that is yours — it is marked done. Tasks assigned to someone else cannot be ticked.
       *勾选属于自己的清单任务——标记为完成；分配给别人的任务不能勾选。*
 
+- [ ] As a manager, click **Checklist template** on **Transactions**, remove a few tasks, add "Book the moving elevator" at -7 days from closing, save, then open a new deal with a closing date — its checklist is exactly your list, with the elevator task due a week before closing. Click **Restore standard** afterwards.
+      *用经理账号在“交易”页点“过户清单模板”，删掉几项，添加“预约搬家电梯”（相对过户日 -7 天）并保存，再新开一个有过户日期的交易——它的清单正好是你的清单，电梯任务在过户前一周到期。测完点“恢复标准清单”。*
+- [ ] An agent does not see the **Checklist template** button.
+      *经纪人看不到“过户清单模板”按钮。*
+
 Report problems with: the page, what you clicked, what you expected, what happened, and a screenshot.

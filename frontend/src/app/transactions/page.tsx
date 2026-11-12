@@ -6,11 +6,16 @@ import { useToast } from "@/components/ui/Toast";
 import { useExtra } from "@/lib/i18n/extra";
 import { api } from "@/lib/api";
 import DealDrawer from "@/components/deals/DealDrawer";
+import ChecklistTemplateModal from "@/components/deals/ChecklistTemplateModal";
+import { useAuth } from "@/lib/auth/AuthContext";
 
 export default function TransactionsPage() {
   const { t } = useI18n();
   const toast = useToast();
   const X = useExtra();
+  const { user } = useAuth();
+  const canEditTemplate = ["SUPERADMIN", "FIRMADMIN", "MANAGER"].includes(user?.role ?? "");
+  const [templateOpen, setTemplateOpen] = React.useState(false);
 
   const respondToOffer = async (offer: any, status: string) => {
     let counterAmount: number | undefined;
@@ -247,6 +252,14 @@ export default function TransactionsPage() {
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto shrink-0">
+          {canEditTemplate && (
+            <button
+              onClick={() => setTemplateOpen(true)}
+              className="px-6 py-3 bg-transparent border border-border hover:border-foreground text-foreground transition-colors duration-500 rounded-none text-base uppercase tracking-widest font-medium"
+            >
+              {X.deals.template.button}
+            </button>
+          )}
           <button
             onClick={() => setIsAddOfferModalOpen(true)}
             className="px-6 py-3 bg-transparent border border-border hover:border-foreground text-foreground transition-colors duration-500 rounded-none text-base uppercase tracking-widest font-medium text-center"
@@ -689,6 +702,7 @@ export default function TransactionsPage() {
         </div>
       )}
       {openDealId && <DealDrawer dealId={openDealId} onClose={() => setOpenDealId(null)} onSaved={fetchTransactions} />}
+      {templateOpen && <ChecklistTemplateModal onClose={() => setTemplateOpen(false)} />}
     </div>
   );
 }

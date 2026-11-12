@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { prisma } from '../server';
+import { Prisma } from '@prisma/client';
 import { AuthRequest, authorizeRole, authenticateToken, clearAccountCache } from '../middleware/authMiddleware';
 import crypto from 'crypto';
 import { sendEmail, inviteEmail } from '../lib/email';
@@ -7,6 +8,7 @@ import { EMAIL, Lang, isLang, normalizeLang } from '../lib/messages';
 import { getSeatUsage } from '../lib/seats';
 import { audit, diffFields } from '../lib/audit';
 import { resolveLeadAssignee } from '../lib/routing';
+import { STANDARD_CHECKLIST, parseChecklistTemplate } from '../lib/deals';
 import { normalizeNotificationPrefs } from './notifications';
 import { normalizeOrgPolicies, applyOrgPoliciesPatch, normalizePreferences, applyPreferencesPatch } from '../lib/policies';
 
@@ -668,6 +670,32 @@ router.patch('/users/:id/lead-availability', authorizeRole(['SUPERADMIN', 'FIRMA
         select: { id: true, name: true, acceptingLeads: true, maxActiveLeads: true },
     });
     res.json(updated);
+});
+
+// ─── Closing checklist template (used when a deal is opened) ────────────────
+
+// GET /api/settings/checklist-template — any member can see the checklist their deals get
+router.get('/checklist-template', async (req: AuthRequest, res) => {
+    const org = await prisma.organization.findUnique({ where: { id: req.user!.orgId }, select: { checklistTemplate: true } });
+    const parsed = org?.checklistTemplate ? parseChecklistTemplate(org.checklistTemplate) : null;
+    if (parsed && 'items' in parsed) return res.json({ isStandard: false, items: parsed.items });
+    res.json({ isStandard: true, items: STANDARD_CHECKLIST });
+});
+
+// PUT /api/settings/checklist-template — managers and admins; { items: null } restores the standard checklist
+router.put('/checklist-template', authorizeRole(['SUPERADMIN', 'FIRMADMIN', 'MANAGER']), async (req: AuthRequest, res) => {
+    const orgId = req.user!.orgId;
+    const before = await prisma.organization.findUnique({ where: { id: orgId }, select: { checklistTemplate: true } });
+    if (req.body?.items === null) {
+        await prisma.organization.update({ where: { id: orgId }, data: { checklistTemplate: Prisma.DbNull } });
+        await audit(req, 'RESET_CHECKLIST_TEMPLATE', 'Organization', orgId, before?.checklistTemplate ?? null, null);
+        return res.json({ isStandard: true, items: STANDARD_CHECKLIST });
+    }
+    const parsed = parseChecklistTemplate(req.body?.items);
+    if ('error' in parsed) return res.status(400).json({ error: parsed.error });
+    await prisma.organization.update({ where: { id: orgId }, data: { checklistTemplate: parsed.items as any } });
+    await audit(req, 'UPDATE_CHECKLIST_TEMPLATE', 'Organization', orgId, before?.checklistTemplate ?? null, parsed.items);
+    res.json({ isStandard: false, items: parsed.items });
 });
 
 // GET /api/settings/lead-routing — list all lead routing rules for the organization

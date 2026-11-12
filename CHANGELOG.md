@@ -26,6 +26,10 @@
   *Removed three misleading “fake features”: the “Send via DocuSign” button on deal cards said the document was sent for signature and showed a fake envelope ID while sending nothing; “Auto-fill from Zillow” in the new-listing form filled in made-up listing data; “Sync with Google” on Appointments spun as if working. The DocuSign and Zillow buttons are gone, the Google sync button now shows “Coming soon” and cannot be clicked, and the backend endpoints say plainly that they are not available yet. The three integrations remain on the roadmap (3.1, 3.2, 3.3b).*
 
 #### 新增 / Added
+- 自定义过户清单模板：经理和管理员可在“交易”页点“过户清单模板”，编辑本公司的过户任务（标题、相对签约日或过户日的天数、优先级、顺序），之后新开的交易都按这份清单生成任务；已开的交易不受影响，随时可以恢复标准清单。经纪人只能查看，不能修改。
+  *Custom closing-checklist template: managers and admins can click "Checklist template" on Transactions to edit the brokerage's own closing tasks (title, days relative to the contract or closing date, priority, order); new deals then get that checklist, existing deals are unaffected, and the standard list can be restored at any time. Agents can view it but not change it.*
+- 数据库：新增 `Organization.checklistTemplate`（幂等迁移 `20261112000100_checklist_template`）。
+  *Database: new `Organization.checklistTemplate` (idempotent migration `20261112000100_checklist_template`).*
 - 交易详情面板：在“交易”页点任一交易卡片，会打开详情面板。可以查看和修改关键日期（签约、验房、董事会 / 业主协会资料、可以过户、过户，并显示“还有 N 天 / N 天前”），设置该交易的佣金比例，勾选过户清单任务。以前这些在界面上都无法查看或修改。
   *Deal detail panel: clicking any deal card on Transactions opens a detail panel to view and edit the key dates (contract, inspection, board / HOA package, clear to close, closing, with "in N days / N days ago"), set the deal's commission rate and tick off closing-checklist tasks. None of this could be seen or changed in the UI before.*
 - 合作经纪人分佣：可以给交易指定一位合作经纪人和他的分成比例（默认 50%）。成交时系统会为两位经纪人各生成一条佣金记录，每人的部分再按公司分成结算；重复标记成交不会重复生成。合作经纪人能看到这笔交易，但不能修改。
