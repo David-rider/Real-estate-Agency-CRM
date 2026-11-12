@@ -23,6 +23,14 @@ const en = {
     EMAIL: "Email", TEXT: "Text", NOTE: "Note", CALL: "Call", MEETING: "Meeting", SHOWING: "Showing",
     followUpDate: "Remind me to follow up on", aiFollowUp: "Draft follow-up with AI", logged: "Activity logged",
   },
+  perf: {
+    tab: "Performance", since: "Since {date}", scopeTeam: "Whole brokerage", scopeMe: "Your own book",
+    leads: "New leads", closed: "Closed", closedDeals: "Deals closed", closedVolume: "Closed volume", avgDaysToClose: "Average time to close", days: "{n} days",
+    source: "Lead source", conversion: "Conversion", unknownSource: "Not recorded", sourcesTitle: "Lead sources this year", agentsTitle: "Agent comparison",
+    agent: "Agent", newClients: "New clients", grossCommission: "Gross commission", noData: "No leads this year yet.", exportExcel: "Export to Excel (CSV)",
+    goalProgress: "{pct}% of your annual goal ({goal})", teamGoalProgress: "{pct}% of the team's annual goals ({goal})", noGoal: "No annual goal set yet",
+    setGoal: "Set goal", editGoal: "Change goal", goalPrompt: "Your annual commission goal (net, in dollars). Leave empty to remove it:", goalSaved: "Annual goal saved",
+  },
   dashboard: {
     actions: {
       overdue: "Overdue: {title}", wasDue: "Was due {date}", openTasks: "Open tasks",
@@ -263,6 +271,14 @@ const zhCN: Dict = {
     EMAIL: "邮件", TEXT: "短信", NOTE: "备注", CALL: "电话", MEETING: "会面", SHOWING: "带看",
     followUpDate: "提醒我跟进的日期", aiFollowUp: "用 AI 起草跟进消息", logged: "活动已记录",
   },
+  perf: {
+    tab: "业绩", since: "自 {date} 起", scopeTeam: "整个公司", scopeMe: "仅你自己",
+    leads: "新线索", closed: "已成交", closedDeals: "成交笔数", closedVolume: "成交总额", avgDaysToClose: "平均成交周期", days: "{n} 天",
+    source: "线索来源", conversion: "转化率", unknownSource: "未记录", sourcesTitle: "本年度线索来源", agentsTitle: "经纪人对比",
+    agent: "经纪人", newClients: "新客户", grossCommission: "佣金总额", noData: "本年度还没有线索。", exportExcel: "导出到 Excel（CSV）",
+    goalProgress: "已完成年度目标的 {pct}%（{goal}）", teamGoalProgress: "已完成团队年度目标的 {pct}%（{goal}）", noGoal: "尚未设定年度目标",
+    setGoal: "设定目标", editGoal: "修改目标", goalPrompt: "你的年度佣金目标（净额，美元）。留空则取消：", goalSaved: "年度目标已保存",
+  },
   dashboard: {
     actions: {
       overdue: "已逾期：{title}", wasDue: "截止日期 {date}", openTasks: "打开任务",
@@ -501,6 +517,14 @@ const zhTW: Dict = {
     EMAIL: "郵件", TEXT: "簡訊", NOTE: "備註", CALL: "電話", MEETING: "會面", SHOWING: "帶看",
     followUpDate: "提醒我跟進的日期", aiFollowUp: "用 AI 草擬跟進訊息", logged: "活動已記錄",
   },
+  perf: {
+    tab: "業績", since: "自 {date} 起", scopeTeam: "整間公司", scopeMe: "僅你自己",
+    leads: "新線索", closed: "已成交", closedDeals: "成交筆數", closedVolume: "成交總額", avgDaysToClose: "平均成交週期", days: "{n} 天",
+    source: "線索來源", conversion: "轉換率", unknownSource: "未記錄", sourcesTitle: "本年度線索來源", agentsTitle: "經紀人比較",
+    agent: "經紀人", newClients: "新客戶", grossCommission: "佣金總額", noData: "本年度還沒有線索。", exportExcel: "匯出到 Excel（CSV）",
+    goalProgress: "已完成年度目標的 {pct}%（{goal}）", teamGoalProgress: "已完成團隊年度目標的 {pct}%（{goal}）", noGoal: "尚未設定年度目標",
+    setGoal: "設定目標", editGoal: "修改目標", goalPrompt: "你的年度佣金目標（淨額，美元）。留空則取消：", goalSaved: "年度目標已儲存",
+  },
   dashboard: {
     actions: {
       overdue: "已逾期：{title}", wasDue: "截止日期 {date}", openTasks: "開啟任務",
@@ -738,6 +762,14 @@ const es: Dict = {
   detail: {
     EMAIL: "Correo", TEXT: "Mensaje", NOTE: "Nota", CALL: "Llamada", MEETING: "Reunión", SHOWING: "Visita",
     followUpDate: "Recordarme hacer seguimiento el", aiFollowUp: "Redactar seguimiento con IA", logged: "Actividad registrada",
+  },
+  perf: {
+    tab: "Rendimiento", since: "Desde el {date}", scopeTeam: "Toda la correduría", scopeMe: "Solo su cartera",
+    leads: "Prospectos nuevos", closed: "Cerrados", closedDeals: "Operaciones cerradas", closedVolume: "Volumen cerrado", avgDaysToClose: "Tiempo medio de cierre", days: "{n} días",
+    source: "Origen del prospecto", conversion: "Conversión", unknownSource: "Sin registrar", sourcesTitle: "Orígenes de prospectos este año", agentsTitle: "Comparación de agentes",
+    agent: "Agente", newClients: "Clientes nuevos", grossCommission: "Comisión bruta", noData: "Aún no hay prospectos este año.", exportExcel: "Exportar a Excel (CSV)",
+    goalProgress: "{pct}% de su meta anual ({goal})", teamGoalProgress: "{pct}% de las metas anuales del equipo ({goal})", noGoal: "Aún no ha fijado una meta anual",
+    setGoal: "Fijar meta", editGoal: "Cambiar meta", goalPrompt: "Su meta anual de comisión (neta, en dólares). Déjelo vacío para quitarla:", goalSaved: "Meta anual guardada",
   },
   dashboard: {
     actions: {

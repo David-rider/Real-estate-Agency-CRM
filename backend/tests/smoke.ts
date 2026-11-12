@@ -336,6 +336,38 @@ async function main() {
         assert.equal((await call('GET', '/api/settings/checklist-template', owner)).body.isStandard, true);
     });
 
+    await step('annual goal drives the dashboard progress; performance report counts sources, time to close and agents', async () => {
+        const owner = await register('perf');
+        const before = await call('GET', '/api/dashboard', owner);
+        assert.equal(before.status, 200);
+        assert.equal(before.body.annualGoal, null, 'no made-up goal before one is set');
+        assert.equal((await call('PATCH', '/api/settings/profile', owner, { annualCommissionGoal: -5 })).status, 400);
+        assert.equal((await call('PATCH', '/api/settings/profile', owner, { annualCommissionGoal: 120000 })).status, 200);
+        const after = await call('GET', '/api/dashboard', owner);
+        assert.equal(after.body.annualGoal, 120000);
+
+        const prop = await call('POST', '/api/properties', owner, { address: '3 Perf Pl', city: 'New York', state: 'NY', zip: '10003', price: 600000, beds: 1, baths: 1 });
+        const web = await call('POST', '/api/clients', owner, { firstName: 'Web', lastName: `Lead${run}`, source: 'Website' });
+        await call('POST', '/api/clients', owner, { firstName: 'Ref', lastName: `Lead${run}`, source: 'Referral' });
+        const contract = new Date(Date.now() - 30 * 86400000);
+        const tx = await call('POST', '/api/transactions', owner, { propertyId: prop.body.id, clientId: web.body.id, price: 600000, status: 'IN_CONTRACT', contractDate: contract.toISOString(), closingDate: new Date().toISOString(), createChecklist: false });
+        assert.equal(tx.status, 201, JSON.stringify(tx.body));
+        assert.equal((await call('PATCH', `/api/transactions/${tx.body.id}`, owner, { status: 'CLOSED' })).status, 200);
+
+        const rep = await call('GET', '/api/reports/performance', owner);
+        assert.equal(rep.status, 200, JSON.stringify(rep.body));
+        assert.equal(rep.body.scope, 'team');
+        assert.equal(rep.body.totals.closedDeals, 1);
+        assert.equal(rep.body.totals.closedVolume, 600000);
+        assert.ok(rep.body.totals.avgDaysToClose >= 29 && rep.body.totals.avgDaysToClose <= 31, `about 30 days, got ${rep.body.totals.avgDaysToClose}`);
+        const website = rep.body.sources.find((r: any) => r.source === 'Website');
+        assert.deepEqual([website.leads, website.closed, website.conversion], [1, 1, 100]);
+        assert.ok(rep.body.sources.some((r: any) => r.source === 'Referral' && r.closed === 0));
+        assert.equal(rep.body.agents[0].closedDeals, 1);
+        assert.equal(rep.body.agents[0].closedVolume, 600000);
+        assert.equal((await call('GET', '/api/reports/performance')).status, 401);
+    });
+
     await step('gifts and documents with real records', async () => {
         const g = await call('POST', '/api/gifts', a, { item: 'Champagne', clientId });
         assert.equal(g.status, 201, JSON.stringify(g.body));

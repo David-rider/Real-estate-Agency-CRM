@@ -31,6 +31,7 @@ import clientRoutes from './routes/clients';
 import propertyRoutes from './routes/properties';
 import transactionRoutes from './routes/transactions';
 import dashboardRoutes from './routes/dashboard';
+import reportsRoutes from './routes/reports';
 import marketingRoutes from './routes/marketing';
 import authRoutes from './routes/auth';
 import financeRoutes from './routes/finance';
@@ -94,6 +95,7 @@ app.use('/api/clients', authenticateToken, clientRoutes);
 app.use('/api/properties', propertyRoutes); // Public /public route + self-managed auth via router.use(authenticateToken)
 app.use('/api/transactions', authenticateToken, transactionRoutes);
 app.use('/api/dashboard', authenticateToken, dashboardRoutes);
+app.use('/api/reports', authenticateToken, reportsRoutes);
 app.use('/api/marketing', authenticateToken, marketingRoutes);
 app.use('/api/finance', authenticateToken, financeRoutes);
 app.use('/api/settings', authenticateToken, settingsRoutes);

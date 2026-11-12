@@ -110,4 +110,10 @@ happen; note anything that doesn't.
 - [ ] An agent does not see the **Checklist template** button.
       *经纪人看不到“过户清单模板”按钮。*
 
+## 12. Goals & performance / 目标与业绩
+- [ ] On the **Dashboard**, the commission card says "No annual goal set yet". Click **Set goal**, enter an amount — the bar and percentage reflect your paid commission against that goal.
+      *仪表盘的佣金卡片显示“尚未设定年度目标”。点“设定目标”填一个金额——进度条和百分比按已发放佣金与目标对比显示。*
+- [ ] **Reports → Performance** shows lead sources with conversion, deals closed, volume and average time to close; a manager also sees the agent comparison. **Export to Excel (CSV)** opens in Excel with Chinese text intact.
+      *报表 → 业绩 显示线索来源及转化率、成交笔数、总额和平均成交周期；经理还能看到经纪人对比。“导出到 Excel（CSV）”用 Excel 打开时中文不乱码。*
+
 Report problems with: the page, what you clicked, what you expected, what happened, and a screenshot.

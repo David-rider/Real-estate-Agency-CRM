@@ -286,8 +286,8 @@ This file lists what to do after the trial launch, in priority order by stage. E
 
 | # | 事项<br>*Item* | 说明<br>*Description* | 工作量<br>*Effort* |
 |---|---|---|---|
-| 5.1 | 业绩目标与排行榜<br>*Performance goals and leaderboard* | 月度目标（带看数、报价数、成交额），仪表盘进度条，排行榜<br>*Monthly goals (showings, offers, closed volume), dashboard progress bars, leaderboard* | 3 |
-| 5.2 | 报表增强<br>*Better reports* | 线索来源转化率、平均成交周期、经纪人对比；支持导出 Excel<br>*Lead-source conversion, average time to close, agent comparison; Excel export* | 4 |
+| 5.1 | 业绩目标与排行榜<br>*Performance goals and leaderboard* | 月度目标（带看数、报价数、成交额），仪表盘进度条，排行榜<br>*Monthly goals (showings, offers, closed volume), dashboard progress bars, leaderboard* <br>✅ **2026-11**：个人年度佣金目标 + 仪表盘真实进度已上线；月度目标（带看、报价）未做。<br>*Personal annual commission goal with real dashboard progress is live; monthly goals (showings, offers) not yet.* | 3 |
+| 5.2 | 报表增强<br>*Better reports* | 线索来源转化率、平均成交周期、经纪人对比；支持导出 Excel<br>*Lead-source conversion, average time to close, agent comparison; Excel export* <br>✅ **2026-11**：报表“业绩”页签（来源转化率、平均成交周期、经纪人对比）+ Excel 可直接打开的 CSV 导出已上线。<br>*Reports "Performance" tab (source conversion, time to close, agent comparison) and an Excel-ready CSV export are live.* | 4 |
 | 5.3 | 移动端体验<br>*Mobile experience* | 先完善 PWA（`manifest.json` 已有）：离线缓存、添加到主屏幕、推送通知；再评估是否开发原生 App<br>*Polish the PWA first (`manifest.json` exists): offline cache, add to home screen, push notifications; then decide whether to build a native app* | 4（PWA） |
 | 5.4 | 一键拨号与通话记录<br>*One-tap dialing and call log* | 用 Twilio Voice 网页拨号，自动记录通话时长，可选录音（需事先告知对方）<br>*Dial from the web with Twilio Voice, log call duration automatically, optional recording (the other party must be told beforehand)* | 5 |
 | 5.5 | 账号安全<br>*Account security* | 管理员强制两步验证（TOTP），登录设备管理<br>*Mandatory two-step verification (TOTP) for admins, signed-in device management* | 3 |

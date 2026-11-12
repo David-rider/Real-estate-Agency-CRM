@@ -17,11 +17,14 @@ import React from "react";
 import Link from "next/link";
 import { useExtra, fmt } from "@/lib/i18n/extra";
 import { useSettings } from "@/lib/settings/useSettings";
+import { api } from "@/lib/api";
+import { useToast } from "@/components/ui/Toast";
 
 export default function DashboardPage() {
   const { t } = useI18n();
   const D = t.dashboard as any;
   const X = useExtra();
+  const toast = useToast();
   // The server sends English text plus the raw values; word the card in the viewer's language.
   const localizeActionItem = (item: any) => {
     const A = X.dashboard.actions;
@@ -49,6 +52,8 @@ export default function DashboardPage() {
     ],
     funnelData: [] as { name: string; value: number }[],
     ytdCommission: 0,
+    annualGoal: null as number | null,
+    goalScope: "me" as "me" | "team",
     actionItems: [] as any[],
     todaysAppointments: [] as any[],
     overdueTasks: [] as any[],
@@ -91,6 +96,24 @@ export default function DashboardPage() {
         setLoading(false);
       });
   }, [t.dashboard]);
+
+  // Progress toward the real annual goal (own goal, or the team's goals added up in the brokerage view)
+  const goalPct = dashboardData.annualGoal ? Math.min(100, Math.round((dashboardData.ytdCommission / dashboardData.annualGoal) * 100)) : null;
+
+  const setAnnualGoal = async () => {
+    const current = dashboardData.goalScope === "me" && dashboardData.annualGoal ? String(dashboardData.annualGoal) : "";
+    const v = window.prompt(X.perf.goalPrompt, current);
+    if (v === null) return;
+    const cleaned = v.replace(/[$,\s]/g, "");
+    try {
+      await api("/api/settings/profile", { method: "PATCH", body: { annualCommissionGoal: cleaned === "" ? null : Number(cleaned) } });
+      const d = await api("/api/dashboard");
+      setDashboardData((prev) => ({ ...prev, annualGoal: d.annualGoal, goalScope: d.goalScope }));
+      toast.success(X.perf.goalSaved);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : X.common.error);
+    }
+  };
 
   const handleDownloadReport = () => {
     let csvContent = "data:text/csv;charset=utf-8,";
@@ -222,11 +245,18 @@ export default function DashboardPage() {
                   : "••••"}
             </p>
             <div className="mt-6 w-full bg-background rounded-full h-1.5 overflow-hidden ring-1 ring-inset ring-border">
-              <div className="bg-primary w-3/4 h-full rounded-full" />
+              <div className="bg-primary h-full rounded-full" style={{ width: `${goalPct ?? 0}%` }} />
             </div>
-            <p className="text-xs font-medium text-foreground/40 mt-3">
-              {t.dashboard.annualGoal}
-            </p>
+            <div className="flex items-center justify-between gap-2 mt-3">
+              <p className="text-xs font-medium text-foreground/40">
+                {dashboardData.annualGoal && preferences.finance.showIncomeOnDashboard
+                  ? fmt(dashboardData.goalScope === "team" ? X.perf.teamGoalProgress : X.perf.goalProgress, { pct: goalPct ?? 0, goal: `$${dashboardData.annualGoal.toLocaleString()}` })
+                  : dashboardData.annualGoal ? "" : X.perf.noGoal}
+              </p>
+              <button onClick={setAnnualGoal} className="text-xs text-primary hover:underline shrink-0">
+                {dashboardData.annualGoal ? X.perf.editGoal : X.perf.setGoal}
+              </button>
+            </div>
           </div>
         </div>
 

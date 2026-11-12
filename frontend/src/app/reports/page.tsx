@@ -1,5 +1,7 @@
 "use client";
 
+import PerformanceTab from "@/components/reports/PerformanceTab";
+import { useExtra } from "@/lib/i18n/extra";
 import React, { useState, useEffect, useCallback } from "react";
 import {
     BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
@@ -42,12 +44,14 @@ export default function ReportsPage() {
     const [finMetrics,  setFinMetrics]  = useState<FinanceMetrics | null>(null);
     const [loading,     setLoading]     = useState(true);
     const [activeTab,   setActiveTab]   = useState("overview");
+    const XR = useExtra();
 
     const TABS = [
         { key: "overview",    label: T.tabs?.overview },
         { key: "commissions", label: T.tabs?.commissions },
         { key: "pipeline",    label: T.tabs?.pipeline },
         { key: "leaderboard", label: T.tabs?.leaderboard },
+        { key: "performance", label: XR.perf.tab },
     ];
 
     const fetchData = useCallback(async () => {
@@ -278,6 +282,8 @@ export default function ReportsPage() {
             )}
 
             {/* Leaderboard tab */}
+            {activeTab === "performance" && <PerformanceTab />}
+
             {activeTab === "leaderboard" && (
                 <div className="bg-surface border border-border rounded-xl overflow-hidden">
                     <div className="px-6 py-4 border-b border-border flex items-center justify-between">
