@@ -29,8 +29,6 @@
 
 ---
 
----
-
 ## [1.2.1.0] — 2026-11-12 · 多语言补全（邮件与通知按收件人语言、西班牙语设置页补齐）、一键本地开发环境、GitHub 仓库安全设置 / Language completion (emails and notifications in the recipient's language, Spanish Settings page completed), one-command local development, GitHub repository security settings
 
 - 数据库：无迁移。环境变量：生产无新增（`DEV_*` 仅用于本地 Docker）。
