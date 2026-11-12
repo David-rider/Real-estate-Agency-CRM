@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../server';
 import { OrgPolicies, normalizeOrgPolicies } from '../lib/policies';
+import { ipAllowed, IP_BLOCKED } from '../lib/ipAllowlist';
 
 const JWT_SECRET = process.env.JWT_SECRET as string;
 
@@ -80,6 +81,7 @@ interface CachedAccount {
     passwordChangedAtSec: number | null;
     sessionTimeoutMinutes: number;
     logoutOnPasswordChange: boolean;
+    ipAllowlist: string[];
     policies: OrgPolicies;
 }
 const accountCache = new Map<string, { at: number; user: CachedAccount | null }>();
@@ -101,7 +103,7 @@ async function currentAccount(userId: string) {
         where: { id: userId },
         select: {
             role: true, tier: true, orgId: true, isActive: true, passwordChangedAt: true,
-            organization: { select: { sessionTimeoutMinutes: true, logoutOnPasswordChange: true, policies: true } },
+            organization: { select: { sessionTimeoutMinutes: true, logoutOnPasswordChange: true, ipAllowlist: true, policies: true } },
         },
     });
     const user: CachedAccount | null = u && u.isActive ? {
@@ -109,6 +111,7 @@ async function currentAccount(userId: string) {
         passwordChangedAtSec: u.passwordChangedAt ? Math.floor(u.passwordChangedAt.getTime() / 1000) : null,
         sessionTimeoutMinutes: u.organization.sessionTimeoutMinutes,
         logoutOnPasswordChange: u.organization.logoutOnPasswordChange,
+        ipAllowlist: u.organization.ipAllowlist,
         policies: normalizeOrgPolicies(u.organization.policies),
     } : null;
     accountCache.set(userId, { at: Date.now(), user });
@@ -155,6 +158,8 @@ export const authenticateToken = async (req: AuthRequest, res: Response, next: N
     try {
         const account = await currentAccount(decoded.userId);
         if (!account) return res.status(401).json({ error: 'This account is no longer active' });
+        // Brokerage IP allowlist: 403 (authenticated, but not from an allowed network)
+        if (!ipAllowed(account.ipAllowlist, req.ip ?? '')) return res.status(403).json(IP_BLOCKED);
 
         // Organization security policy: sessions end after the configured time, and a password
         // change signs out every session that started before it.

@@ -49,6 +49,9 @@ services:
         sync: false
       - key: STRIPE_PRICE_ELITE_ANNUAL
         sync: false
+      # --- Emergency: set to true only if a brokerage locked itself out with its IP allowlist ---
+      - key: DISABLE_IP_ALLOWLIST
+        sync: false
       # --- Sentry (optional) ---
       - key: SENTRY_DSN
         sync: false

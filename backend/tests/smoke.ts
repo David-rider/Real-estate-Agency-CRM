@@ -878,6 +878,40 @@ async function main() {
         assert.ok(plain.body.token, 'password alone works again once 2FA is off');
     });
 
+    await step('IP whitelist: validation, no self-lockout, sign-in and API refused from other networks', async () => {
+        const owner = await register('ipallow');
+        const email = `ipallow-${run}@smoke.test`;
+        const sec = await call('GET', '/api/settings/security', owner);
+        assert.equal(sec.status, 200);
+        assert.deepEqual(sec.body.ipAllowlist, []);
+        const myIp = sec.body.yourIp as string;
+        assert.ok(myIp, 'the page can show the caller their IP');
+
+        assert.equal((await call('PATCH', '/api/settings/security', owner, { ipAllowlist: ['not-an-ip'] })).body.code, 'INVALID_IP');
+        assert.equal((await call('PATCH', '/api/settings/security', owner, { ipAllowlist: ['10.0.0.0/33'] })).body.code, 'INVALID_IP');
+        const lock = await call('PATCH', '/api/settings/security', owner, { ipAllowlist: ['203.0.113.7'] });
+        assert.equal(lock.status, 400);
+        assert.equal(lock.body.code, 'WOULD_LOCK_OUT', 'an admin cannot lock themselves out');
+        const ok = await call('PATCH', '/api/settings/security', owner, { ipAllowlist: [myIp, '203.0.113.0/24', '2001:db8::/32', myIp] });
+        assert.equal(ok.status, 200, JSON.stringify(ok.body));
+        assert.deepEqual(ok.body.ipAllowlist, [myIp, '203.0.113.0/24', '2001:db8::/32'], 'entries are normalized and de-duplicated');
+        assert.equal((await call('GET', '/api/settings/profile', owner)).status, 200, 'still works from an allowed address');
+
+        // Simulate the brokerage being restricted to another network
+        const me = await db().user.findUnique({ where: { email }, select: { orgId: true } });
+        await db().organization.update({ where: { id: me!.orgId }, data: { ipAllowlist: ['203.0.113.0/24'] } });
+        const login = await call('POST', '/api/auth/login', undefined, { email, password: 'SmokeTest123!' });
+        assert.equal(login.status, 403);
+        assert.equal(login.body.code, 'IP_NOT_ALLOWED');
+        await db().organization.update({ where: { id: me!.orgId }, data: { ipAllowlist: [] } });
+        const agent = await joinOrg(owner, 'ipallow-agent', 'AGENT');
+        await db().organization.update({ where: { id: me!.orgId }, data: { ipAllowlist: ['203.0.113.0/24'] } });
+        const blocked = await call('GET', '/api/settings/profile', agent.token);
+        assert.equal(blocked.status, 403, 'API requests are refused from other networks');
+        assert.equal(blocked.body.code, 'IP_NOT_ALLOWED');
+        await db().organization.update({ where: { id: me!.orgId }, data: { ipAllowlist: [] } });
+    });
+
     await step('security policy is saved and enforced', async () => {
         if (!process.env.DATABASE_URL || !process.env.JWT_SECRET) {
             console.log('    (skipped: set DATABASE_URL and JWT_SECRET to run the security policy checks)');
@@ -893,7 +927,7 @@ async function main() {
             // Defaults match the behaviour before the policy existed
             const def = await call('GET', '/api/settings/security', owner);
             assert.equal(def.status, 200);
-            assert.deepEqual(def.body, { sessionTimeoutMinutes: 1440, minPasswordLength: 8, requirePasswordSpecialChar: false, passwordExpiryDays: 0, logoutOnPasswordChange: true });
+            assert.deepEqual({ ...def.body, yourIp: undefined }, { yourIp: undefined, ipAllowlist: [], ipAllowlistDisabled: false,  sessionTimeoutMinutes: 1440, minPasswordLength: 8, requirePasswordSpecialChar: false, passwordExpiryDays: 0, logoutOnPasswordChange: true });
 
             // Validation and permission
             assert.equal((await patch(owner, { sessionTimeoutMinutes: 7 })).status, 400);

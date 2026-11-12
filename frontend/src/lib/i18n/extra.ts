@@ -23,6 +23,11 @@ const en = {
     EMAIL: "Email", TEXT: "Text", NOTE: "Note", CALL: "Call", MEETING: "Meeting", SHOWING: "Showing",
     followUpDate: "Remind me to follow up on", aiFollowUp: "Draft follow-up with AI", logged: "Activity logged",
   },
+  ipAllow: {
+    desc: "Members can only sign in and use the CRM from these IP addresses or ranges, one per line (e.g. 203.0.113.7 or 203.0.113.0/24). Leave empty to allow any network.",
+    placeholder: "203.0.113.0/24", yourIp: "Your current IP: {ip}", addMine: "Add my IP",
+    disabledByServer: "Enforcement is switched off on the server right now (emergency switch).",
+  },
   twoFactor: {
     desc: "Ask for a code from an authenticator app (Google Authenticator, Microsoft Authenticator, 1Password…) after your password.",
     on: "On", setUp: "Set up", turnOff: "Turn off", codesLeft: "{n} recovery codes left",
@@ -287,6 +292,11 @@ const zhCN: Dict = {
     EMAIL: "邮件", TEXT: "短信", NOTE: "备注", CALL: "电话", MEETING: "会面", SHOWING: "带看",
     followUpDate: "提醒我跟进的日期", aiFollowUp: "用 AI 起草跟进消息", logged: "活动已记录",
   },
+  ipAllow: {
+    desc: "成员只能从这些 IP 地址或网段登录和使用 CRM，每行一个（如 203.0.113.7 或 203.0.113.0/24）。留空表示不限制网络。",
+    placeholder: "203.0.113.0/24", yourIp: "你当前的 IP：{ip}", addMine: "添加我的 IP",
+    disabledByServer: "服务器当前关闭了白名单检查（紧急开关）。",
+  },
   twoFactor: {
     desc: "输入密码后，还需要输入验证器 App（Google Authenticator、Microsoft Authenticator、1Password 等）生成的验证码。",
     on: "已开启", setUp: "设置", turnOff: "关闭", codesLeft: "剩余 {n} 个恢复码",
@@ -549,6 +559,11 @@ const zhTW: Dict = {
     EMAIL: "郵件", TEXT: "簡訊", NOTE: "備註", CALL: "電話", MEETING: "會面", SHOWING: "帶看",
     followUpDate: "提醒我跟進的日期", aiFollowUp: "用 AI 草擬跟進訊息", logged: "活動已記錄",
   },
+  ipAllow: {
+    desc: "成員只能從這些 IP 位址或網段登入和使用 CRM，每行一個（如 203.0.113.7 或 203.0.113.0/24）。留空表示不限制網路。",
+    placeholder: "203.0.113.0/24", yourIp: "你目前的 IP：{ip}", addMine: "加入我的 IP",
+    disabledByServer: "伺服器目前關閉了白名單檢查（緊急開關）。",
+  },
   twoFactor: {
     desc: "輸入密碼後，還需要輸入驗證器 App（Google Authenticator、Microsoft Authenticator、1Password 等）產生的驗證碼。",
     on: "已開啟", setUp: "設定", turnOff: "關閉", codesLeft: "剩餘 {n} 個復原碼",
@@ -810,6 +825,11 @@ const es: Dict = {
   detail: {
     EMAIL: "Correo", TEXT: "Mensaje", NOTE: "Nota", CALL: "Llamada", MEETING: "Reunión", SHOWING: "Visita",
     followUpDate: "Recordarme hacer seguimiento el", aiFollowUp: "Redactar seguimiento con IA", logged: "Actividad registrada",
+  },
+  ipAllow: {
+    desc: "Los miembros solo pueden iniciar sesión y usar el CRM desde estas direcciones IP o rangos, uno por línea (p. ej. 203.0.113.7 o 203.0.113.0/24). Déjelo vacío para permitir cualquier red.",
+    placeholder: "203.0.113.0/24", yourIp: "Su IP actual: {ip}", addMine: "Agregar mi IP",
+    disabledByServer: "La verificación está desactivada en el servidor en este momento (interruptor de emergencia).",
   },
   twoFactor: {
     desc: "Después de la contraseña, pedir un código de una aplicación de autenticación (Google Authenticator, Microsoft Authenticator, 1Password…).",

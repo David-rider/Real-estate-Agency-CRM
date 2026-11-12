@@ -7,6 +7,7 @@ import { sendEmail, inviteEmail } from '../lib/email';
 import { EMAIL, Lang, isLang, normalizeLang } from '../lib/messages';
 import { getSeatUsage } from '../lib/seats';
 import { audit, diffFields } from '../lib/audit';
+import { parseEntry, ipAllowed, normalizeIp, enforcementDisabled as ipEnforcementDisabled, MAX_ENTRIES as MAX_IP_ENTRIES } from '../lib/ipAllowlist';
 import { resolveLeadAssignee } from '../lib/routing';
 import { STANDARD_CHECKLIST, parseChecklistTemplate } from '../lib/deals';
 import { normalizeNotificationPrefs } from './notifications';
@@ -520,7 +521,7 @@ router.post('/invite', authorizeRole(['SUPERADMIN', 'FIRMADMIN', 'MANAGER']), as
 const SESSION_TIMEOUT_OPTIONS = [15, 30, 60, 120, 480, 1440];
 const SECURITY_SELECT = {
     sessionTimeoutMinutes: true, minPasswordLength: true, requirePasswordSpecialChar: true,
-    passwordExpiryDays: true, logoutOnPasswordChange: true,
+    passwordExpiryDays: true, logoutOnPasswordChange: true, ipAllowlist: true,
 } as const;
 
 // GET /api/settings/security — everyone can read the policy that applies to them
@@ -529,7 +530,7 @@ router.get('/security', async (req: AuthRequest, res) => {
         if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
         const org = await prisma.organization.findUnique({ where: { id: req.user.orgId }, select: SECURITY_SELECT });
         if (!org) return res.status(404).json({ error: 'Organization not found' });
-        res.json(org);
+        res.json({ ...org, yourIp: normalizeIp(req.ip ?? ''), ipAllowlistDisabled: ipEnforcementDisabled() });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Failed to load security settings' });
@@ -541,7 +542,7 @@ router.patch('/security', authorizeRole(ADMIN_ROLES), async (req: AuthRequest, r
     try {
         if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
         const b = req.body ?? {};
-        const data: Record<string, number | boolean> = {};
+        const data: Record<string, number | boolean | string[]> = {};
 
         if (b.sessionTimeoutMinutes !== undefined) {
             const n = Number(b.sessionTimeoutMinutes);
@@ -563,6 +564,22 @@ router.patch('/security', authorizeRole(ADMIN_ROLES), async (req: AuthRequest, r
                 if (typeof b[key] !== 'boolean') return res.status(400).json({ error: `${key} must be true or false` });
                 data[key] = b[key];
             }
+        }
+        if (b.ipAllowlist !== undefined) {
+            if (!Array.isArray(b.ipAllowlist)) return res.status(400).json({ error: 'ipAllowlist must be a list' });
+            const entries: string[] = [];
+            for (const raw of b.ipAllowlist) {
+                if (typeof raw !== 'string' || !raw.trim()) continue;
+                const e = parseEntry(raw);
+                if (!e) return res.status(400).json({ error: `Not a valid IP address or range: ${String(raw).slice(0, 60)}`, code: 'INVALID_IP' });
+                if (!entries.includes(e)) entries.push(e);
+            }
+            if (entries.length > MAX_IP_ENTRIES) return res.status(400).json({ error: `At most ${MAX_IP_ENTRIES} entries` });
+            // Never let an admin lock themselves out: the address they are saving from must be allowed
+            if (entries.length > 0 && !ipAllowed(entries, req.ip ?? '')) {
+                return res.status(400).json({ error: `Your current IP (${normalizeIp(req.ip ?? '')}) is not in the list. Add it first so you don't lock yourself out.`, code: 'WOULD_LOCK_OUT' });
+            }
+            data.ipAllowlist = entries;
         }
         if (Object.keys(data).length === 0) return res.status(400).json({ error: 'Nothing to update' });
 

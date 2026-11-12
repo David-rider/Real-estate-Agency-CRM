@@ -62,8 +62,8 @@ happen; note anything that doesn't.
       *两步验证：设置 → 安全 → 设置，用验证器 App 扫码并输入验证码，会显示 10 个恢复码。退出后重新登录：输完密码会要求输入 6 位验证码；错误的验证码会被拒绝，恢复码只能用一次。*
 - [ ] Turning 2FA off asks for your password and a code. A firm admin sees **Reset 2FA** next to a teammate who has it on (Team & Roles).
       *关闭两步验证需要输入密码和验证码。公司管理员在“团队与角色”里，会在已开启两步验证的同事旁边看到“重置两步验证”。*
-- [ ] The IP whitelist shows **Coming soon** and does nothing yet.
-      *IP 白名单显示“即将推出”，目前不起作用。*
+- [ ] **IP whitelist** (firm admin): the row shows "Your current IP". Enter only another address (e.g. `203.0.113.7`) and save — refused, because it would lock you out. Click **Add my IP**, save — accepted. Sign in from another network (e.g. a phone on mobile data) — refused with "contact your administrator". Clear the list and save afterwards.
+      *IP 白名单（公司管理员）：这一行会显示“你当前的 IP”。只填一个别的地址（如 `203.0.113.7`）并保存——会被拒绝，因为会把自己锁在外面。点“添加我的 IP”再保存——成功。用另一个网络（如手机流量）登录——被拒绝并提示联系管理员。测完把名单清空并保存。*
 
 ## 9. Settings: CRM, Properties, Finance, Appointments, Documents / 设置：CRM、房源、财务、预约、文档
 - [ ] **Settings → CRM** (firm admin): make *Email* a required field, save, then add a client without an email — it is refused with a clear message; the add form shows a red asterisk on Email. Set the client limit to 1 and try adding a second open client as an agent — refused.

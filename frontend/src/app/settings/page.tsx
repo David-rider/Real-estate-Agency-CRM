@@ -7,7 +7,7 @@ import { useI18n } from "@/lib/i18n/I18nContext";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { useTheme, ThemeName } from "@/lib/theme/ThemeContext";
 import { useToast } from "@/components/ui/Toast";
-import { useExtra } from "@/lib/i18n/extra";
+import { useExtra, fmt } from "@/lib/i18n/extra";
 import { uploadFile } from "@/lib/api";
 
 // ─── Role hierarchy ─────────────────────────────────────────────────────────────
@@ -167,7 +167,8 @@ export default function SettingsPage() {
   const [mktOrg,      setMktOrg]      = React.useState(() => ls("settings_mkt_org",       DEFAULT_MKT_ORG));
   const [mktPersonal, setMktPersonal] = React.useState(() => ls("settings_mkt_personal",  DEFAULT_MKT_PREF));
   // Organization security policy; every field here is saved by the backend and enforced there.
-  const [security,    setSecurity]    = React.useState({ sessionTimeoutMinutes: 1440, minPasswordLength: 8, requirePasswordSpecialChar: false, passwordExpiryDays: 0, logoutOnPasswordChange: true });
+  const [security,    setSecurity]    = React.useState({ sessionTimeoutMinutes: 1440, minPasswordLength: 8, requirePasswordSpecialChar: false, passwordExpiryDays: 0, logoutOnPasswordChange: true, ipAllowlist: [] as string[], yourIp: "", ipAllowlistDisabled: false });
+  const [ipText, setIpText] = React.useState("");
   const [integrations,setIntegrations]= React.useState({ stripeConnected: false, googleCalendarConnected: false, mlsConnected: false, docusignConnected: false, mailchimpConnected: false, zapierConnected: false, mapboxKey: "", openaiKey: "" });
 
   // ── Load team & lead routing ──────────────────────────────────────────────────
@@ -208,7 +209,7 @@ export default function SettingsPage() {
     fetch(`${API_BASE}/api/settings/security`, { headers: authHeaders(), credentials: "include" })
       .then((r) => (r.ok ? r.json() : null))
       .then((p) => {
-        if (p) setSecurity((prev) => ({ ...prev, ...p }));
+        if (p) { setSecurity((prev) => ({ ...prev, ...p })); setIpText((p.ipAllowlist ?? []).join("\n")); }
       })
       .catch(() => {});
     fetch(`${API_BASE}/api/settings/organization`, { headers: authHeaders(), credentials: "include" })
@@ -269,11 +270,17 @@ export default function SettingsPage() {
         method: "PATCH",
         headers: { ...authHeaders(), "X-CSRF-Protection": "1" },
         credentials: "include",
-        body: JSON.stringify(security),
+        body: JSON.stringify({
+          sessionTimeoutMinutes: security.sessionTimeoutMinutes, minPasswordLength: security.minPasswordLength,
+          requirePasswordSpecialChar: security.requirePasswordSpecialChar, passwordExpiryDays: security.passwordExpiryDays,
+          logoutOnPasswordChange: security.logoutOnPasswordChange,
+          ipAllowlist: ipText.split(/[\n,]+/).map((s) => s.trim()).filter(Boolean),
+        }),
       });
       const d = await res.json();
       if (res.ok) {
         setSecurity((prev) => ({ ...prev, ...d }));
+        setIpText((d.ipAllowlist ?? []).join("\n"));
         toast.success(XS.secSaved);
       } else {
         toast.error(d.error || XS.secSaveFailed);
@@ -857,8 +864,24 @@ export default function SettingsPage() {
           <LockedRow label={SC.forceLogout ?? "Force Logout on Password Change"} description={XS.secForceLogoutDesc} minRoleLabel={roleLabel("FIRMADMIN")} canEdit={isFirmAdmin}>
             <Toggle checked={security.logoutOnPasswordChange} onChange={(v) => setSecurity({ ...security, logoutOnPasswordChange: v })} disabled={!isFirmAdmin} />
           </LockedRow>
-          <LockedRow label={SC.ipWhitelist ?? "IP Whitelist"} description={XS.secNotYet} minRoleLabel={roleLabel("FIRMADMIN")} canEdit={isFirmAdmin}>
-            {soonBadge}
+          <LockedRow label={SC.ipWhitelist ?? "IP Whitelist"} description={XE.ipAllow.desc} minRoleLabel={roleLabel("FIRMADMIN")} canEdit={isFirmAdmin}>
+            <div className="w-64 space-y-1">
+              <textarea
+                className={TEXTAREA_CLS}
+                rows={3}
+                value={ipText}
+                disabled={!isFirmAdmin}
+                onChange={(e) => setIpText(e.target.value)}
+                placeholder={XE.ipAllow.placeholder}
+              />
+              <div className="flex items-center justify-between gap-2 text-xs text-foreground/50">
+                <span>{fmt(XE.ipAllow.yourIp, { ip: security.yourIp || "—" })}</span>
+                {isFirmAdmin && security.yourIp && !ipText.split(/[\n,]+/).map((s) => s.trim()).includes(security.yourIp) && (
+                  <button type="button" className="text-primary hover:underline" onClick={() => setIpText((ipText.trim() ? ipText.trim() + "\n" : "") + security.yourIp)}>{XE.ipAllow.addMine}</button>
+                )}
+              </div>
+              {security.ipAllowlistDisabled && <p className="text-xs text-amber-500">{XE.ipAllow.disabledByServer}</p>}
+            </div>
           </LockedRow>
         </div>
         {isFirmAdmin && <SaveBtn label={saving ? "…" : (SC.save ?? "Save Security Settings")} onClick={saveSecurity} />}
