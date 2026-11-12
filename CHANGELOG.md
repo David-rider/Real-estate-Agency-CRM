@@ -21,6 +21,12 @@
 
 ## [未发布]
 
+#### 新增 / Added
+- 开放日签到增强：签到表单新增“是否已有经纪人”“预算”“计划购房时间”，以及必须勾选的“同意被联系”（记录同意时间）。签到的访客会自动成为客户线索，回答写进客户备注；已有经纪人的访客标为“温”而非“热”。开放日线索会生成“24 小时内跟进”任务，网站咨询仍是“15 分钟内回电”。
+  *Open-house sign-in improvements: the form adds "working with an agent?", budget and purchase timeline, plus a required "agree to be contacted" box (the time of consent is recorded). Visitors become leads automatically with their answers in the client notes; visitors who already have an agent are marked warm rather than hot. Open-house leads get a "follow up within 24 hours" task, while website inquiries keep the 15-minute call-back.*
+- 可打印的开放日二维码签到页：在“房源”卡片上点 “QR” 会打开该房源的签到海报（大号二维码、地址、经纪公司名，四种语言），可直接打印放在门口；同时复制签到链接，方便发短信或邮件。二维码在浏览器本地生成，不经过第三方。
+  *A printable open-house QR sign: clicking "QR" on a listing card opens a sign-in poster for that listing (large QR code, address, brokerage name, in four languages) ready to print for the entrance; the sign-in link is also copied for texting or email. The QR code is generated in the browser, with no third party involved.*
+
 ---
 
 ## [1.2.1.0] — 2026-11-12 · 多语言补全（邮件与通知按收件人语言、西班牙语设置页补齐）、一键本地开发环境、GitHub 仓库安全设置 / Language completion (emails and notifications in the recipient's language, Spanish Settings page completed), one-command local development, GitHub repository security settings

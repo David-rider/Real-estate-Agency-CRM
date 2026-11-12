@@ -25,7 +25,7 @@ export default function PublicListingPage() {
   const [notFound, setNotFound] = useState(false);
   const [photo, setPhoto] = useState(0);
   const [openHouse, setOpenHouse] = useState(false);
-  const [form, setForm] = useState({ name: "", email: "", phone: "", message: "", website: "" });
+  const [form, setForm] = useState({ name: "", email: "", phone: "", message: "", website: "", hasAgent: "", budget: "", timeline: "", consent: false });
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
@@ -133,6 +133,33 @@ export default function PublicListingPage() {
                 <input required placeholder={P.yourName} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={INPUT} />
                 <input type="email" placeholder={P.email} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className={INPUT} />
                 <input type="tel" placeholder={P.phone} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className={INPUT} />
+                {openHouse && (
+                  <>
+                    <div className="text-sm">
+                      <div className="mb-1 text-foreground/70">{P.hasAgentQ}</div>
+                      <div className="flex gap-4">
+                        {(["yes", "no"] as const).map((v) => (
+                          <label key={v} className="flex items-center gap-1.5 cursor-pointer">
+                            <input type="radio" name="hasAgent" value={v} checked={form.hasAgent === v} onChange={() => setForm({ ...form, hasAgent: v })} />
+                            {P[v]}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                    <input placeholder={P.budget} value={form.budget} onChange={(e) => setForm({ ...form, budget: e.target.value })} className={INPUT} />
+                    <select value={form.timeline} onChange={(e) => setForm({ ...form, timeline: e.target.value })} className={INPUT} aria-label={P.timelineQ}>
+                      <option value="">{P.timelineQ}</option>
+                      <option value="0-3">{P.timeline03}</option>
+                      <option value="3-6">{P.timeline36}</option>
+                      <option value="6-12">{P.timeline612}</option>
+                      <option value="browsing">{P.timelineBrowsing}</option>
+                    </select>
+                    <label className="flex items-start gap-2 text-xs text-foreground/70 cursor-pointer">
+                      <input type="checkbox" required checked={form.consent} onChange={(e) => setForm({ ...form, consent: e.target.checked })} className="mt-0.5" />
+                      <span>{P.consent}</span>
+                    </label>
+                  </>
+                )}
                 {!openHouse && (
                   <textarea rows={3} placeholder={P.messagePlaceholder} value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} className={`${INPUT} resize-none`} />
                 )}

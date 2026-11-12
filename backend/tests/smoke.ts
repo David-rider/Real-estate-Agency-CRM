@@ -201,6 +201,37 @@ async function main() {
         assert.ok(notes.body.notifications.some((n: any) => n.type === 'NEW_CLIENT'));
     });
 
+    await step('open-house sign-in: consent required, answers saved, follow-up within a day', async () => {
+        const oh = await register('openhouse');
+        const prop = await call('POST', '/api/properties', oh, { address: '9 Open House Ln', city: 'New York', state: 'NY', zip: '10009', price: 900000, beds: 2, baths: 1 });
+        assert.equal(prop.status, 201, JSON.stringify(prop.body));
+        const url = `/api/properties/public/${prop.body.id}/inquiry`;
+        const email = `visitor-${run}@example.com`;
+        const noConsent = await call('POST', url, undefined, { name: 'Olivia Visitor', email, source: 'OPEN_HOUSE' });
+        assert.equal(noConsent.status, 400, 'open-house sign-in needs consent to be contacted');
+        const ok = await call('POST', url, undefined, { name: 'Olivia Visitor', email, source: 'OPEN_HOUSE', consent: true, hasAgent: 'yes', budget: '$900k', timeline: '3-6' });
+        assert.equal(ok.status, 201, JSON.stringify(ok.body));
+
+        const found = await call('GET', `/api/clients?q=${encodeURIComponent(email)}`, oh);
+        assert.equal(found.body.total, 1);
+        const c = await call('GET', `/api/clients/${found.body.data[0].id}`, oh);
+        assert.equal(c.body.source, 'Open House');
+        assert.equal(c.body.budget, '$900k');
+        assert.equal(c.body.temperature, 'WARM', 'a visitor who already has an agent is not a hot lead');
+        const note = (c.body.clientNotes || []).map((n: any) => n.content).join('\n');
+        assert.match(note, /Working with an agent: yes/);
+        assert.match(note, /Timeline: 3-6 months/);
+        assert.match(note, /Agreed to be contacted at \d{4}-\d{2}-\d{2}T/);
+
+        const tasks = await call('GET', `/api/tasks?clientId=${c.body.id}`, oh);
+        assert.equal(tasks.status, 200);
+        const t = (Array.isArray(tasks.body) ? tasks.body : tasks.body.data || [])[0];
+        assert.ok(t && /open house/i.test(t.title), 'an open-house follow-up task is created');
+        assert.equal(t.priority, 'HIGH');
+        const hours = (new Date(t.dueDate).getTime() - Date.now()) / 3600000;
+        assert.ok(hours > 23 && hours < 25, `due about a day later, got ${hours.toFixed(1)}h`);
+    });
+
     await step('gifts and documents with real records', async () => {
         const g = await call('POST', '/api/gifts', a, { item: 'Champagne', clientId });
         assert.equal(g.status, 201, JSON.stringify(g.body));

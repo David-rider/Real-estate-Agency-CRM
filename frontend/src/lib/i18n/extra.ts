@@ -73,6 +73,10 @@ const en = {
     result: "Result", saveToLibrary: "Save to library", language: "Language",
   },
   publicListing: {
+    hasAgentQ: "Are you working with a real estate agent?", yes: "Yes", no: "No", budget: "Budget (optional)",
+    timelineQ: "When are you planning to buy?", timeline03: "Within 3 months", timeline36: "3–6 months", timeline612: "6–12 months", timelineBrowsing: "Just looking",
+    consent: "I agree to be contacted about this and similar homes by phone, text or email.",
+    scanToSignIn: "Scan to sign in", orVisit: "Or visit:", print: "Print", signHint: "Print this page and place it at the entrance.",
     contactAgent: "Ask about this home", yourName: "Your name", email: "Email", phone: "Phone", message: "Message",
     messagePlaceholder: "I'd like to schedule a showing…", send: "Send", sending: "Sending…",
     sent: "Thanks! The listing agent will reach out shortly.", back: "All listings", viewDetails: "View details",
@@ -292,6 +296,10 @@ const zhCN: Dict = {
     result: "结果", saveToLibrary: "保存到素材库", language: "语言",
   },
   publicListing: {
+    hasAgentQ: "你目前是否已有房产经纪人？", yes: "是", no: "否", budget: "预算（可选）",
+    timelineQ: "你计划什么时候购房？", timeline03: "3 个月内", timeline36: "3–6 个月", timeline612: "6–12 个月", timelineBrowsing: "只是看看",
+    consent: "我同意经纪人通过电话、短信或邮件与我联系，介绍这套及类似房源。",
+    scanToSignIn: "扫码签到", orVisit: "或访问：", print: "打印", signHint: "打印本页，放在入口处。",
     contactAgent: "咨询这套房源", yourName: "您的姓名", email: "邮箱", phone: "电话", message: "留言",
     messagePlaceholder: "我想预约看房…", send: "发送", sending: "发送中…",
     sent: "感谢！经纪人会尽快与您联系。", back: "全部房源", viewDetails: "查看详情",
@@ -509,6 +517,10 @@ const zhTW: Dict = {
     result: "結果", saveToLibrary: "儲存到素材庫", language: "語言",
   },
   publicListing: {
+    hasAgentQ: "你目前是否已有房產經紀人？", yes: "是", no: "否", budget: "預算（選填）",
+    timelineQ: "你計劃什麼時候購屋？", timeline03: "3 個月內", timeline36: "3–6 個月", timeline612: "6–12 個月", timelineBrowsing: "只是看看",
+    consent: "我同意經紀人透過電話、簡訊或郵件與我聯絡，介紹這間及類似房源。",
+    scanToSignIn: "掃碼簽到", orVisit: "或造訪：", print: "列印", signHint: "列印本頁，放在入口處。",
     contactAgent: "詢問此物件", yourName: "您的姓名", email: "電子郵件", phone: "電話", message: "留言",
     messagePlaceholder: "我想預約看屋…", send: "送出", sending: "送出中…",
     sent: "感謝！經紀人將盡快與您聯絡。", back: "全部物件", viewDetails: "查看詳情",
@@ -726,6 +738,10 @@ const es: Dict = {
     result: "Resultado", saveToLibrary: "Guardar en la biblioteca", language: "Idioma",
   },
   publicListing: {
+    hasAgentQ: "¿Trabaja actualmente con un agente inmobiliario?", yes: "Sí", no: "No", budget: "Presupuesto (opcional)",
+    timelineQ: "¿Cuándo planea comprar?", timeline03: "En los próximos 3 meses", timeline36: "En 3 a 6 meses", timeline612: "En 6 a 12 meses", timelineBrowsing: "Solo estoy mirando",
+    consent: "Acepto que me contacten por teléfono, mensaje de texto o correo sobre esta y otras propiedades similares.",
+    scanToSignIn: "Escanee para registrarse", orVisit: "O visite:", print: "Imprimir", signHint: "Imprima esta página y colóquela en la entrada.",
     contactAgent: "Pregunta por esta casa", yourName: "Tu nombre", email: "Correo", phone: "Teléfono", message: "Mensaje",
     messagePlaceholder: "Me gustaría agendar una visita…", send: "Enviar", sending: "Enviando…",
     sent: "¡Gracias! El agente te contactará pronto.", back: "Todas las propiedades", viewDetails: "Ver detalles",

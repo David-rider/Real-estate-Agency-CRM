@@ -56,7 +56,7 @@ This file lists what to do after the trial launch, in priority order by stage. E
 | 1.3.0.0 | 2.1 邮件群发与序列<br>*Email blasts and sequences* | ⬜ | |
 | 1.3.0.0 | 2.2 短信<br>*SMS* | ⬜ | 先提交 Twilio A2P 注册<br>*Submit the Twilio A2P registration first* |
 | 1.3.0.0 | 2.3 统一收件箱<br>*Unified inbox* | ⬜ | |
-| 1.3.0.0 | 2.4 开放日增强<br>*Open-house enhancements* | ⬜ | |
+| 1.3.0.0 | 2.4 开放日增强<br>*Open-house enhancements* | ✅ | 签到问题（经纪人/预算/时间）、必选同意联系并记录时间、24 小时跟进任务、可打印二维码签到页<br>*Sign-in questions (agent / budget / timeline), required consent with timestamp, 24-hour follow-up task, printable QR sign* |
 | 1.4.0.0 | 3.1 DocuSign | ⬜ | |
 | 1.4.0.0 | 3.2 Google 日历同步<br>*Google Calendar sync* | ⬜ | |
 | 1.4.0.0 | 3.3b MLS / StreetEasy 自动同步<br>*MLS / StreetEasy automatic sync* | ⬜ | 需 REBNY RLS / RESO 数据授权<br>*Needs REBNY RLS / RESO data authorisation* |

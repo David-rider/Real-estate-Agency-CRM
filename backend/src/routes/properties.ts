@@ -101,12 +101,20 @@ router.post('/public/:id/inquiry', inquiryLimiter, async (req, res) => {
     const phone = clean(req.body.phone, 40);
     const message = clean(req.body.message, 2000);
     const source = req.body.source === 'OPEN_HOUSE' ? 'Open House' : 'Website';
+    const openHouse = source === 'Open House';
+    // Open-house sign-in questions (all optional except consent at an open house)
+    const hasAgent = req.body.hasAgent === 'yes' ? 'yes' : req.body.hasAgent === 'no' ? 'no' : '';
+    const budget = clean(req.body.budget, 60);
+    const timeline = ['0-3', '3-6', '6-12', 'browsing'].includes(req.body.timeline) ? String(req.body.timeline) : '';
+    const consent = req.body.consent === true;
     // Honeypot field: real users never fill it in
     if (clean(req.body.website)) return res.status(201).json({ ok: true });
 
     if (!name) return res.status(400).json({ error: 'Please enter your name' });
     if (!email && !phone) return res.status(400).json({ error: 'Please enter an email or phone number' });
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: 'Invalid email address' });
+    // A record of permission to contact is required for open-house sign-ins (calls and texts need consent)
+    if (openHouse && !consent) return res.status(400).json({ error: 'Please agree to be contacted' });
 
     const property = await prisma.property.findFirst({
         where: { id: String(req.params.id), status: { in: ['ACTIVE', 'COMING_SOON', 'IN_CONTRACT'] } },
@@ -134,12 +142,16 @@ router.post('/public/:id/inquiry', inquiryLimiter, async (req, res) => {
             data: {
                 firstName, lastName: rest.join(' '),
                 email: email || null, phone: phone || null,
-                type: 'BUYER', status: 'LEAD', funnelStage: 'LEAD', temperature: 'HOT',
+                type: 'BUYER', status: 'LEAD', funnelStage: 'LEAD', temperature: hasAgent === 'yes' ? 'WARM' : 'HOT',
+                budget: budget || null,
                 source, agentId: assignedAgentId, orgId: property.orgId,
             },
         });
     } else {
-        await prisma.client.update({ where: { id: client.id }, data: { temperature: 'HOT' } });
+        await prisma.client.update({
+            where: { id: client.id },
+            data: { temperature: hasAgent === 'yes' ? client.temperature ?? 'WARM' : 'HOT', ...(budget && !client.budget ? { budget } : {}) },
+        });
     }
 
     const targetAgentId = isNew ? assignedAgentId : client.agentId;
@@ -147,15 +159,24 @@ router.post('/public/:id/inquiry', inquiryLimiter, async (req, res) => {
     await prisma.note.create({
         data: {
             type: 'NOTE',
-            content: `${source} inquiry about ${property.address}${message ? `:\n${message}` : ''}`,
+            content: [
+                `${source} ${openHouse ? 'sign-in' : 'inquiry'} about ${property.address}${message ? `:\n${message}` : ''}`,
+                hasAgent ? `Working with an agent: ${hasAgent}` : '',
+                budget ? `Budget: ${budget}` : '',
+                timeline ? `Timeline: ${timeline === 'browsing' ? 'just looking' : `${timeline} months`}` : '',
+                consent ? `Agreed to be contacted at ${new Date().toISOString()}` : '',
+            ].filter(Boolean).join('\n'),
             clientId: client.id, propertyId: property.id,
             authorId: targetAgentId, orgId: property.orgId,
         },
     });
     await prisma.task.create({
         data: {
-            title: `Call back ${name} about ${property.address}`,
-            priority: 'URGENT', dueDate: new Date(Date.now() + 15 * 60 * 1000),
+            title: openHouse
+                ? `Follow up with ${name} from the open house at ${property.address}${hasAgent === 'yes' ? ' (has an agent)' : ''}`
+                : `Call back ${name} about ${property.address}`,
+            priority: openHouse ? 'HIGH' : 'URGENT',
+            dueDate: new Date(Date.now() + (openHouse ? 24 * 60 : 15) * 60 * 1000),
             linkedClientId: client.id, linkedPropertyId: property.id,
             agentId: targetAgentId, orgId: property.orgId,
         },
