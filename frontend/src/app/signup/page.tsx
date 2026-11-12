@@ -4,6 +4,7 @@ import React, { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { useI18n } from "@/lib/i18n/I18nContext";
+import { useExtra } from "@/lib/i18n/extra";
 import Link from "next/link";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
@@ -30,6 +31,7 @@ function SignupForm() {
 
   const { login }                    = useAuth();
   const { t, language, setLanguage } = useI18n();
+  const X = useExtra();
   const S = t.signup as any;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -241,7 +243,7 @@ function SignupForm() {
                 <>
                   <div className="relative flex py-3 items-center">
                     <div className="flex-grow border-t border-border"></div>
-                    <span className="flex-shrink-0 mx-4 text-foreground/30 text-sm font-sans tracking-widest">OR</span>
+                    <span className="flex-shrink-0 mx-4 text-foreground/30 text-sm font-sans tracking-widest">{X.common.or}</span>
                     <div className="flex-grow border-t border-border"></div>
                   </div>
 

@@ -166,7 +166,7 @@ export default function LoginPage() {
 
               <div className="relative flex py-3 items-center">
                 <div className="flex-grow border-t border-border"></div>
-                <span className="flex-shrink-0 mx-4 text-foreground/30 text-sm font-sans tracking-widest">OR</span>
+                <span className="flex-shrink-0 mx-4 text-foreground/30 text-sm font-sans tracking-widest">{X.common.or}</span>
                 <div className="flex-grow border-t border-border"></div>
               </div>
 

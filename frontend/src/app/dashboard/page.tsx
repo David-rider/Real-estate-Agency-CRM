@@ -22,6 +22,20 @@ export default function DashboardPage() {
   const { t } = useI18n();
   const D = t.dashboard as any;
   const X = useExtra();
+  // The server sends English text plus the raw values; word the card in the viewer's language.
+  const localizeActionItem = (item: any) => {
+    const A = X.dashboard.actions;
+    const p = item.params;
+    const typeLabel = (A.types as Record<string, string>)[item.type] ?? item.type;
+    if (!p) return { ...item, typeLabel };
+    switch (item.type) {
+      case "TASK": return { ...item, typeLabel, title: fmt(A.overdue, { title: p.title }), subtitle: p.due ? fmt(A.wasDue, { date: p.due }) : "", actionLabel: A.openTasks };
+      case "OFFER": return { ...item, typeLabel, title: fmt(A.reviewOffer, { amount: `$${Number(p.amount).toLocaleString()}` }), subtitle: fmt(A.offerFor, { address: p.address, client: p.client }), actionLabel: A.reviewRespond };
+      case "FOLLOW_UP": return { ...item, typeLabel, title: fmt(A.followUp, { name: p.name }), subtitle: p.days === null || p.days === undefined ? A.neverContacted : fmt(A.noContactDays, { days: p.days }), actionLabel: A.openClient };
+      case "GIFT": return { ...item, typeLabel, title: fmt(A.sendGift, { item: p.item }), subtitle: fmt(A.recipient, { name: p.name }), actionLabel: A.orderGift };
+      default: return { ...item, typeLabel };
+    }
+  };
   const { preferences } = useSettings();
   const [now] = React.useState(() => Date.now());
 
@@ -323,18 +337,18 @@ export default function DashboardPage() {
       <div>
         <h2 className="text-base font-semibold text-foreground mb-4 flex items-center gap-2">
           {t.dashboard.actionItems}
-          <span className="px-2 py-0.5 bg-primary/10 rounded-full text-primary text-xs font-bold">3</span>
+          <span className="px-2 py-0.5 bg-primary/10 rounded-full text-primary text-xs font-bold">{dashboardData.actionItems?.length ?? 0}</span>
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {dashboardData.actionItems && dashboardData.actionItems.length > 0 ? (
-            dashboardData.actionItems.map((item) => (
+            dashboardData.actionItems.map((raw) => localizeActionItem(raw)).map((item) => (
               <div key={item.id} className="group bg-surface border border-border rounded-xl p-5 hover:shadow-md hover:border-primary/30 transition-all duration-300">
                 <div className="flex justify-between items-start mb-1.5">
                   <p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
                     {item.title}
                   </p>
                   <span className={`text-xs font-bold px-2 py-0.5 rounded-md ${item.type === 'OFFER' ? 'bg-primary/10 text-primary' : 'bg-surface-hover text-foreground/40'}`}>
-                    {item.type}
+                    {item.typeLabel}
                   </span>
                 </div>
                 <p className="text-sm text-foreground/50 mb-4 line-clamp-2">

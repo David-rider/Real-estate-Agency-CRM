@@ -33,6 +33,14 @@
 - 本地开发环境一条命令启动：根目录新增 `docker-compose.yml` 和 `.env.example`，`docker compose up` 会一起启动数据库（PostgreSQL 16）、API 和网站，自动安装依赖并执行迁移；密码从 `.env` 读取，仓库里没有任何写死的密码，所有端口只绑定本机。用法见 README。
   *One-command local development: a new `docker-compose.yml` and `.env.example` in the repo root; `docker compose up` starts the database (PostgreSQL 16), the API and the web app together, installs dependencies and applies migrations. Passwords come from `.env`, nothing is hard-coded in the repo, and every port is bound to localhost. See the README.*
 
+#### 修复 / Fixed
+- 西班牙语界面的“设置”页以前大部分是英文（300 条文案缺失），现在全部为西班牙语。
+  *The Settings page in the Spanish interface was mostly English (300 strings missing); it is now fully Spanish.*
+- 仪表盘的“待办事项”卡片以前在任何语言下都是英文，现在按界面语言显示；卡片旁的数量以前固定显示 3，现在显示真实数量。
+  *The dashboard “action items” cards were English in every language; they now follow the interface language, and the count next to them, which always showed 3, now shows the real number.*
+- 营销页 AI 技能的名称和说明、登录和注册页的“或”分隔符，现在四种语言都已翻译。西班牙语“待办事项”的译名改为更自然的 “Acciones pendientes”。
+  *The AI skill names and descriptions on the Marketing page and the “or” divider on the login and sign-up pages are now translated in all four languages. The Spanish label for action items is now the more natural “Acciones pendientes”.*
+
 #### 移除 / Removed
 - 删除 `backend/docker-compose.yml`：它只有一个数据库，并且写死了密码，已被根目录的新 `docker-compose.yml` 取代。
   *Removed `backend/docker-compose.yml`: it held only a database and had a hard-coded password; the new root `docker-compose.yml` replaces it.*

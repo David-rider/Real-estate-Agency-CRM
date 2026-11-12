@@ -4,6 +4,7 @@ import { useI18n } from "./I18nContext";
 
 const en = {
   common: {
+    or: "OR",
     save: "Save", cancel: "Cancel", delete: "Delete", edit: "Edit", close: "Close", loading: "Loading…",
     optional: "optional", none: "None", copy: "Copy", copied: "Copied", saved: "Saved", error: "Something went wrong",
     confirmDelete: "Delete this item? This cannot be undone.",
@@ -23,6 +24,13 @@ const en = {
     followUpDate: "Remind me to follow up on", aiFollowUp: "Draft follow-up with AI", logged: "Activity logged",
   },
   dashboard: {
+    actions: {
+      overdue: "Overdue: {title}", wasDue: "Was due {date}", openTasks: "Open tasks",
+      reviewOffer: "Review offer: {amount}", offerFor: "{address} (client: {client})", reviewRespond: "Review & respond",
+      followUp: "Follow up: {name}", noContactDays: "No contact for {days} days", neverContacted: "Never contacted", openClient: "Open client",
+      sendGift: "Send gift: {item}", recipient: "Recipient: {name}", orderGift: "Order gift",
+      types: { TASK: "Task", OFFER: "Offer", FOLLOW_UP: "Follow-up", GIFT: "Gift" },
+    },
     today: "Today", todaysAppointments: "Today's appointments", noAppointments: "No appointments today",
     overdueTasks: "Overdue tasks", noOverdue: "Nothing overdue", needsFollowUp: "Leads needing follow-up",
     allCaughtUp: "All caught up", hotLeads: "Hot leads", viewAll: "View all", myView: "My numbers", teamView: "Team numbers",
@@ -49,6 +57,16 @@ const en = {
     amount: "Budget ($)", markDelivered: "Mark delivered", accept: "Accept", decline: "Decline",
   },
   ai: {
+    skills: {
+      listing_description: { name: "Listing description", desc: "MLS-ready listing copy built from the property record." },
+      social_post: { name: "Social media post", desc: "Instagram / Facebook caption with hashtags for a listing." },
+      listing_email: { name: "New-listing email", desc: "Email to your buyer list announcing a listing." },
+      follow_up: { name: "Client follow-up", desc: "A personal check-in text and email based on the client record and recent notes." },
+      objection_handler: { name: "Objection handler", desc: "Turn a buyer or seller objection into a calm, honest response." },
+      open_house_follow_up: { name: "Open house follow-up", desc: "Thank-you message for an open-house visitor." },
+      seller_discovery: { name: "Seller discovery questions", desc: "Questions to ask before a listing appointment to understand motivation and timeline." },
+      listing_presentation: { name: "Listing presentation outline", desc: "Talking points for a listing appointment built from the property and seller record." },
+    } as Record<string, { name: string; desc: string }>,
     title: "AI Assistant", subtitle: "Run real-estate skills against your listings and clients.", skill: "Skill",
     property: "Listing", client: "Client", input: "Your input", run: "Generate", running: "Writing…",
     locked: "Requires {tier} plan", inDevelopment: "In development", inDevelopmentNote: "The AI assistant is still in development and will be available in a later release. Below is a preview of the planned skills.", notConfigured: "The AI assistant isn't configured on the server yet (ANTHROPIC_API_KEY). Listing copy uses basic templates until then.",
@@ -205,6 +223,7 @@ type Dict = typeof en;
 
 const zhCN: Dict = {
   common: {
+    or: "或",
     save: "保存", cancel: "取消", delete: "删除", edit: "编辑", close: "关闭", loading: "加载中…",
     optional: "可选", none: "无", copy: "复制", copied: "已复制", saved: "已保存", error: "出错了",
     confirmDelete: "确定删除？此操作无法撤销。",
@@ -224,6 +243,13 @@ const zhCN: Dict = {
     followUpDate: "提醒我跟进的日期", aiFollowUp: "用 AI 起草跟进消息", logged: "活动已记录",
   },
   dashboard: {
+    actions: {
+      overdue: "已逾期：{title}", wasDue: "截止日期 {date}", openTasks: "打开任务",
+      reviewOffer: "审核报价：{amount}", offerFor: "{address}（客户：{client}）", reviewRespond: "审核并回复",
+      followUp: "跟进：{name}", noContactDays: "已 {days} 天未联系", neverContacted: "从未联系", openClient: "打开客户",
+      sendGift: "寄送礼品：{item}", recipient: "收件人：{name}", orderGift: "订购礼品",
+      types: { TASK: "任务", OFFER: "报价", FOLLOW_UP: "跟进", GIFT: "礼品" },
+    },
     today: "今天", todaysAppointments: "今日预约", noAppointments: "今天没有预约",
     overdueTasks: "逾期任务", noOverdue: "没有逾期任务", needsFollowUp: "待跟进客户",
     allCaughtUp: "全部已跟进", hotLeads: "热门客户", viewAll: "查看全部", myView: "我的数据", teamView: "团队数据",
@@ -250,6 +276,16 @@ const zhCN: Dict = {
     amount: "预算（美元）", markDelivered: "标记已送达", accept: "接受", decline: "拒绝",
   },
   ai: {
+    skills: {
+      listing_description: { name: "房源描述", desc: "根据房源资料生成可直接用于 MLS 的房源文案。" },
+      social_post: { name: "社交媒体帖子", desc: "为房源生成带话题标签的 Instagram / Facebook 文案。" },
+      listing_email: { name: "新房源邮件", desc: "向你的买家名单发送新房源通知邮件。" },
+      follow_up: { name: "客户跟进", desc: "根据客户资料和最近的备注，生成一条贴心的问候短信和邮件。" },
+      objection_handler: { name: "异议处理", desc: "把买家或卖家的顾虑变成冷静、诚实的回应。" },
+      open_house_follow_up: { name: "开放日跟进", desc: "给开放日访客的感谢信息。" },
+      seller_discovery: { name: "卖家需求访谈问题", desc: "挂牌面谈前要问的问题，了解卖家的动机和时间安排。" },
+      listing_presentation: { name: "挂牌演示提纲", desc: "根据房源和卖家资料生成挂牌面谈的要点。" },
+    } as Record<string, { name: string; desc: string }>,
     title: "AI 助手", subtitle: "基于你的房源和客户运行房产专用技能。", skill: "技能",
     property: "房源", client: "客户", input: "补充说明", run: "生成", running: "生成中…",
     locked: "需要 {tier} 套餐", inDevelopment: "正在开发", inDevelopmentNote: "AI 助手正在开发中，将在后续版本开放。下面是计划提供的技能预览。", notConfigured: "服务器尚未配置 AI 助手（ANTHROPIC_API_KEY）。在此之前房源文案使用基础模板。",
@@ -404,6 +440,7 @@ const zhCN: Dict = {
 
 const zhTW: Dict = {
   common: {
+    or: "或",
     save: "儲存", cancel: "取消", delete: "刪除", edit: "編輯", close: "關閉", loading: "載入中…",
     optional: "選填", none: "無", copy: "複製", copied: "已複製", saved: "已儲存", error: "發生錯誤",
     confirmDelete: "確定刪除？此操作無法復原。",
@@ -423,6 +460,13 @@ const zhTW: Dict = {
     followUpDate: "提醒我跟進的日期", aiFollowUp: "用 AI 草擬跟進訊息", logged: "活動已記錄",
   },
   dashboard: {
+    actions: {
+      overdue: "已逾期：{title}", wasDue: "截止日期 {date}", openTasks: "開啟任務",
+      reviewOffer: "審核報價：{amount}", offerFor: "{address}（客戶：{client}）", reviewRespond: "審核並回覆",
+      followUp: "跟進：{name}", noContactDays: "已 {days} 天未聯絡", neverContacted: "從未聯絡", openClient: "開啟客戶",
+      sendGift: "寄送禮品：{item}", recipient: "收件人：{name}", orderGift: "訂購禮品",
+      types: { TASK: "任務", OFFER: "報價", FOLLOW_UP: "跟進", GIFT: "禮品" },
+    },
     today: "今天", todaysAppointments: "今日預約", noAppointments: "今天沒有預約",
     overdueTasks: "逾期任務", noOverdue: "沒有逾期任務", needsFollowUp: "待跟進客戶",
     allCaughtUp: "全部已跟進", hotLeads: "熱門客戶", viewAll: "查看全部", myView: "我的數據", teamView: "團隊數據",
@@ -449,6 +493,16 @@ const zhTW: Dict = {
     amount: "預算（美元）", markDelivered: "標記已送達", accept: "接受", decline: "拒絕",
   },
   ai: {
+    skills: {
+      listing_description: { name: "房源描述", desc: "根據房源資料產生可直接用於 MLS 的房源文案。" },
+      social_post: { name: "社群媒體貼文", desc: "為房源產生帶主題標籤的 Instagram / Facebook 文案。" },
+      listing_email: { name: "新房源郵件", desc: "向你的買家名單寄送新房源通知郵件。" },
+      follow_up: { name: "客戶跟進", desc: "根據客戶資料和最近的備註，產生一則貼心的問候簡訊和郵件。" },
+      objection_handler: { name: "異議處理", desc: "把買家或賣家的顧慮變成冷靜、誠實的回應。" },
+      open_house_follow_up: { name: "開放日跟進", desc: "給開放日訪客的感謝訊息。" },
+      seller_discovery: { name: "賣家需求訪談問題", desc: "掛牌面談前要問的問題，了解賣家的動機和時間安排。" },
+      listing_presentation: { name: "掛牌簡報大綱", desc: "根據房源和賣家資料產生掛牌面談的要點。" },
+    } as Record<string, { name: string; desc: string }>,
     title: "AI 助理", subtitle: "以你的物件與客戶執行房產專用技能。", skill: "技能",
     property: "物件", client: "客戶", input: "補充說明", run: "產生", running: "撰寫中…",
     locked: "需要 {tier} 方案", inDevelopment: "開發中", inDevelopmentNote: "AI 助理仍在開發中，將於後續版本開放。以下為規劃中的技能預覽。", notConfigured: "伺服器尚未設定 AI 助理（ANTHROPIC_API_KEY）。在此之前物件文案使用基本範本。",
@@ -603,6 +657,7 @@ const zhTW: Dict = {
 
 const es: Dict = {
   common: {
+    or: "O",
     save: "Guardar", cancel: "Cancelar", delete: "Eliminar", edit: "Editar", close: "Cerrar", loading: "Cargando…",
     optional: "opcional", none: "Ninguno", copy: "Copiar", copied: "Copiado", saved: "Guardado", error: "Algo salió mal",
     confirmDelete: "¿Eliminar este elemento? No se puede deshacer.",
@@ -622,6 +677,13 @@ const es: Dict = {
     followUpDate: "Recordarme hacer seguimiento el", aiFollowUp: "Redactar seguimiento con IA", logged: "Actividad registrada",
   },
   dashboard: {
+    actions: {
+      overdue: "Vencida: {title}", wasDue: "Vencía el {date}", openTasks: "Abrir tareas",
+      reviewOffer: "Revisar oferta: {amount}", offerFor: "{address} (cliente: {client})", reviewRespond: "Revisar y responder",
+      followUp: "Dar seguimiento: {name}", noContactDays: "Sin contacto desde hace {days} días", neverContacted: "Nunca contactado", openClient: "Abrir cliente",
+      sendGift: "Enviar regalo: {item}", recipient: "Destinatario: {name}", orderGift: "Pedir regalo",
+      types: { TASK: "Tarea", OFFER: "Oferta", FOLLOW_UP: "Seguimiento", GIFT: "Regalo" },
+    },
     today: "Hoy", todaysAppointments: "Citas de hoy", noAppointments: "No hay citas hoy",
     overdueTasks: "Tareas vencidas", noOverdue: "Nada vencido", needsFollowUp: "Contactos que requieren seguimiento",
     allCaughtUp: "Todo al día", hotLeads: "Contactos calientes", viewAll: "Ver todo", myView: "Mis números", teamView: "Equipo",
@@ -648,6 +710,16 @@ const es: Dict = {
     amount: "Presupuesto ($)", markDelivered: "Marcar entregado", accept: "Aceptar", decline: "Rechazar",
   },
   ai: {
+    skills: {
+      listing_description: { name: "Descripción del listado", desc: "Texto listo para MLS creado a partir de la ficha de la propiedad." },
+      social_post: { name: "Publicación en redes sociales", desc: "Texto para Instagram / Facebook con hashtags para un listado." },
+      listing_email: { name: "Correo de nuevo listado", desc: "Correo a su lista de compradores para anunciar un listado." },
+      follow_up: { name: "Seguimiento de clientes", desc: "Un mensaje y un correo personales basados en la ficha del cliente y las notas recientes." },
+      objection_handler: { name: "Manejo de objeciones", desc: "Convierte la objeción de un comprador o vendedor en una respuesta tranquila y honesta." },
+      open_house_follow_up: { name: "Seguimiento de jornada de puertas abiertas", desc: "Mensaje de agradecimiento para un visitante de la jornada de puertas abiertas." },
+      seller_discovery: { name: "Preguntas para el vendedor", desc: "Preguntas antes de una cita de captación para entender la motivación y los plazos." },
+      listing_presentation: { name: "Guion de presentación del listado", desc: "Puntos clave para una cita de captación a partir de la propiedad y del vendedor." },
+    } as Record<string, { name: string; desc: string }>,
     title: "Asistente IA", subtitle: "Ejecuta habilidades inmobiliarias sobre tus propiedades y clientes.", skill: "Habilidad",
     property: "Propiedad", client: "Cliente", input: "Tus indicaciones", run: "Generar", running: "Escribiendo…",
     locked: "Requiere el plan {tier}", inDevelopment: "En desarrollo", inDevelopmentNote: "El asistente de IA aún está en desarrollo y estará disponible en una versión posterior. Abajo hay una vista previa de las habilidades previstas.", notConfigured: "El asistente IA aún no está configurado en el servidor (ANTHROPIC_API_KEY). Mientras tanto se usan plantillas básicas.",
