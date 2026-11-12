@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { prisma } from '../server';
 import { Prisma } from '@prisma/client';
-import { AuthRequest, authorizeRole, authenticateToken, clearAccountCache } from '../middleware/authMiddleware';
+import { AuthRequest, authorizeRole, authenticateToken, clearAccountCache, invalidateAccount } from '../middleware/authMiddleware';
 import crypto from 'crypto';
 import { sendEmail, inviteEmail } from '../lib/email';
 import { EMAIL, Lang, isLang, normalizeLang } from '../lib/messages';
@@ -101,6 +101,7 @@ router.patch('/profile', async (req: AuthRequest, res) => {
             },
             select: PROFILE_SELECT,
         });
+        if (preferredLanguage !== undefined) invalidateAccount(req.user.userId); // error messages follow the new language
         res.json(updated);
     } catch (error) {
         console.error(error);

@@ -32,6 +32,7 @@ import propertyRoutes from './routes/properties';
 import transactionRoutes from './routes/transactions';
 import dashboardRoutes from './routes/dashboard';
 import reportsRoutes from './routes/reports';
+import { localizeErrors } from './middleware/localizeErrors';
 import marketingRoutes from './routes/marketing';
 import authRoutes from './routes/auth';
 import financeRoutes from './routes/finance';
@@ -86,6 +87,8 @@ app.use(cors({
 // Stripe webhook needs raw body — must be before express.json()
 app.use('/api/payments/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json());
+// Error messages in the caller's language
+app.use(localizeErrors);
 
 // Routes
 app.use('/api/auth', authRoutes);

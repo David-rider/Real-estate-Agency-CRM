@@ -94,6 +94,8 @@ happen; note anything that doesn't.
       *切到西班牙语，逐个点开“设置”的每个栏目，再看仪表盘的待办卡片和营销页的 AI 技能——不应再有英文（地名和品牌名除外）。*
 - [ ] Notifications created *before* the language was saved stay in the language they were created in.
       *在保存语言之前生成的旧通知，保持生成时的语言，不会被改写。*
+- [ ] In 简体中文, sign in with a wrong password, then try to save a client without a first name — both error messages are in Chinese. Repeat in Español.
+      *切到简体中文，用错误的密码登录，再试着保存一个没填名字的客户——两条错误提示都是中文；切到西班牙语再试一次。*
 
 ## 10. Open house / 开放日
 - [ ] On **Listings**, click **QR** on a listing — a printable sign opens with a large QR code; print it (or save as PDF) and scan it with a phone.

@@ -2,6 +2,13 @@
 // sessions back to the login page.
 export const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
+/** The interface language, sent as X-Lang so the API answers errors in the same language. */
+export function langHeader(): Record<string, string> {
+  if (typeof window === "undefined") return {};
+  const lang = localStorage.getItem("preferredLanguage");
+  return lang ? { "X-Lang": lang } : {};
+}
+
 export class ApiError extends Error {
   status: number;
   body: any;
@@ -19,6 +26,7 @@ export async function api<T = any>(path: string, options: { method?: string; bod
     credentials: "include",
     headers: {
       "X-CSRF-Protection": "1",
+      ...langHeader(),
       ...(options.body !== undefined ? { "Content-Type": "application/json" } : {}),
       ...(options.auth !== false && token ? { Authorization: `Bearer ${token}` } : {}),
     },
@@ -58,6 +66,7 @@ export async function uploadFile(file: File, visibility: "PUBLIC" | "PRIVATE" = 
     credentials: "include",
     headers: {
       "X-CSRF-Protection": "1",
+      ...langHeader(),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
     body: formData,
