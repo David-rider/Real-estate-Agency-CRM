@@ -27,6 +27,10 @@
 - 服务器返回的错误提示（如“邮箱或密码不正确”“找不到该客户”“验证码不正确”“你的角色不能创建房源”等约 230 条）现在按你选择的语言显示：English、简体中文、繁體中文、Español。以前这些提示一律是英文。
   *Error messages from the server (about 230 of them, such as "Invalid credentials", "Client not found", "That code is not correct" or "Your role cannot create listings") now appear in your chosen language: English, Simplified Chinese, Traditional Chinese or Spanish. Before, they were always English.*
 
+#### 移除 / Removed
+- 设置页的“访问控制”栏目已移除。它一直标着“即将推出”，界面上的权限矩阵只保存在浏览器里，从来没有真正生效。权限仍按固定角色（经纪人、经理、公司管理员）执行，以后有客户需要再做成真正可配置的。
+  *The "Access Control" section of Settings is removed. It was always marked "Coming soon" and its permission matrix was only stored in the browser, never actually applied. Permissions still follow the fixed roles (agent, manager, firm admin); a truly configurable version can come when a customer needs it.*
+
 ---
 
 ## [1.4.1.0] — 2026-11-12 · Prisma 升级到 6.19.3、Vercel 部署减量（跳过无前端改动的构建、删除重复的 Deploy Hook）/ Prisma upgraded to 6.19.3, leaner Vercel deploys (skip builds without frontend changes, duplicate Deploy Hook removed)
