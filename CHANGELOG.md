@@ -31,6 +31,10 @@
 - 设置页的“访问控制”栏目已移除。它一直标着“即将推出”，界面上的权限矩阵只保存在浏览器里，从来没有真正生效。权限仍按固定角色（经纪人、经理、公司管理员）执行，以后有客户需要再做成真正可配置的。
   *The "Access Control" section of Settings is removed. It was always marked "Coming soon" and its permission matrix was only stored in the browser, never actually applied. Permissions still follow the fixed roles (agent, manager, firm admin); a truly configurable version can come when a customer needs it.*
 
+#### 变更 / Changed
+- 数据库结构说明（`schema.prisma`）补上了迁移早已建好的 3 个索引和一个默认值，结构说明与实际数据库完全一致。数据库本身不变，没有新迁移，用户感受不到变化。
+  *The database schema description (`schema.prisma`) now declares 3 indexes and a default that the migrations had already created, so the description matches the real database exactly. The database itself is unchanged, with no new migration; users notice nothing.*
+
 ---
 
 ## [1.4.1.0] — 2026-11-12 · Prisma 升级到 6.19.3、Vercel 部署减量（跳过无前端改动的构建、删除重复的 Deploy Hook）/ Prisma upgraded to 6.19.3, leaner Vercel deploys (skip builds without frontend changes, duplicate Deploy Hook removed)

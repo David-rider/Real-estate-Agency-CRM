@@ -665,6 +665,8 @@ model UploadedFile {
   r2Key      String?
   data       Bytes?
   createdAt  DateTime     @default(now())
+
+  @@index([orgId])
 }
 
 // ─── LeadRoutingRule ─────────────────────────────────────────────────────────
@@ -685,7 +687,10 @@ model LeadRoutingRule {
   targetAgentId String?
   lastAssignedIndex Int      @default(0)
   createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  // The migration created the column with DEFAULT now(); declared here so schema and database agree
+  updatedAt     DateTime     @default(now()) @updatedAt
+
+  @@index([orgId, priority])
 }
 
 // ─── OrgSlugHistory ──────────────────────────────────────────────────────────
@@ -696,4 +701,6 @@ model OrgSlugHistory {
   orgId        String
   organization Organization @relation(fields: [orgId], references: [id])
   createdAt    DateTime     @default(now())
+
+  @@index([orgId])
 }
