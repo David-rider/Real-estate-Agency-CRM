@@ -1,5 +1,6 @@
 "use client";
 
+import { useExtra } from "@/lib/i18n/extra";
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useToast } from "@/components/ui/Toast";
 import { useI18n } from "@/lib/i18n/I18nContext";
@@ -39,6 +40,7 @@ const daysSince = (iso: string) => {
 export default function PipelinePage() {
     const toast = useToast();
     const { t } = useI18n();
+    const UI = useExtra().ui;
     const T = (t as any).pipeline ?? {};
 
     const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -199,7 +201,7 @@ export default function PipelinePage() {
                                                 </div>
                                                 <div className="text-xs text-foreground/40 truncate">
                                                     {tx.property?.city}
-                                                    {tx.property?.propertyType && ` · ${tx.property.propertyType}`}
+                                                    {tx.property?.propertyType && ` · ${(UI.propertyTypes as Record<string, string>)[tx.property.propertyType] ?? tx.property.propertyType}`}
                                                 </div>
                                             </div>
                                             <div className="text-sm font-bold text-primary flex-shrink-0">
@@ -223,7 +225,7 @@ export default function PipelinePage() {
                                             {tx.closingDate && (
                                                 <span className="text-[10px] text-foreground/40 flex items-center gap-1">
                                                     <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                                                    {new Date(tx.closingDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                                                    {new Date(tx.closingDate).toLocaleDateString(document.documentElement.lang || "en-US", { month: "short", day: "numeric" })}
                                                 </span>
                                             )}
                                             <span className="text-[10px] text-foreground/30">{tx.agent?.name?.split(" ")[0]}</span>

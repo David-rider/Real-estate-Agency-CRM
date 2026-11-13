@@ -1,5 +1,6 @@
 "use client";
 
+import { useExtra } from "@/lib/i18n/extra";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useI18n } from "@/lib/i18n/I18nContext";
@@ -36,6 +37,7 @@ interface SidebarProps {
 
 export default function Sidebar({ onClose }: SidebarProps) {
     const { t } = useI18n();
+    const UI = useExtra().ui;
     const { user } = useAuth();
     const pathname = usePathname();
 
@@ -95,7 +97,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
                 <button
                     onClick={onClose}
                     className="md:hidden p-1.5 rounded-lg text-foreground/40 hover:text-foreground hover:bg-surface transition-colors"
-                    aria-label="Close menu"
+                    aria-label={UI.closeMenu}
                 >
                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

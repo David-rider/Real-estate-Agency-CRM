@@ -366,7 +366,7 @@ export default function ListingsPage() {
                   />
                 ) : (
                   <span className="text-3xl text-foreground/20 font-sans font-bold">
-                    No Image
+                    {X.ui.noImage}
                   </span>
                 )}
                 <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-black/40 to-transparent pointer-events-none" />
@@ -702,7 +702,7 @@ export default function ListingsPage() {
                   >
                     <option value="">—</option>
                     {["CONDO", "COOP", "TOWNHOUSE", "SINGLE_FAMILY", "MULTI_FAMILY", "COMMERCIAL", "LAND"].map((v) => (
-                      <option key={v} value={v}>{v.replace("_", " ")}</option>
+                      <option key={v} value={v}>{(X.ui.propertyTypes as Record<string, string>)[v] ?? v}</option>
                     ))}
                   </select>
                 </div>
@@ -827,11 +827,11 @@ export default function ListingsPage() {
                   <table className="w-full text-xs text-left">
                     <thead className="bg-surface border-b border-border text-foreground/50">
                       <tr>
-                        <th className="p-2">Address</th>
-                        <th className="p-2">City</th>
-                        <th className="p-2">Price</th>
-                        <th className="p-2">Beds/Baths</th>
-                        <th className="p-2">Status</th>
+                        <th className="p-2">{X.ui.colAddress}</th>
+                        <th className="p-2">{X.ui.colCity}</th>
+                        <th className="p-2">{X.ui.colPrice}</th>
+                        <th className="p-2">{X.ui.colBedsBaths}</th>
+                        <th className="p-2">{X.ui.colStatus}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -954,7 +954,7 @@ export default function ListingsPage() {
                           {isImg ? (
                             <img
                               src={asset.url}
-                              alt="Property Asset"
+                              alt={X.ui.photo}
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                             />
                           ) : (

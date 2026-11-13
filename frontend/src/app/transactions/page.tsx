@@ -529,7 +529,7 @@ export default function TransactionsPage() {
                   </option>
                   {clients.map((c) => (
                     <option key={c.id} value={c.id}>
-                      {c.firstName} {c.lastName} ({c.type})
+                      {c.firstName} {c.lastName} ({(X.ui.clientTypes as Record<string, string>)[c.type] ?? c.type})
                     </option>
                   ))}
                 </select>
@@ -657,7 +657,7 @@ export default function TransactionsPage() {
                   </option>
                   {clients.map((c) => (
                     <option key={c.id} value={c.id}>
-                      {c.firstName} {c.lastName} ({c.type})
+                      {c.firstName} {c.lastName} ({(X.ui.clientTypes as Record<string, string>)[c.type] ?? c.type})
                     </option>
                   ))}
                 </select>

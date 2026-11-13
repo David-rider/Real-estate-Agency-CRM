@@ -182,7 +182,7 @@ function UpgradePageInner() {
             <h3 className="font-sans font-bold tracking-wide text-2xl mb-2 text-primary">{t.upgrade.pro.name}</h3>
             <div className="flex items-baseline gap-1 mt-4">
               <span className="text-5xl font-light font-sans tracking-tight">{billingCycle === 'annual' ? t.upgrade.pro.priceA : t.upgrade.pro.priceM}</span>
-              <span className="text-foreground/40 text-base font-medium">/{billingCycle === 'annual' ? "yr" : "mo"}</span>
+              <span className="text-foreground/40 text-base font-medium">/{billingCycle === 'annual' ? X.ui.perYear : X.ui.perMonth}</span>
             </div>
             <p className="text-foreground/60 text-base mt-4 min-h-[40px] leading-relaxed">{t.upgrade.pro.desc}</p>
           </div>
@@ -213,7 +213,7 @@ function UpgradePageInner() {
             <h3 className="font-sans font-medium tracking-wide text-2xl mb-2">{t.upgrade.elite.name}</h3>
             <div className="flex items-baseline gap-1 mt-4">
               <span className="text-5xl font-light font-sans tracking-tight">{billingCycle === 'annual' ? t.upgrade.elite.priceA : t.upgrade.elite.priceM}</span>
-              <span className="text-foreground/40 text-base font-medium">/{billingCycle === 'annual' ? "yr" : "mo"}</span>
+              <span className="text-foreground/40 text-base font-medium">/{billingCycle === 'annual' ? X.ui.perYear : X.ui.perMonth}</span>
             </div>
             <p className="text-foreground/50 text-base mt-4 min-h-[40px] leading-relaxed">{t.upgrade.elite.desc}</p>
           </div>

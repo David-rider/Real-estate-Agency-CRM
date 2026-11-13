@@ -79,6 +79,8 @@ Existing Chinese-only records get their English added the next time they are edi
      Every public route and the internal `Header.tsx` must show the 4-language switcher at all screen sizes.
    - 提交任何界面 / 品牌 / 文案改动前，先运行 `cd frontend && npm run audit:i18n`（页面覆盖率必须保持 100%），并用 `git grep` 确认没有遗留的旧品牌 / 旧价格。
      Before committing UI/branding/copy changes, run `npm run audit:i18n` (100% page coverage) and `git grep` for legacy brand/pricing drift.
+   - `npm run audit:i18n` 还会运行严格扫描 `scripts/i18n-strict.js`：组件里直接写的英文界面文字（JSX 文本、`placeholder` / `title` / `alt` / `aria-label`）会让它失败，CI 也会失败。界面文字放进 `extra.ts`（如 `ui` 分区）；确属品牌、技术格式的，在扫描脚本的白名单里处理。枚举值（房产类型、客户类型、阶段）用 `X.ui.*` 映射显示，不要直接显示原始值。
+     `npm run audit:i18n` also runs the strict scan `scripts/i18n-strict.js`: English UI text written straight into components (JSX text, `placeholder` / `title` / `alt` / `aria-label`) fails it, and CI with it. Put UI text in `extra.ts` (e.g. the `ui` section); genuine brand names or technical formats go in the scanner's allow-list. Show enum values (property types, client types, stages) through the `X.ui.*` maps, never raw.
 10. **前端是静态导出 / The frontend is a static export**（准备迁移到 Cloudflare / preparing the move to Cloudflare）
    - `next.config.ts` 设了 `output: "export"`：不能用动态路由（`[id]`）、`headers()`、`redirects()`、服务端渲染或 API 路由。详情页用查询参数（`/client?id=`、`/property?id=`、`/property/sign?id=`），读取 `useSearchParams()` 时要包在 `<Suspense>` 里。
      `next.config.ts` sets `output: "export"`: no dynamic routes (`[id]`), `headers()`, `redirects()`, server rendering or API routes. Detail pages use query parameters (`/client?id=`, `/property?id=`, `/property/sign?id=`); wrap `useSearchParams()` in `<Suspense>`.
