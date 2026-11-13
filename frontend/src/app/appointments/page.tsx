@@ -17,6 +17,16 @@ const locales = {
   "zh-TW": zhCN,   // date-fns only has zhCN; close enough for calendar headers
   es:     es,
 };
+// Appointment times are picked, not typed: a bounded date range and 15-minute slots from 06:00 to 22:45
+const TIME_SLOTS = Array.from({ length: 68 }, (_, i) => {
+  const m = 6 * 60 + i * 15;
+  return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+});
+const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+const todayInput = () => ymd(new Date());
+const DATE_MIN = ymd(new Date(new Date().getFullYear() - 1, 0, 1));
+const DATE_MAX = ymd(new Date(new Date().getFullYear() + 3, 11, 31));
+
 const localizer = dateFnsLocalizer({
   format,
   parse,
@@ -477,14 +487,28 @@ export default function AppointmentsPage() {
                   <label className="block font-sans text-sm uppercase tracking-widest text-foreground/50 mb-2">
                     {t.appointments.modal.date}
                   </label>
-                  <input
-                    required
-                    name="date"
-                    value={formData.date}
-                    onChange={handleChange}
-                    type="datetime-local"
-                    className="w-full px-4 py-3 bg-surface border border-border rounded-none text-base text-foreground focus:border-primary outline-none transition-colors font-sans"
-                  />
+                  {/* Date from the calendar picker (bounded years) + time from a 15-minute list: no free typing */}
+                  <div className="flex gap-2">
+                    <input
+                      required
+                      type="date"
+                      min={DATE_MIN}
+                      max={DATE_MAX}
+                      value={formData.date.slice(0, 10)}
+                      onKeyDown={(e) => { if (e.key !== "Tab") e.preventDefault(); }}
+                      onClick={(e) => (e.currentTarget as HTMLInputElement & { showPicker?: () => void }).showPicker?.()}
+                      onChange={(e) => setFormData({ ...formData, date: e.target.value ? `${e.target.value}T${formData.date.slice(11, 16) || "10:00"}` : "" })}
+                      className="flex-1 min-w-0 px-4 py-3 bg-surface border border-border rounded-none text-base text-foreground focus:border-primary outline-none transition-colors font-sans cursor-pointer"
+                    />
+                    <select
+                      required
+                      value={formData.date.slice(11, 16) || "10:00"}
+                      onChange={(e) => setFormData({ ...formData, date: `${formData.date.slice(0, 10) || todayInput()}T${e.target.value}` })}
+                      className="w-32 px-3 py-3 bg-surface border border-border rounded-none text-base text-foreground focus:border-primary outline-none transition-colors font-sans"
+                    >
+                      {TIME_SLOTS.map((ts) => <option key={ts} value={ts}>{ts}</option>)}
+                    </select>
+                  </div>
                 </div>
                 <div>
                   <label className="block font-sans text-sm uppercase tracking-widest text-foreground/50 mb-2">

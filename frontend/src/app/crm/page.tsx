@@ -107,6 +107,13 @@ export default function CRMPage() {
     type: preferences.crm.defaultClientType, funnelStage: preferences.crm.defaultFunnelStage,
   });
   const openAddModal = () => { setFormData(blankForm()); setIsAddModalOpen(true); };
+  // /crm?new=1 (the dashboard "New lead" button) opens the add-client form straight away
+  React.useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("new") === "1") {
+      setIsAddModalOpen(true);
+      window.history.replaceState(null, "", "/crm");
+    }
+  }, []);
 
   const handleAddClient = async (e: React.FormEvent, force = false) => {
     e.preventDefault();

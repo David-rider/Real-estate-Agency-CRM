@@ -4,6 +4,8 @@ import { useExtra } from "@/lib/i18n/extra";
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useToast } from "@/components/ui/Toast";
 import { useI18n } from "@/lib/i18n/I18nContext";
+import NewDealModal from "@/components/deals/NewDealModal";
+import { fmt } from "@/lib/i18n/extra";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 const token = () => (typeof window !== "undefined" ? localStorage.getItem("token") || "" : "");
@@ -48,6 +50,10 @@ export default function PipelinePage() {
     const [dragging, setDragging] = useState<string | null>(null);
     const [dragOver, setDragOver] = useState<TransStatus | null>(null);
     const dragCard = useRef<Transaction | null>(null);
+    const [view, setView] = useState<"board" | "list">("board");
+    const [newOpen, setNewOpen] = useState(false);
+    useEffect(() => { try { if (localStorage.getItem("pipelineView") === "list") setView("list"); } catch { /* ignore */ } }, []);
+    const switchView = (v: "board" | "list") => { setView(v); try { localStorage.setItem("pipelineView", v); } catch { /* ignore */ } };
 
     const fetchAll = useCallback(async () => {
         setLoading(true);
@@ -131,20 +137,59 @@ export default function PipelinePage() {
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <a href="/transactions"
+                    <button type="button" onClick={() => switchView(view === "board" ? "list" : "board")}
                         className="px-3 py-2 bg-surface border border-border rounded-lg text-sm text-foreground/60 hover:bg-surface-hover transition-colors">
-                        {T.listView}
-                    </a>
-                    <a href="/transactions"
+                        {view === "board" ? T.listView : UI.boardView}
+                    </button>
+                    <button type="button" onClick={() => setNewOpen(true)}
                         className="flex items-center gap-2 px-4 py-2 bg-primary text-background rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors">
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
                         {T.newDeal}
-                    </a>
+                    </button>
                 </div>
             </div>
 
+            <NewDealModal open={newOpen} onClose={() => setNewOpen(false)} onCreated={fetchAll} />
+
+            {view === "list" && (
+                <div className="overflow-x-auto border border-border rounded-2xl bg-surface">
+                    <table className="w-full text-sm">
+                        <thead className="text-left text-xs uppercase tracking-wider text-foreground/40 border-b border-border">
+                            <tr>
+                                <th className="px-4 py-3">{UI.colProperty}</th>
+                                <th className="px-4 py-3">{UI.colClient}</th>
+                                <th className="px-4 py-3">{UI.colAgent}</th>
+                                <th className="px-4 py-3 text-right">{UI.colPrice}</th>
+                                <th className="px-4 py-3">{UI.colStage}</th>
+                                <th className="px-4 py-3 text-right">{UI.colDays}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {activeTxs.length === 0 && (
+                                <tr><td colSpan={6} className="px-4 py-10 text-center text-foreground/40">{UI.noDeals}</td></tr>
+                            )}
+                            {activeTxs.map(tx => (
+                                <tr key={tx.id} className="border-b border-border/50 last:border-0 hover:bg-background/50">
+                                    <td className="px-4 py-3 text-foreground">{tx.property?.address}<div className="text-xs text-foreground/40">{tx.property?.city}</div></td>
+                                    <td className="px-4 py-3 text-foreground/80">{tx.client?.firstName} {tx.client?.lastName}</td>
+                                    <td className="px-4 py-3 text-foreground/60">{tx.agent?.name}</td>
+                                    <td className="px-4 py-3 text-right font-medium text-foreground">{fmtPrice(tx.price)}</td>
+                                    <td className="px-4 py-3">
+                                        <select value={tx.status} onChange={e => { dragCard.current = tx; handleDrop(e.target.value as TransStatus); }}
+                                            className="bg-background border border-border rounded-lg px-2 py-1 text-xs text-foreground">
+                                            {COLUMN_KEYS.map(c => <option key={c.key} value={c.key}>{T.columns?.[c.key]}</option>)}
+                                        </select>
+                                    </td>
+                                    <td className="px-4 py-3 text-right text-foreground/50">{fmt(UI.daysN, { n: daysSince(tx.createdAt) })}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            )}
+
             {/* Kanban board */}
-            <div className="flex gap-4 overflow-x-auto pb-4 flex-1 min-h-0" style={{ scrollSnapType: "x mandatory" }}>
+            {view === "board" && <div className="flex gap-4 overflow-x-auto pb-4 flex-1 min-h-0" style={{ scrollSnapType: "x mandatory" }}>
                 {COLUMN_KEYS.map(col => {
                     const colLabel = T.columns?.[col.key];
                     const colTxs = transactions.filter(t => t.status === col.key);
@@ -269,7 +314,7 @@ export default function PipelinePage() {
                         ))}
                     </div>
                 </div>
-            </div>
+            </div>}
 
             {/* Mobile hint */}
             <div className="mt-2 text-xs text-foreground/30 text-center md:hidden">

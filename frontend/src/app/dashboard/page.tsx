@@ -158,9 +158,9 @@ export default function DashboardPage() {
           >
             {t.dashboard.downloadReport}
           </button>
-          <button className="px-4 py-2 bg-primary text-background hover:opacity-90 transition-opacity rounded-lg text-sm font-semibold w-full sm:w-auto text-center shadow-sm">
+          <Link href="/crm?new=1" className="px-4 py-2 bg-primary text-background hover:opacity-90 transition-opacity rounded-lg text-sm font-semibold w-full sm:w-auto text-center shadow-sm">
             {t.dashboard.newLead}
-          </button>
+          </Link>
         </div>
       </div>
 

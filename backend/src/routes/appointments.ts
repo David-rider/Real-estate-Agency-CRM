@@ -38,7 +38,8 @@ function parseFields(body: any) {
     const data: any = {};
     if (typeof body.title === 'string') data.title = body.title.trim();
     const date = optDate(body.date);
-    if (date) data.date = date;
+    // A mistyped year (e.g. 123333) is not a valid appointment date
+    if (date && date.getUTCFullYear() >= 2000 && date.getUTCFullYear() <= 2100) data.date = date;
     const endDate = optDate(body.endDate);
     if (endDate !== undefined) data.endDate = endDate;
     const status = pickEnum(body.status, STATUSES);

@@ -7,6 +7,7 @@ import { useExtra } from "@/lib/i18n/extra";
 import { api } from "@/lib/api";
 import DealDrawer from "@/components/deals/DealDrawer";
 import ChecklistTemplateModal from "@/components/deals/ChecklistTemplateModal";
+import NewDealModal from "@/components/deals/NewDealModal";
 import { useAuth } from "@/lib/auth/AuthContext";
 
 export default function TransactionsPage() {
@@ -41,12 +42,6 @@ export default function TransactionsPage() {
   const [isAddModalOpen, setIsAddModalOpen] = React.useState(false);
   const [openDealId, setOpenDealId] = React.useState<string | null>(null);
   const [isAddOfferModalOpen, setIsAddOfferModalOpen] = React.useState(false);
-  const [formData, setFormData] = React.useState({
-    propertyId: "",
-    clientId: "",
-    price: "",
-    status: "OFFER_REVIEW",
-  });
   const [offerFormData, setOfferFormData] = React.useState({
     propertyId: "",
     clientId: "",
@@ -108,54 +103,10 @@ export default function TransactionsPage() {
       .then((data) => setClients(data.data || []));
   }, []);
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>,
-  ) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
   const handleOfferChange = (
     e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>,
   ) => {
     setOfferFormData({ ...offerFormData, [e.target.name]: e.target.value });
-  };
-
-  const handleAddTransaction = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    try {
-      const token = localStorage.getItem("token");
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/transactions`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(formData),
-      });
-      if (res.ok) {
-        setIsAddModalOpen(false);
-        setFormData({
-          propertyId: "",
-          clientId: "",
-          price: "",
-          status: "OFFER_REVIEW",
-        });
-        fetchTransactions();
-      } else {
-        setFormData({
-          propertyId: "",
-          clientId: "",
-          price: "",
-          status: "OFFER_REVIEW",
-        });
-      }
-    } catch (error) {
-      console.error(error);
-      toast.error(X.common.error);
-    } finally {
-      setIsSubmitting(false);
-    }
   };
 
   const handleAddOffer = async (e: React.FormEvent) => {
@@ -473,132 +424,7 @@ export default function TransactionsPage() {
       </div>
 
       {/* Add Deal Modal Overlay */}
-      {isAddModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/90 backdrop-blur-sm animate-in fade-in duration-500">
-          <div className="bg-background border border-border shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh] rounded-none">
-            <div className="p-8 border-b border-border flex justify-between items-center bg-surface">
-              <h2 className="font-serif text-3xl font-light text-foreground">
-                {t.transactions.modal.title}
-              </h2>
-              <button
-                onClick={() => setIsAddModalOpen(false)}
-                className="text-foreground/50 hover:text-primary text-3xl font-light transition-colors leading-none"
-              >
-                &times;
-              </button>
-            </div>
-            <form
-              onSubmit={handleAddTransaction}
-              className="p-8 overflow-y-auto space-y-8"
-            >
-              <div>
-                <label className="block font-sans text-sm uppercase tracking-widest text-foreground/50 mb-2">
-                  {t.transactions.modal.selectProperty}
-                </label>
-                <select
-                  required
-                  name="propertyId"
-                  value={formData.propertyId}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 bg-surface border border-border rounded-none text-base text-foreground focus:border-primary outline-none transition-colors appearance-none cursor-pointer"
-                >
-                  <option value="" disabled>
-                    {t.transactions.modal.selectPropertyPlaceholder}
-                  </option>
-                  {properties.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.address}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block font-sans text-sm uppercase tracking-widest text-foreground/50 mb-2">
-                  {t.transactions.modal.selectClient}
-                </label>
-                <select
-                  required
-                  name="clientId"
-                  value={formData.clientId}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 bg-surface border border-border rounded-none text-base text-foreground focus:border-primary outline-none transition-colors appearance-none cursor-pointer"
-                >
-                  <option value="" disabled>
-                    {t.transactions.modal.selectClientPlaceholder}
-                  </option>
-                  {clients.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.firstName} {c.lastName} ({(X.ui.clientTypes as Record<string, string>)[c.type] ?? c.type})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div>
-                  <label className="block font-sans text-sm uppercase tracking-widest text-foreground/50 mb-2">
-                    {t.transactions.modal.offerPrice}
-                  </label>
-                  <input
-                    required
-                    name="price"
-                    value={formData.price}
-                    onChange={handleChange}
-                    type="number"
-                    min="0"
-                    className="w-full px-4 py-3 bg-surface border border-border rounded-none text-base text-foreground focus:border-primary outline-none transition-colors font-serif placeholder:font-sans placeholder:text-foreground/20"
-                    placeholder="1400000"
-                  />
-                </div>
-                <div>
-                  <label className="block font-sans text-sm uppercase tracking-widest text-foreground/50 mb-2">
-                    {t.transactions.modal.initialStage}
-                  </label>
-                  <select
-                    name="status"
-                    value={formData.status}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 bg-surface border border-border rounded-none text-base text-foreground focus:border-primary outline-none transition-colors appearance-none cursor-pointer"
-                  >
-                    <option value="OFFER_REVIEW">
-                      {t.transactions.modal.stageOffer}
-                    </option>
-                    <option value="IN_CONTRACT">
-                      {t.transactions.modal.stageContract}
-                    </option>
-                    <option value="BOARD_PACKAGE">
-                      {t.transactions.modal.stageBoard}
-                    </option>
-                    <option value="CLEARED_TO_CLOSE">
-                      {t.transactions.modal.stageClose}
-                    </option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="pt-6 flex justify-end gap-4 mt-8 border-t border-border">
-                <button
-                  type="button"
-                  onClick={() => setIsAddModalOpen(false)}
-                  className="px-6 py-3 bg-transparent border border-border text-foreground/70 rounded-none text-base uppercase tracking-widest font-medium hover:text-foreground hover:border-foreground transition-colors"
-                >
-                  {t.transactions.modal.cancel}
-                </button>
-                <button
-                  disabled={isSubmitting}
-                  type="submit"
-                  className="px-6 py-3 bg-primary text-background rounded-none text-base uppercase tracking-widest font-medium hover:bg-primary-hover transition-colors disabled:opacity-50"
-                >
-                  {isSubmitting
-                    ? t.transactions.modal.saving
-                    : t.transactions.modal.save}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <NewDealModal open={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} onCreated={fetchTransactions} />
 
       {/* Add Offer Modal Overlay */}
       {isAddOfferModalOpen && (
