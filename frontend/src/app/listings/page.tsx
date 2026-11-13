@@ -47,6 +47,12 @@ export default function ListingsPage() {
     virtualTourUrl: "",
   });
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  // Grid or list view, remembered in this browser
+  const [view, setView] = React.useState<"grid" | "list">("grid");
+  React.useEffect(() => {
+    try { if (localStorage.getItem("listings_view") === "list") setView("list"); } catch { /* storage unavailable */ }
+  }, []);
+  const chooseView = (v: "grid" | "list") => { setView(v); try { localStorage.setItem("listings_view", v); } catch { /* storage unavailable */ } };
   // Photos chosen in the "new listing" dialog: local files (uploaded after the listing is created) or image links
   type NewPhoto = { id: string; file?: File; url?: string; preview: string };
   const [newPhotos, setNewPhotos] = React.useState<NewPhoto[]>([]);
@@ -173,6 +179,56 @@ export default function ListingsPage() {
     return next;
   });
   const removeNewPhoto = (id: string) => setNewPhotos((prev) => prev.filter((p) => { if (p.id === id && p.file) URL.revokeObjectURL(p.preview); return p.id !== id; }));
+
+  // Action buttons shared by the grid cards and the list rows
+  const renderActions = (prop: any) => (
+    <>
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          openMediaModal(prop.id);
+        }}
+        className="font-sans text-sm font-medium text-foreground/60 hover:text-foreground transition-colors duration-300"
+      >
+        {t.listings.media.photos}
+      </button>
+      {prop.status === "COMING_SOON" && (
+        <button
+          onClick={(e) => { e.stopPropagation(); goActive(prop.id); }}
+          className="font-sans text-sm font-medium text-primary hover:text-primary-hover transition-colors duration-300"
+        >
+          {PX.goActive}
+        </button>
+      )}
+      {AI_ASSISTANT_ENABLED && <a
+        href={`/marketing?skill=listing_description&propertyId=${prop.id}`}
+        className="font-sans text-sm font-medium text-foreground/60 hover:text-foreground transition-colors duration-300"
+      >
+        ✨ {X.listings.aiDescribe}
+      </a>}
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          // Opens the printable open-house sign; the sign-in link is copied too, for texting or email
+          navigator.clipboard.writeText(`${window.location.origin}/property?id=${prop.id}&openhouse=1`).catch(() => {});
+          toast.success(X.listings.linkCopied);
+          window.open(`/property/sign?id=${prop.id}`, "_blank", "noopener");
+        }}
+        title={X.listings.openHouseLink}
+        className="font-sans text-sm font-medium text-foreground/60 hover:text-foreground transition-colors duration-300"
+      >
+        QR
+      </button>
+      <a
+        href={`/property?id=${prop.id}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="font-sans text-base font-semibold text-primary hover:text-primary-hover transition-colors duration-300 flex items-center gap-1"
+      >
+        {X.listings.publicPage} ↗
+      </a>
+    </>
+  );
 
   // Coming Soon -> Active (the server checks the photo rule and tells us what is missing)
   const goActive = async (id: string) => {
@@ -361,12 +417,19 @@ export default function ListingsPage() {
         <select className="hidden">
         </select>
         <div className="flex gap-2 bg-background ring-1 ring-border/40 rounded-xl p-1 md:ml-auto w-full md:w-auto shadow-sm">
-          <button className="flex-1 md:flex-none px-6 py-2 bg-surface rounded-lg text-foreground text-sm font-semibold shadow-sm ring-1 ring-border/50">
-            {t.listings.viewOptions.grid}
-          </button>
-          <button className="flex-1 md:flex-none px-6 py-2 text-foreground/50 hover:text-foreground text-sm font-medium transition-colors">
-            {t.listings.viewOptions.list}
-          </button>
+          {(["grid", "list"] as const).map((v) => (
+            <button
+              key={v}
+              type="button"
+              onClick={() => chooseView(v)}
+              aria-pressed={view === v}
+              className={view === v
+                ? "flex-1 md:flex-none px-6 py-2 bg-surface rounded-lg text-foreground text-sm font-semibold shadow-sm ring-1 ring-border/50"
+                : "flex-1 md:flex-none px-6 py-2 text-foreground/50 hover:text-foreground text-sm font-medium transition-colors"}
+            >
+              {v === "grid" ? t.listings.viewOptions.grid : t.listings.viewOptions.list}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -378,6 +441,57 @@ export default function ListingsPage() {
       ) : filteredProperties.length === 0 ? (
         <div className="py-24 border border-border bg-surface/30 text-center text-foreground/50 tracking-widest uppercase text-sm">
           {t.listings.table.noProperties}
+        </div>
+      ) : view === "list" ? (
+        <div className="overflow-x-auto bg-background ring-1 ring-border/50 rounded-2xl">
+          <table className="w-full text-sm text-left">
+            <thead className="text-xs uppercase tracking-wider text-foreground/50 border-b border-border/50">
+              <tr>
+                <th className="p-3 w-20">{X.ui.newPhotos}</th>
+                <th className="p-3">{X.ui.colAddress}</th>
+                <th className="p-3">{X.ui.colStatus}</th>
+                <th className="p-3 text-right">{X.ui.colPrice}</th>
+                <th className="p-3 text-center">{t.listings.card.beds}</th>
+                <th className="p-3 text-center">{t.listings.card.baths}</th>
+                <th className="p-3 text-center">{t.listings.card.sqft}</th>
+                <th className="p-3">{X.ui.actions}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredProperties.map((prop) => {
+                const cover = prop.mediaAssets?.[0]?.url || prop.featuredImage || prop.image;
+                return (
+                  <tr key={prop.id} className="border-b border-border/30 last:border-0 hover:bg-surface/50">
+                    <td className="p-3">
+                      {cover
+                        // eslint-disable-next-line @next/next/no-img-element
+                        ? <img src={cover} alt={prop.address} className="w-16 h-12 object-cover rounded-md" />
+                        : <div className="w-16 h-12 rounded-md bg-surface flex items-center justify-center text-[10px] text-foreground/40 text-center leading-tight">{X.ui.noImage}</div>}
+                    </td>
+                    <td className="p-3">
+                      <div className="font-semibold text-foreground">{prop.address}</div>
+                      <div className="text-foreground/50">{prop.city}, {prop.state} {prop.zip}</div>
+                    </td>
+                    <td className="p-3 whitespace-nowrap">
+                      {prop.status === "IN_CONTRACT" ? t.listings.modal.statusInContract
+                        : prop.status === "ACTIVE" ? t.listings.modal.statusActive
+                        : prop.status === "SOLD" ? t.listings.modal.statusSold
+                        : t.listings.modal.statusComingSoon}
+                    </td>
+                    <td className="p-3 text-right font-semibold whitespace-nowrap">
+                      {new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0 }).format(prop.price)}
+                    </td>
+                    <td className="p-3 text-center">{prop.beds}</td>
+                    <td className="p-3 text-center">{prop.baths}</td>
+                    <td className="p-3 text-center">{prop.sqft || "-"}</td>
+                    <td className="p-3">
+                      <div className="flex items-center gap-4 whitespace-nowrap">{renderActions(prop)}</div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8">
@@ -460,50 +574,7 @@ export default function ListingsPage() {
                     }).format(prop.price)}
                   </span>
                   <div className="flex items-center gap-4">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openMediaModal(prop.id);
-                      }}
-                      className="font-sans text-sm font-medium text-foreground/60 hover:text-foreground transition-colors duration-300"
-                    >
-                      {t.listings.media.photos}
-                    </button>
-                    {prop.status === "COMING_SOON" && (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); goActive(prop.id); }}
-                        className="font-sans text-sm font-medium text-primary hover:text-primary-hover transition-colors duration-300"
-                      >
-                        {PX.goActive}
-                      </button>
-                    )}
-                    {AI_ASSISTANT_ENABLED && <a
-                      href={`/marketing?skill=listing_description&propertyId=${prop.id}`}
-                      className="font-sans text-sm font-medium text-foreground/60 hover:text-foreground transition-colors duration-300"
-                    >
-                      ✨ {X.listings.aiDescribe}
-                    </a>}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        // Opens the printable open-house sign; the sign-in link is copied too, for texting or email
-                        navigator.clipboard.writeText(`${window.location.origin}/property?id=${prop.id}&openhouse=1`).catch(() => {});
-                        toast.success(X.listings.linkCopied);
-                        window.open(`/property/sign?id=${prop.id}`, "_blank", "noopener");
-                      }}
-                      title={X.listings.openHouseLink}
-                      className="font-sans text-sm font-medium text-foreground/60 hover:text-foreground transition-colors duration-300"
-                    >
-                      QR
-                    </button>
-                    <a
-                      href={`/property?id=${prop.id}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-sans text-base font-semibold text-primary hover:text-primary-hover transition-colors duration-300 flex items-center gap-1"
-                    >
-                      {X.listings.publicPage} ↗
-                    </a>
+                    {renderActions(prop)}
                   </div>
                 </div>
               </div>

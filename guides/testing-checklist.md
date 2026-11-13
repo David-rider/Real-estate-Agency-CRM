@@ -31,6 +31,9 @@ happen; note anything that doesn't.
 - [ ] **New listing with photos**: on Listings click **+ Add listing**, upload a photo from your computer and paste one image link, use the arrows to put the link first, then save — the card shows that photo as the cover, and **Photos** lists both in that order.
       *新增房源带照片：在“房源中心”点“发布房源”，从电脑上传一张照片、再粘贴一个图片链接，用箭头把链接那张移到第一位后保存——卡片封面就是那张，“相册管理”里两张照片按这个顺序排列。*
 
+- [ ] On Listings click **List view** — a table appears with the same actions (Photos, QR, Public page); reload the page and it is still in list view; click **Grid view** to switch back.
+      *在“房源中心”点“列表视图”——显示表格，操作按钮与卡片相同（相册管理、QR、公开页面）；刷新页面后仍是列表视图；点“网格视图”切回。*
+
 ## 4. Offers, deals, commission
 - [ ] **Transactions → Add Offer** for a client on a listing.
 - [ ] **Counter** (enter an amount), then **Accept** → a deal is created, the listing shows *In Contract*,
