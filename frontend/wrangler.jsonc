@@ -1,0 +1,15 @@
+{
+  // Cloudflare Workers deployment of the static frontend (build first: `npm run build` → out/).
+  // Deploy: `npx wrangler@4 deploy` (Cloudflare Workers Builds runs this from the frontend/ folder).
+  "name": "real-estate-agency-crm",
+  "main": "cloudflare/worker.js",
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    "directory": "./out",
+    "binding": "ASSETS",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page",
+    // Only these paths reach the Worker (legacy-link redirects); everything else is served as static files.
+    "run_worker_first": ["/crm/*", "/public-listings/*"]
+  }
+}

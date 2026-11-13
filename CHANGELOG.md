@@ -22,6 +22,8 @@
 ## [未发布]
 
 #### 变更 / Changed
+- 部署：新增 Cloudflare Workers 部署配置（`frontend/wrangler.jsonc`、`frontend/cloudflare/worker.js`），前端可以同时部署到 Cloudflare 免费版；旧链接在 Cloudflare 上同样自动跳转。正式切换前，Vercel 地址照常使用。
+  *Deployment: added the Cloudflare Workers config (`frontend/wrangler.jsonc`, `frontend/cloudflare/worker.js`) so the frontend can also deploy to Cloudflare's free plan, with old links redirecting there too. Until the switch-over, the Vercel address stays in use.*
 - 前端改为静态网站，为迁移到 Cloudflare 做准备。房源公开页、开放日签到海报和客户详情页的地址变成 `/property?id=…`、`/property/sign?id=…`、`/client?id=…`；新生成的二维码使用新地址。**以前打印的二维码和分享出去的旧链接会自动跳转到新地址，开放日参数保留，照常可用。**
   *The frontend is now a static site, in preparation for moving to Cloudflare. The public listing page, the open-house sign and the client detail page move to `/property?id=…`, `/property/sign?id=…` and `/client?id=…`; new QR codes use the new addresses. **QR codes printed earlier and old shared links redirect automatically to the new addresses, with the open-house parameter kept, and keep working.***
 
