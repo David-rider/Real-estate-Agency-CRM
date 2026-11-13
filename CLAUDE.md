@@ -75,10 +75,17 @@ Existing Chinese-only records get their English added the next time they are edi
 9. **唯一数据源与全站审计（零漂移）/ Single source of truth & full-site audit (zero drift)**
    - 不要重复业务数据：价格（`Core $0` / `Pro $39 月、$390 年` / `Elite $79 月、$790 年`）、套餐功能、品牌名（`Real Estate CRM`）、主题（`luxury`、`modern`、`youth`、`chinese`、`cyberpunk`）一律从 `frontend/src/lib/i18n/translations.ts` / `extra.ts` 和 `ThemeContext.tsx` 读取，不得在落地页等处另行硬编码。
      Never duplicate pricing, plan features, brand names or theme definitions; read them from `translations.ts` / `extra.ts` / `ThemeContext.tsx`.
-   - 每个公开路由（`/`、`/login`、`/signup`、`/forgot-password`、`/reset-password`、`/verify-email`、`/public-listings`、`/public-listings/[id]`）和内部 `Header.tsx` 都必须在所有屏幕尺寸下显示四语言切换（`en`、`zh-CN`、`zh-TW`、`es`），不得用 `hidden sm:block` 隐藏。
+   - 每个公开路由（`/`、`/login`、`/signup`、`/forgot-password`、`/reset-password`、`/verify-email`、`/public-listings`、`/property`、`/property/sign`）和内部 `Header.tsx` 都必须在所有屏幕尺寸下显示四语言切换（`en`、`zh-CN`、`zh-TW`、`es`），不得用 `hidden sm:block` 隐藏。
      Every public route and the internal `Header.tsx` must show the 4-language switcher at all screen sizes.
    - 提交任何界面 / 品牌 / 文案改动前，先运行 `cd frontend && npm run audit:i18n`（页面覆盖率必须保持 100%），并用 `git grep` 确认没有遗留的旧品牌 / 旧价格。
      Before committing UI/branding/copy changes, run `npm run audit:i18n` (100% page coverage) and `git grep` for legacy brand/pricing drift.
+10. **前端是静态导出 / The frontend is a static export**（准备迁移到 Cloudflare / preparing the move to Cloudflare）
+   - `next.config.ts` 设了 `output: "export"`：不能用动态路由（`[id]`）、`headers()`、`redirects()`、服务端渲染或 API 路由。详情页用查询参数（`/client?id=`、`/property?id=`、`/property/sign?id=`），读取 `useSearchParams()` 时要包在 `<Suspense>` 里。
+     `next.config.ts` sets `output: "export"`: no dynamic routes (`[id]`), `headers()`, `redirects()`, server rendering or API routes. Detail pages use query parameters (`/client?id=`, `/property?id=`, `/property/sign?id=`); wrap `useSearchParams()` in `<Suspense>`.
+   - 安全响应头写在 `frontend/vercel.json` 和 `frontend/public/_headers`（Cloudflare）两处，要保持一致；旧链接（`/crm/:id`、`/public-listings/:id`、`/public-listings/:id/sign`，含已打印的二维码）由托管平台跳转到新地址并保留查询参数。
+     Security headers live in both `frontend/vercel.json` and `frontend/public/_headers` (Cloudflare) and must stay in sync; old links (`/crm/:id`, `/public-listings/:id`, `/public-listings/:id/sign`, including printed QR codes) are redirected by the host to the new pages with the query string kept.
+   - 新增公开页面时，要同时加进 `AuthContext.tsx` 的 `publicRoutes` 和 `AuthLayoutWrapper.tsx` 的 `PUBLIC_ROUTES`，否则未登录访客会被送去登录页。
+     A new public page must be added to both `publicRoutes` in `AuthContext.tsx` and `PUBLIC_ROUTES` in `AuthLayoutWrapper.tsx`, or signed-out visitors are sent to the login page.
 
 ## Checks before pushing / 推送前的检查
 

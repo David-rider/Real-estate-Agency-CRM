@@ -1,7 +1,8 @@
 "use client";
 
+import { Suspense } from "react";
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import QRCode from "qrcode";
 import { useI18n } from "@/lib/i18n/I18nContext";
@@ -10,10 +11,10 @@ import { api } from "@/lib/api";
 
 /**
  * Printable open-house sign: a large QR code that opens the listing's sign-in form
- * (/public-listings/[id]?openhouse=1). The QR code is generated in the browser.
+ * (/property?id=…&openhouse=1). The QR code is generated in the browser.
  */
-export default function OpenHouseSignPage() {
-  const { id } = useParams<{ id: string }>();
+function OpenHouseSignPage() {
+  const id = useSearchParams().get("id") ?? "";
   const { language, setLanguage } = useI18n();
   const X = useExtra();
   const P = X.publicListing;
@@ -24,7 +25,7 @@ export default function OpenHouseSignPage() {
   const [signInUrl, setSignInUrl] = useState("");
 
   useEffect(() => {
-    const url = `${window.location.origin}/public-listings/${id}?openhouse=1`;
+    const url = `${window.location.origin}/property?id=${id}&openhouse=1`;
     setSignInUrl(url);
     QRCode.toDataURL(url, { width: 640, margin: 1, errorCorrectionLevel: "M" }).then(setQr).catch(() => setQr(""));
     api(`/api/properties/public/${id}`, { auth: false }).then(setListing).catch(() => setNotFound(true));
@@ -63,5 +64,14 @@ export default function OpenHouseSignPage() {
         {listing?.agent?.name && <p className="text-base text-gray-700">{P.listedBy} {listing.agent.name}</p>}
       </main>
     </div>
+  );
+}
+
+// Static export: the id comes from the query string (?id=), read inside a Suspense boundary
+export default function OpenHouseSignPageRoute() {
+  return (
+    <Suspense fallback={null}>
+      <OpenHouseSignPage />
+    </Suspense>
   );
 }

@@ -350,7 +350,7 @@ export default function PublicListingsPage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {filtered.map((p, i) => (
-              <PropertyCard key={p.id} property={p} index={i} P={P} onContact={() => { window.location.href = `/public-listings/${p.id}`; }} />
+              <PropertyCard key={p.id} property={p} index={i} P={P} onContact={() => { window.location.href = `/property?id=${p.id}`; }} />
             ))}
           </div>
         )}

@@ -21,6 +21,10 @@
 
 ## [未发布]
 
+#### 变更 / Changed
+- 前端改为静态网站，为迁移到 Cloudflare 做准备。房源公开页、开放日签到海报和客户详情页的地址变成 `/property?id=…`、`/property/sign?id=…`、`/client?id=…`；新生成的二维码使用新地址。**以前打印的二维码和分享出去的旧链接会自动跳转到新地址，开放日参数保留，照常可用。**
+  *The frontend is now a static site, in preparation for moving to Cloudflare. The public listing page, the open-house sign and the client detail page move to `/property?id=…`, `/property/sign?id=…` and `/client?id=…`; new QR codes use the new addresses. **QR codes printed earlier and old shared links redirect automatically to the new addresses, with the open-house parameter kept, and keep working.***
+
 ---
 
 ## [1.4.2.0] — 2026-11-12 · 错误提示与过户清单多语言、移除访问控制栏目、数据库结构说明同步 / Localized error messages and checklist titles, Access Control section removed, schema description synced

@@ -100,6 +100,8 @@ happen; note anything that doesn't.
 ## 10. Open house / 开放日
 - [ ] On **Listings**, click **QR** on a listing — a printable sign opens with a large QR code; print it (or save as PDF) and scan it with a phone.
       *在“房源”页点某个房源的 QR——会打开可打印的签到海报；打印（或存为 PDF）后用手机扫码。*
+- [ ] An **old** link still works: open `/public-listings/<listing id>?openhouse=1` (the format of QR codes printed before 1.4.3) — it lands on the same listing with the open-house form. Signed out, the listing and the sign page show no internal sidebar and do not ask you to sign in.
+      *旧链接仍然可用：打开 `/public-listings/<房源 id>?openhouse=1`（1.4.3 之前打印的二维码就是这种格式）——会进入同一个房源并显示开放日签到表单。未登录时，房源页和签到海报都没有内部侧栏，也不会要求登录。*
 - [ ] On the sign-in form, try to submit without ticking "agree to be contacted" — it is refused. Tick it, answer the questions and submit.
       *在签到表单里不勾“同意被联系”直接提交——无法提交；勾选并填写问题后提交。*
 - [ ] The visitor appears in **CRM** with source "Open House", the budget filled in and the answers in the notes; a "follow up within 24 hours" task appears for the listing agent.
