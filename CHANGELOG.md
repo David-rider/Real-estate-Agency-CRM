@@ -21,7 +21,15 @@
 
 ## [未发布]
 
+## [1.5.0.0] — 2026-11-13 · Google 登录、迁移到 Cloudflare、全站多语言补全、新增房源可加照片、隐私政策与服务条款 / Sign in with Google, move to Cloudflare, site-wide translation, photos on new listings, privacy policy and terms
+
 #### 新增 / Added
+- Google 账号登录：登录页和注册页可以用 Google 一键登录（使用 Google 官方按钮）。已有邮箱账号的人用同一个邮箱登录 Google 时，只要 Google 确认该邮箱已验证，就会自动关联到原账号；新邮箱会创建自己的公司，与邮箱注册相同。两步验证、账号停用和 IP 白名单照常生效。在“设置 → 安全”里可以关联或取消关联 Google（只有 Google 登录、没有密码的账号不能取消，以免无法登录）。配置 Google 客户端 ID 之前，按钮继续显示“即将推出”。
+  *Sign in with Google: the sign-in and sign-up pages offer one-click Google sign-in (Google's official button). Someone who already has an email account is linked to it automatically when Google confirms the same email is verified; a new email gets its own brokerage, as with email sign-up. 2FA, deactivation and the IP whitelist still apply. Settings → Security can link or unlink Google (a Google-only account without a password cannot unlink, so nobody locks themselves out). Until a Google client ID is configured, the button keeps showing "Coming soon".*
+- Apple 账号登录的服务器端校验已经写好（用 Apple 公钥验证身份令牌，关联规则与 Google 相同）；需要 Apple 开发者账号配置后才会开放，按钮暂时保持“即将推出”。
+  *Server-side verification for Sign in with Apple is ready (identity tokens checked against Apple's public keys, same linking rules as Google); it opens once an Apple developer account is configured, and the button stays "Coming soon" until then.*
+- 新增房源时可以直接加照片：从电脑上传，或粘贴图片链接；可预览、移除、调整顺序（第一张是封面），保存房源时一起保存，并遵守公司的每房源照片上限。也可以填写虚拟看房链接。以前要先保存房源，再到“相册管理”里加照片。
+  *Photos can now be added while creating a listing: upload from your computer or paste image links, preview, remove and reorder them (the first is the cover); they are saved with the listing and respect the brokerage's photo limit. A virtual-tour link can be entered too. Before, photos could only be added afterwards under "Photos".*
 - 新增“隐私政策”（`/privacy`）和“服务条款”（`/terms`）页面，四种语言，未登录也能打开；首页底部有链接。说明了用 Google 登录时只获取姓名、邮箱和 Google 账号 ID，且只用于登录。
   *New Privacy Policy (`/privacy`) and Terms of Service (`/terms`) pages in all four languages, open to signed-out visitors and linked from the home-page footer. They state that Google sign-in only receives your name, email and Google account ID, used only for signing in.*
 
@@ -32,6 +40,8 @@
   *The frontend is now a static site, in preparation for moving to Cloudflare. The public listing page, the open-house sign and the client detail page move to `/property?id=…`, `/property/sign?id=…` and `/client?id=…`; new QR codes use the new addresses. **QR codes printed earlier and old shared links redirect automatically to the new addresses, with the open-house parameter kept, and keep working.***
 
 #### 修复 / Fixed
+- 套餐名称全站统一：设置页“订阅方案”、侧边栏、财务和营销页的升级提示、服务器提示，以前显示“CORE 套餐”“PRO”“ELITE”，现在都和升级页一致（基础版 / 专业版 / 精英版）。
+  *Plan names are now consistent everywhere: Settings → Subscription, the sidebar, the upgrade prompts on Finance and Marketing, and server messages used to show "CORE plan", "PRO" or "ELITE"; they now match the upgrade page (Core / Pro / Elite).*
 - 房源中心的“列表视图”以前点了没反应，现在会切换为表格（照片、地址、状态、价格、卧室 / 浴室 / 面积、操作），并记住你的选择。
   *"List view" on Listings did nothing; it now switches to a table (photo, address, status, price, beds / baths / area, actions) and remembers your choice.*
 - 全站多语言补全：房源“暂无照片”、房产类型（共管公寓、合作公寓等）、客户类型和阶段、交易看板日期、导入预览表头、输入框示例、登录页“即将推出”、套餐与席位、时区、404 和出错页面、读屏标签等，以前在中文 / 西语界面下仍显示英文，现在都跟随所选语言。
@@ -40,14 +50,6 @@
   *The Reports "Lead sources" chart used to show made-up sample numbers; it now shows the real lead counts for the fiscal year, and says so when there are none.*
 - 站内通知现在跟随你当前选择的语言显示，切换语言后立即生效；以前生成的旧通知（例如“Deal status updated”“Payout approved”）也会被翻译。以前通知的文字在生成时就固定下来，切换语言不会改变。
   *In-app notifications now follow your current language and change as soon as you switch; older ones (such as "Deal status updated" or "Payout approved") are translated too. Before, the text was frozen when the notification was created and ignored the language switch.*
-
-#### 新增 / Added
-- Google 账号登录：登录页和注册页可以用 Google 一键登录（使用 Google 官方按钮）。已有邮箱账号的人用同一个邮箱登录 Google 时，只要 Google 确认该邮箱已验证，就会自动关联到原账号；新邮箱会创建自己的公司，与邮箱注册相同。两步验证、账号停用和 IP 白名单照常生效。在“设置 → 安全”里可以关联或取消关联 Google（只有 Google 登录、没有密码的账号不能取消，以免无法登录）。配置 Google 客户端 ID 之前，按钮继续显示“即将推出”。
-  *Sign in with Google: the sign-in and sign-up pages offer one-click Google sign-in (Google's official button). Someone who already has an email account is linked to it automatically when Google confirms the same email is verified; a new email gets its own brokerage, as with email sign-up. 2FA, deactivation and the IP whitelist still apply. Settings → Security can link or unlink Google (a Google-only account without a password cannot unlink, so nobody locks themselves out). Until a Google client ID is configured, the button keeps showing "Coming soon".*
-- Apple 账号登录的服务器端校验已经写好（用 Apple 公钥验证身份令牌，关联规则与 Google 相同）；需要 Apple 开发者账号配置后才会开放，按钮暂时保持“即将推出”。
-  *Server-side verification for Sign in with Apple is ready (identity tokens checked against Apple's public keys, same linking rules as Google); it opens once an Apple developer account is configured, and the button stays "Coming soon" until then.*
-- 新增房源时可以直接加照片：从电脑上传，或粘贴图片链接；可预览、移除、调整顺序（第一张是封面），保存房源时一起保存，并遵守公司的每房源照片上限。也可以填写虚拟看房链接。以前要先保存房源，再到“相册管理”里加照片。
-  *Photos can now be added while creating a listing: upload from your computer or paste image links, preview, remove and reorder them (the first is the cover); they are saved with the listing and respect the brokerage's photo limit. A virtual-tour link can be entered too. Before, photos could only be added afterwards under "Photos".*
 
 ---
 

@@ -496,8 +496,8 @@ const base = {
         casual: "Casual",
         enthusiastic: "Enthusiastic",
       },
-      upgradePro: "Upgrade to PRO to unlock Social & Email features",
-      upgradeElite: "Upgrade to ELITE to unlock Tone selection",
+      upgradePro: "Upgrade to Pro to unlock Social & Email features",
+      upgradeElite: "Upgrade to Elite to unlock Tone selection",
     },
     finance: {
       title: "Finance",
@@ -1102,9 +1102,9 @@ const base = {
       GUEST: "访客",
     },
     tiers: {
-      CORE: "基础",
-      PRO: "专业",
-      ELITE: "精英",
+      CORE: "基础版",
+      PRO: "专业版",
+      ELITE: "精英版",
     },
     login: {
       welcomeBack: "欢迎回来",
@@ -2141,9 +2141,9 @@ const base = {
       GUEST: "訪客",
     },
     tiers: {
-      CORE: "基礎",
-      PRO: "專業",
-      ELITE: "精英",
+      CORE: "基礎版",
+      PRO: "專業版",
+      ELITE: "精英版",
     },
     login: {
       welcomeBack: "歡迎回來",
@@ -3626,8 +3626,8 @@ const base = {
         casual: "Informal",
         enthusiastic: "Entusiasta",
       },
-      upgradePro: "Actualiza a PRO para desbloquear Social y Email",
-      upgradeElite: "Actualiza a ELITE para desbloquear selección de Tono",
+      upgradePro: "Actualiza a Pro para desbloquear Social y Email",
+      upgradeElite: "Actualiza a Élite para desbloquear selección de Tono",
     },
     finance: {
       title: "Finanzas",

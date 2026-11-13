@@ -100,7 +100,7 @@ router.post('/generate', async (req: AuthRequest, res) => {
         // 1. Tier-based Type Gating
         if (type !== 'LISTING' && userTier === 'CORE') {
             return res.status(403).json({ 
-                error: 'Social and Email generation require a PRO subscription.',
+                error: 'Social and Email generation require the Pro plan.',
                 requiredTier: 'PRO'
             });
         }
@@ -108,7 +108,7 @@ router.post('/generate', async (req: AuthRequest, res) => {
         // 2. Tier-based Tone Gating
         if (tone && userTier !== 'ELITE') {
             return res.status(403).json({ 
-                error: 'Custom Tone of Voice requires an ELITE subscription.',
+                error: 'Custom Tone of Voice requires the Elite plan.',
                 requiredTier: 'ELITE'
             });
         }

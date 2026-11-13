@@ -1,5 +1,6 @@
 "use client";
 
+import { planName } from "@/lib/plans";
 import { useExtra } from "@/lib/i18n/extra";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -160,7 +161,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
                         <p className="text-foreground text-sm font-semibold truncate">{getLocalizedName(user?.name)}</p>
                         <p className="text-xs text-foreground/40 font-medium truncate">
                             {user?.role ? ((t as any).roles?.[user.role] || user.role) : ''}
-                            {user?.tier ? ` · ${(t as any).tiers?.[user.tier] || user.tier}` : ''}
+                            {user?.tier ? ` · ${planName(t, user.tier)}` : ''}
                         </p>
                     </div>
                 </div>

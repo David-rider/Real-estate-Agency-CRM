@@ -1,5 +1,6 @@
 "use client";
 
+import { planName } from "@/lib/plans";
 import GoogleLinkPanel from "@/components/settings/GoogleLinkPanel";
 import { GOOGLE_CLIENT_ID } from "@/lib/features";
 import TwoFactorPanel from "@/components/settings/TwoFactorPanel";
@@ -555,7 +556,7 @@ export default function SettingsPage() {
           <div className="text-xs font-semibold uppercase tracking-widest text-foreground/40 mb-4">{O.subscription ?? "Subscription"}</div>
           <div className="flex items-center justify-between p-4 bg-surface rounded-lg border border-border">
             <div>
-              <div className="text-sm font-semibold text-foreground">{fmt(XE.ui.planLabel, { tier: user?.tier || "CORE" })}</div>
+              <div className="text-sm font-semibold text-foreground">{fmt(XE.ui.planLabel, { tier: planName(t, user?.tier) })}</div>
               {orgPlan && (
                 <div className="text-xs text-foreground/50 mt-0.5">
                   {orgPlan.seats.limit === null
