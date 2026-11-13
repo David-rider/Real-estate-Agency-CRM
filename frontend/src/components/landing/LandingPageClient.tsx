@@ -1,5 +1,6 @@
 "use client";
 
+import { LEGAL } from "@/lib/i18n/legal";
 import { useExtra } from "@/lib/i18n/extra";
 import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
@@ -968,6 +969,12 @@ export default function LandingPageClient() {
             </Link>
             <Link href="/signup" className="hover:text-foreground transition-colors">
               {copy.nav.getStarted}
+            </Link>
+            <Link href="/privacy" className="hover:text-foreground transition-colors">
+              {(LEGAL[language] ?? LEGAL.en).privacyLink}
+            </Link>
+            <Link href="/terms" className="hover:text-foreground transition-colors">
+              {(LEGAL[language] ?? LEGAL.en).termsLink}
             </Link>
           </div>
           <span>
