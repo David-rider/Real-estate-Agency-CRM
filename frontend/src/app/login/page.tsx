@@ -1,5 +1,7 @@
 "use client";
 
+import GoogleSignInButton from "@/components/auth/GoogleSignInButton";
+import { GOOGLE_CLIENT_ID } from "@/lib/features";
 import { langHeader } from "@/lib/api";
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -52,6 +54,28 @@ export default function LoginPage() {
         );
       }
     } catch (err) {
+      setError(t.login.serverError);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Google sign-in: the ID token is verified by the backend; 2FA continues on the code step below
+  const handleGoogle = async (idToken: string) => {
+    setError("");
+    setIsLoading(true);
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/oauth/google`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json", "X-CSRF-Protection": "1", ...langHeader() },
+        body: JSON.stringify({ idToken }),
+      });
+      const data = await res.json();
+      if (res.ok && data.twoFactorRequired) { setChallenge(data.challenge); setCode(""); }
+      else if (res.ok && data.token) login(data.token, data.user);
+      else setError(data.error || t.login.invalidCredentials);
+    } catch {
       setError(t.login.serverError);
     } finally {
       setIsLoading(false);
@@ -225,6 +249,7 @@ export default function LoginPage() {
 
               {/* OAuth buttons — demo/prototype only */}
               <div className="space-y-3">
+                {GOOGLE_CLIENT_ID ? <GoogleSignInButton onCredential={handleGoogle} /> : (
                 <button
                   type="button"
                   disabled
@@ -240,6 +265,7 @@ export default function LoginPage() {
                   {t.login.continueGoogle}
                   <span className="text-[10px] text-foreground/30 ml-1">{X.ui.comingSoon}</span>
                 </button>
+                )}
 
                 <button
                   type="button"

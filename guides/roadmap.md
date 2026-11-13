@@ -51,7 +51,7 @@ This file lists what to do after the trial launch, in priority order by stage. E
 | 1.2.0.0 | 1.2 线索自动分配<br>*Automatic lead routing* | ✅ | 支持轮询/最低负载/指定人/挂牌经纪人规则、接单开关与干跑模拟器<br>*Round-robin / lowest-load / named-agent / listing-agent rules, an accepting-leads switch and a dry-run simulator* |
 | 1.2.0.0 | 1.3 邮件提醒<br>*Email reminders* | ✅ | 支持新线索/报价/预约前24h/任务逾期邮件提醒与个人通知偏好持久化<br>*Emails for new leads / offers / 24h before appointments / overdue tasks, with persisted personal notification preferences* |
 | 1.2.0.0 | 1.4 公开页地址自定义<br>*Custom public page address* | ✅ | 支持自定义 `slug`、`OrgSlugHistory` 旧地址自动跳转、Logo 直传与品牌主题色<br>*Custom `slug`, automatic redirects from old addresses via `OrgSlugHistory`, direct logo upload and brand theme colour* |
-| 1.2.0.0 | 1.5 Google 登录<br>*Google sign-in* | ⏸ | 非核心痛点，移至后续按需开启（需 Google OAuth 凭证）<br>*Not a core pain point; postponed and enabled on demand (needs Google OAuth credentials)* |
+| 1.2.0.0 | 1.5 Google 登录<br>*Google sign-in* | ✅ | 已完成（2026-11-13）：Google 官方按钮、已验证邮箱自动关联、设置里关联 / 取消关联；配置 Google 客户端 ID 后上线<br>*Done (2026-11-13): Google's official button, automatic linking for verified emails, link / unlink in Settings; live once the Google client ID is configured* |
 | 1.2.0.0 | 3.3a 客户与房源 CSV 批量导入<br>*Bulk CSV import of clients and listings* | ✅ | 支持中英西表头自动映射、5行预览、跳过/更新防重策略与模板下载<br>*Automatic header mapping in Chinese / English / Spanish, 5-row preview, skip/update duplicate strategies and template download* |
 | 1.3.0.0 | 2.1 邮件群发与序列<br>*Email blasts and sequences* | ⬜ | |
 | 1.3.0.0 | 2.2 短信<br>*SMS* | ⬜ | 先提交 Twilio A2P 注册<br>*Submit the Twilio A2P registration first* |
@@ -60,7 +60,7 @@ This file lists what to do after the trial launch, in priority order by stage. E
 | 1.4.0.0 | 3.1 DocuSign | ⬜ | |
 | 1.4.0.0 | 3.2 Google 日历同步<br>*Google Calendar sync* | ⬜ | |
 | 1.4.0.0 | 3.3b MLS / StreetEasy 自动同步<br>*MLS / StreetEasy automatic sync* | ⬜ | 需 REBNY RLS / RESO 数据授权<br>*Needs REBNY RLS / RESO data authorisation* |
-| 1.4.0.0 | 3.4 Apple 登录（带校验）<br>*Apple sign-in (with verification)* | ⬜ | |
+| 1.4.0.0 | 3.4 Apple 登录（带校验）<br>*Apple sign-in (with verification)* | 🟡 | 服务器端校验已写好（2026-11-13）；等 Apple 开发者账号（每年 $99）后配置并做前端按钮<br>*Server-side verification written (2026-11-13); configure it and add the frontend button once there is an Apple developer account ($99/year)* |
 | 1.4.0.0 | 3.5 交易流程增强<br>*Deal-flow enhancements* | ✅ | 交易详情面板（关键日期时间轴、清单勾选、佣金比例）、合作经纪人按比例分佣、按公司自定义过户清单模板<br>*Deal detail panel (key-date timeline, checklist ticking, commission rate), co-agent commission split, per-company custom closing-checklist template* |
 | 1.5.0.0 | 4 AI 助手正式上线<br>*AI assistant goes live* | ⏸ | 代码已有，开关关闭（“正在开发”）<br>*Code exists, switch is off (“in development”)* |
 | 2.x.0.0 | 5.x 团队管理与移动端<br>*Team management and mobile* | ⬜ | 按客户反馈排序<br>*Ordered by customer feedback* |

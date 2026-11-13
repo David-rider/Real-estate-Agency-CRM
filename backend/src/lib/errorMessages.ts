@@ -11,6 +11,10 @@ import { Lang, isLang } from './messages';
 type T3 = [string, string, string]; // zh-CN, zh-TW, es
 
 export const ERROR_TEXT: Record<string, T3> = {
+    "Apple identity token is required": ["缺少 Apple 身份令牌", "缺少 Apple 身分權杖", "Se requiere el token de Apple"],
+    "Invalid Apple token": ["Apple 身份令牌无效", "Apple 身分權杖無效", "Token de Apple no válido"],
+    "This account is already linked to another user": ["这个账号已经关联到另一个用户", "這個帳號已經連結到另一個使用者", "Esta cuenta ya está vinculada a otro usuario"],
+    "Set a password before unlinking, so you can still sign in": ["请先设置密码再取消关联，以免无法登录", "請先設定密碼再取消連結，以免無法登入", "Establezca una contraseña antes de desvincular, para poder seguir iniciando sesión"],
     "A valid date is required": ["请填写有效的日期", "請填寫有效的日期", "Se requiere una fecha válida"],
     "A valid http(s) link is required": ["请填写有效的 http(s) 链接", "請填寫有效的 http(s) 連結", "Se requiere un enlace http(s) válido"],
     "A valid offer amount is required": ["请填写有效的报价金额", "請填寫有效的出價金額", "Se requiere un monto de oferta válido"],
