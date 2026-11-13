@@ -21,6 +21,10 @@
 
 ## [未发布]
 
+#### 新增 / Added
+- 新增“隐私政策”（`/privacy`）和“服务条款”（`/terms`）页面，四种语言，未登录也能打开；首页底部有链接。说明了用 Google 登录时只获取姓名、邮箱和 Google 账号 ID，且只用于登录。
+  *New Privacy Policy (`/privacy`) and Terms of Service (`/terms`) pages in all four languages, open to signed-out visitors and linked from the home-page footer. They state that Google sign-in only receives your name, email and Google account ID, used only for signing in.*
+
 #### 变更 / Changed
 - 部署：新增 Cloudflare Workers 部署配置（`frontend/wrangler.jsonc`、`frontend/cloudflare/worker.js`），前端可以同时部署到 Cloudflare 免费版；旧链接在 Cloudflare 上同样自动跳转。正式切换前，Vercel 地址照常使用。
   *Deployment: added the Cloudflare Workers config (`frontend/wrangler.jsonc`, `frontend/cloudflare/worker.js`) so the frontend can also deploy to Cloudflare's free plan, with old links redirecting there too. Until the switch-over, the Vercel address stays in use.*

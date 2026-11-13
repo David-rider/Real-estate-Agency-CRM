@@ -64,6 +64,8 @@ happen; note anything that doesn't.
       *经理和经纪人能看到安全规则，但不能保存修改。*
 - [ ] **Sign in with Google** (once the Google client ID is configured): on the sign-in page click the Google button and choose the Google account that uses your CRM email — you land in your own account (not a new brokerage). Sign out and sign in with Google again — it goes straight in. With 2FA on, Google sign-in still asks for the 6-digit code.
       *用 Google 登录（配置 Google 客户端 ID 之后）：在登录页点 Google 按钮，选择与 CRM 邮箱相同的 Google 账号——进入的是你原来的账号（不会新建公司）。退出后再用 Google 登录——直接进入。开启两步验证时，用 Google 登录也会要求输入 6 位验证码。*
+- [ ] Signed out, open the home page footer links **Privacy Policy** and **Terms of Service** — both open without signing in and follow the language switcher.
+      *未登录时，点首页底部的“隐私政策”和“服务条款”——不用登录就能打开，并随语言切换。*
 - [ ] Settings → Security shows **Google account: Linked**; click **Unlink**, then link it again with the Google button there.
       *“设置 → 安全”显示“Google 账号：已关联”；点“取消关联”，再用那里的 Google 按钮重新关联。*
 - [ ] **Login alerts** (on by default): sign in from a different browser or your phone — you receive a "New sign-in to your account" email with the device, IP and time. Signing in again from the same browser sends nothing. Turn the switch off and the alert stops.

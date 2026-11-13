@@ -9,7 +9,7 @@ import { useExtra } from '@/lib/i18n/extra';
 
 const PUBLIC_ROUTES = [
     '/login', '/signup', '/forgot-password', '/reset-password',
-    '/verify-email', '/public-listings', '/property', '/not-found',
+    '/verify-email', '/public-listings', '/property', '/privacy', '/terms', '/not-found',
 ];
 
 export default function AuthLayoutWrapper({ children }: { children: React.ReactNode }) {
