@@ -1,3 +1,4 @@
+import { appUrl as getAppUrl } from '../lib/appUrl';
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
@@ -194,7 +195,7 @@ router.post('/register', authLimiter, async (req, res) => {
         // Send verification email (non-blocking — fails gracefully if SMTP not configured)
         try {
             await (prisma as any).$executeRaw`UPDATE "User" SET "emailVerifyToken" = ${verifyToken} WHERE id = ${newUser.id}`;
-            const appUrl = process.env.APP_URL || 'http://localhost:3000';
+            const appUrl = getAppUrl();
             const verifyUrl = `${appUrl}/verify-email?token=${verifyToken}`;
             sendEmail({ to: newUser.email, subject: EMAIL[lang].verify.subject, html: welcomeEmail(verifyUrl, newUser.name, lang) }).catch(console.error);
         } catch (emailErr) {
@@ -250,7 +251,7 @@ router.post('/forgot-password', authLimiter, async (req, res) => {
             data: { passwordResetToken: hashToken(token), passwordResetExpiry: expiresAt }
         });
 
-        const appUrl = process.env.APP_URL || 'http://localhost:3000';
+        const appUrl = getAppUrl();
         const resetUrl = `${appUrl}/reset-password?token=${token}`;
 
         await sendEmail({
@@ -410,7 +411,7 @@ router.post('/resend-verification', authLimiter, async (req, res) => {
         const verifyToken = crypto.randomBytes(32).toString('hex');
         await prisma.user.update({ where: { id: user.id }, data: { emailVerifyToken: verifyToken } });
 
-        const appUrl = process.env.APP_URL || 'http://localhost:3000';
+        const appUrl = getAppUrl();
         const lang: Lang = isLang(req.body.language) ? req.body.language : normalizeLang(user.preferredLanguage);
         await sendEmail({
             to: user.email,

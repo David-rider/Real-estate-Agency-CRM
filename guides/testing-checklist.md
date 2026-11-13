@@ -64,6 +64,8 @@ happen; note anything that doesn't.
       *经理和经纪人能看到安全规则，但不能保存修改。*
 - [ ] **Sign in with Google** (once the Google client ID is configured): on the sign-in page click the Google button and choose the Google account that uses your CRM email — you land in your own account (not a new brokerage). Sign out and sign in with Google again — it goes straight in. With 2FA on, Google sign-in still asks for the 6-digit code.
       *用 Google 登录（配置 Google 客户端 ID 之后）：在登录页点 Google 按钮，选择与 CRM 邮箱相同的 Google 账号——进入的是你原来的账号（不会新建公司）。退出后再用 Google 登录——直接进入。开启两步验证时，用 Google 登录也会要求输入 6 位验证码。*
+- [ ] On the sign-in page click **Forgot password**, enter your email — the reset email arrives (in the language you chose) from noreply@notify.apexzone.xyz; its button opens the new site's reset page and lets you set a new password.
+      *在登录页点“忘记密码”，输入邮箱——会收到 noreply@notify.apexzone.xyz 发来的重置邮件（语言与所选一致）；点按钮打开新网站的重置页面并能设置新密码。*
 - [ ] Signed out, open the home page footer links **Privacy Policy** and **Terms of Service** — both open without signing in and follow the language switcher.
       *未登录时，点首页底部的“隐私政策”和“服务条款”——不用登录就能打开，并随语言切换。*
 - [ ] Settings → Security shows **Google account: Linked**; click **Unlink**, then link it again with the Google button there.

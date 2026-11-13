@@ -21,6 +21,14 @@
 
 ## [未发布]
 
+#### 修复 / Fixed
+- 重置密码、邀请、登录提醒等邮件里的链接，在网站地址末尾带斜杠时会出现双斜杠（`//reset-password`），现在统一修正。
+  *Links in password-reset, invitation and sign-in alert emails got a double slash (`//reset-password`) when the site address ended in a slash; now fixed everywhere.*
+
+#### 移除 / Removed
+- 设置 → 外观里 4 个从未生效的预览选项（侧边栏位置、布局密度、日期格式、数字格式）和“即将推出”提示；主题照常可用，日期和数字继续跟随所选语言显示。
+  *The 4 never-working preview options in Settings → Appearance (sidebar position, density, date format, number format) and their "Coming soon" banner; themes work as before, and dates and numbers keep following the chosen language.*
+
 ## [1.5.0.0] — 2026-11-13 · Google 登录、迁移到 Cloudflare、全站多语言补全、新增房源可加照片、隐私政策与服务条款 / Sign in with Google, move to Cloudflare, site-wide translation, photos on new listings, privacy policy and terms
 
 #### 新增 / Added

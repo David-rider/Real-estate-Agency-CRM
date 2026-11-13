@@ -1,3 +1,4 @@
+import { appUrl as getAppUrl } from '../lib/appUrl';
 import { Router } from 'express';
 import { prisma } from '../server';
 import { Prisma } from '@prisma/client';
@@ -492,7 +493,7 @@ router.post('/invite', authorizeRole(['SUPERADMIN', 'FIRMADMIN', 'MANAGER']), as
         const inviter = await prisma.user.findUnique({ where: { id: req.user.userId }, select: { name: true, email: true, preferredLanguage: true } });
         const inviterName = inviter?.name || inviter?.email || 'A team member';
         const org = await prisma.organization.findUnique({ where: { id: req.user.orgId } });
-        const appUrl = process.env.APP_URL || 'http://localhost:3000';
+        const appUrl = getAppUrl();
         // The invitee has no account yet, so the email follows the language of the person who invites
         const lang: Lang = isLang(req.body.language) ? req.body.language : normalizeLang(inviter?.preferredLanguage);
 

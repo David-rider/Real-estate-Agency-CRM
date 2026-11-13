@@ -807,40 +807,6 @@ export default function SettingsPage() {
             ))}
           </div>
         </SettingRow>
-        {/* Only the theme picker above is wired up; the rest are not connected to anything yet */}
-        <div className="mt-6">
-          {soonBanner()}
-          {previewOnly(
-            <>
-              <SettingRow label={AP.sidebarPosition ?? "Sidebar Position"} description={AP.sidebarPositionDesc}>
-                <select className={SELECT_CLS}>
-                  <option>{AP.sidebarLeft ?? "Left (default)"}</option>
-                  <option>{AP.sidebarCollapsed ?? "Collapsed"}</option>
-                </select>
-              </SettingRow>
-              <SettingRow label={AP.density ?? "Density"} description={AP.densityDesc}>
-                <select className={SELECT_CLS}>
-                  <option value="comfortable">{AP.densityComfortable ?? "Comfortable"}</option>
-                  <option value="compact">{AP.densityCompact ?? "Compact"}</option>
-                  <option value="spacious">{AP.densitySpacious ?? "Spacious"}</option>
-                </select>
-              </SettingRow>
-              <SettingRow label={AP.dateFormat ?? "Date Format"}>
-                <select className={SELECT_CLS}>
-                  <option value="MM/DD/YYYY">MM/DD/YYYY ({XE.ui.fmtUS})</option>
-                  <option value="DD/MM/YYYY">DD/MM/YYYY ({XE.ui.fmtEU})</option>
-                  <option value="YYYY-MM-DD">YYYY-MM-DD ({XE.ui.fmtISO})</option>
-                </select>
-              </SettingRow>
-              <SettingRow label={AP.numberFormat ?? "Number Format"}>
-                <select className={SELECT_CLS}>
-                  <option value="1,234,567">1,234,567 ({XE.ui.fmtUS})</option>
-                  <option value="1.234.567">1.234.567 ({XE.ui.fmtEU})</option>
-                </select>
-              </SettingRow>
-            </>
-          )}
-        </div>
       </div>
     );
   };

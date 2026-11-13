@@ -1,3 +1,4 @@
+import { appUrl as getAppUrl } from './appUrl';
 import crypto from 'crypto';
 import { PrismaClient } from '@prisma/client';
 import { sendEmail, loginAlertEmail } from './email';
@@ -56,7 +57,7 @@ export async function recordLogin(prisma: PrismaClient, userId: string, ua: stri
         if (known.length === 0 || !user.loginAlerts) return;
 
         const lang = normalizeLang(user.preferredLanguage);
-        const appUrl = process.env.APP_URL || 'http://localhost:3000';
+        const appUrl = getAppUrl();
         await sendEmail({
             to: user.email,
             subject: EMAIL[lang].loginAlert.subject,

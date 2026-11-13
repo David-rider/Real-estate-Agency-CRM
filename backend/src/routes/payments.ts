@@ -1,3 +1,4 @@
+import { appUrl as getAppUrl } from '../lib/appUrl';
 import express from 'express';
 import Stripe from 'stripe';
 import { prisma } from '../server';
@@ -54,7 +55,7 @@ router.post('/checkout', authenticateToken, async (req: AuthRequest, res) => {
         const priceId = PLAN_PRICES[planId];
         if (!priceId) return res.status(400).json({ error: 'Invalid plan ID' });
 
-        const appUrl = process.env.APP_URL || 'http://localhost:3000';
+        const appUrl = getAppUrl();
 
         const session = await stripe.checkout.sessions.create({
             mode: 'subscription',
@@ -142,7 +143,7 @@ router.get('/portal', authenticateToken, async (req: AuthRequest, res) => {
         if (!stripe) return res.status(503).json({ error: 'Payment service not configured' });
         if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
 
-        const appUrl = process.env.APP_URL || 'http://localhost:3000';
+        const appUrl = getAppUrl();
 
         // Find or create Stripe customer
         const user = await prisma.user.findUnique({ where: { id: req.user.userId } });
