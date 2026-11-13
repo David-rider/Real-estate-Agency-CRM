@@ -35,6 +35,10 @@
 - 站内通知现在跟随你当前选择的语言显示，切换语言后立即生效；以前生成的旧通知（例如“Deal status updated”“Payout approved”）也会被翻译。以前通知的文字在生成时就固定下来，切换语言不会改变。
   *In-app notifications now follow your current language and change as soon as you switch; older ones (such as "Deal status updated" or "Payout approved") are translated too. Before, the text was frozen when the notification was created and ignored the language switch.*
 
+#### 新增 / Added
+- 新增房源时可以直接加照片：从电脑上传，或粘贴图片链接；可预览、移除、调整顺序（第一张是封面），保存房源时一起保存，并遵守公司的每房源照片上限。也可以填写虚拟看房链接。以前要先保存房源，再到“相册管理”里加照片。
+  *Photos can now be added while creating a listing: upload from your computer or paste image links, preview, remove and reorder them (the first is the cover); they are saved with the listing and respect the brokerage's photo limit. A virtual-tour link can be entered too. Before, photos could only be added afterwards under "Photos".*
+
 ---
 
 ## [1.4.2.0] — 2026-11-12 · 错误提示与过户清单多语言、移除访问控制栏目、数据库结构说明同步 / Localized error messages and checklist titles, Access Control section removed, schema description synced

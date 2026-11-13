@@ -44,8 +44,13 @@ export default function ListingsPage() {
     neighborhood: "",
     yearBuilt: "",
     description: "",
+    virtualTourUrl: "",
   });
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  // Photos chosen in the "new listing" dialog: local files (uploaded after the listing is created) or image links
+  type NewPhoto = { id: string; file?: File; url?: string; preview: string };
+  const [newPhotos, setNewPhotos] = React.useState<NewPhoto[]>([]);
+  const [photoLink, setPhotoLink] = React.useState("");
 
   // Media Modal State
   const [isMediaModalOpen, setIsMediaModalOpen] = React.useState(false);
@@ -140,9 +145,34 @@ export default function ListingsPage() {
   const blankForm = () => ({
     address: "", city: "New York", state: "NY", zip: "", price: "", beds: "", baths: "", sqft: "",
     status: photoRuleActive ? "COMING_SOON" : preferences.properties.defaultStatus,
-    propertyType: "", neighborhood: "", yearBuilt: "", description: "",
+    propertyType: "", neighborhood: "", yearBuilt: "", description: "", virtualTourUrl: "",
   });
-  const openAddModal = () => { setFormData(blankForm()); setIsAddModalOpen(true); };
+  const clearNewPhotos = () => setNewPhotos((prev) => { prev.forEach((p) => p.file && URL.revokeObjectURL(p.preview)); return []; });
+  const openAddModal = () => { setFormData(blankForm()); clearNewPhotos(); setPhotoLink(""); setIsAddModalOpen(true); };
+
+  const photoCap = lp.maxPhotosPerListing > 0 ? lp.maxPhotosPerListing : Infinity;
+  const addNewPhotoFiles = (files: FileList | null) => {
+    if (!files) return;
+    const room = photoCap - newPhotos.length;
+    const chosen = Array.from(files).filter((f) => f.type.startsWith("image/"));
+    if (chosen.length > room) toast.error(fmt(X.ui.photoCap, { n: lp.maxPhotosPerListing }));
+    setNewPhotos((prev) => [...prev, ...chosen.slice(0, Math.max(0, room)).map((file) => ({ id: crypto.randomUUID(), file, preview: URL.createObjectURL(file) }))]);
+  };
+  const addNewPhotoLink = () => {
+    const url = photoLink.trim();
+    if (!/^https?:\/\/\S+$/i.test(url)) { toast.error(X.ui.badLink); return; }
+    if (newPhotos.length >= photoCap) { toast.error(fmt(X.ui.photoCap, { n: lp.maxPhotosPerListing })); return; }
+    setNewPhotos((prev) => [...prev, { id: crypto.randomUUID(), url, preview: url }]);
+    setPhotoLink("");
+  };
+  const moveNewPhoto = (i: number, dir: -1 | 1) => setNewPhotos((prev) => {
+    const j = i + dir;
+    if (j < 0 || j >= prev.length) return prev;
+    const next = [...prev];
+    [next[i], next[j]] = [next[j], next[i]];
+    return next;
+  });
+  const removeNewPhoto = (id: string) => setNewPhotos((prev) => prev.filter((p) => { if (p.id === id && p.file) URL.revokeObjectURL(p.preview); return p.id !== id; }));
 
   // Coming Soon -> Active (the server checks the photo rule and tells us what is missing)
   const goActive = async (id: string) => {
@@ -157,30 +187,29 @@ export default function ListingsPage() {
   const handleAddProperty = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    const token = localStorage.getItem("token");
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/properties`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(formData),
-      });
-      if (res.ok) {
-        setIsAddModalOpen(false);
-        setFormData(blankForm());
-        fetchProperties();
-      } else if (res.status === 401) {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-        window.location.href = "/login";
-      } else {
-        const errData = await res.json().catch(() => ({}));
-        toast.error(errData.error || "Failed to add listing. Please try again.");
+      const created = await api<{ id: string }>("/api/properties", { method: "POST", body: formData });
+      // Then the photos, in the chosen order (the first one becomes the cover)
+      let failed = 0;
+      for (const p of newPhotos) {
+        try {
+          if (p.file) {
+            const uploaded = await uploadFile(p.file, "PUBLIC");
+            await api("/api/media", { method: "POST", body: { url: uploaded.url, storageKey: uploaded.storageKey, sizeBytes: uploaded.sizeBytes, mimeType: uploaded.mimeType, type: "image", propertyId: created.id } });
+          } else if (p.url) {
+            await api("/api/media", { method: "POST", body: { url: p.url, type: "image", propertyId: created.id } });
+          }
+        } catch {
+          failed++;
+        }
       }
-    } catch (error) {
-      console.error(error);
+      if (failed > 0) toast.error(fmt(X.ui.photosAddFail, { n: failed }));
+      setIsAddModalOpen(false);
+      setFormData(blankForm());
+      clearNewPhotos();
+      fetchProperties();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : X.common.error);
     } finally {
       setIsSubmitting(false);
     }
@@ -209,7 +238,7 @@ export default function ListingsPage() {
       setMediaFormData({ url: "", type: "image" });
     } catch (error) {
       console.error(error);
-      toast.error("Failed to add media asset. Please check the URL and try again.");
+      toast.error(error instanceof Error ? error.message : X.common.error);
     } finally {
       setIsMediaSubmitting(false);
     }
@@ -750,6 +779,55 @@ export default function ListingsPage() {
                   maxLength={lp.descriptionMaxChars > 0 ? lp.descriptionMaxChars : undefined}
                   rows={4}
                   className="w-full px-4 py-3 bg-background border border-border/60 rounded-xl text-base text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-sans shadow-sm resize-none"
+                />
+              </div>
+
+              {/* Photos: upload or paste links; saved right after the listing is created */}
+              <div>
+                <label className="block font-sans text-sm font-semibold text-foreground/60 mb-1">{X.ui.newPhotos}</label>
+                <p className="text-xs text-foreground/50 mb-3">{X.ui.newPhotosHint}</p>
+                <div className="flex flex-wrap items-center gap-2 mb-3">
+                  <label className="px-4 py-2 bg-surface border border-border/60 rounded-xl text-sm font-semibold text-foreground cursor-pointer hover:bg-background">
+                    {X.ui.addFiles}
+                    <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => { addNewPhotoFiles(e.target.files); e.target.value = ""; }} />
+                  </label>
+                  <input
+                    type="url"
+                    value={photoLink}
+                    onChange={(e) => setPhotoLink(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addNewPhotoLink(); } }}
+                    placeholder={X.ui.photoLinkPh}
+                    className="flex-1 min-w-[200px] px-4 py-2 bg-background border border-border/60 rounded-xl text-sm text-foreground focus:border-primary outline-none"
+                  />
+                  <button type="button" onClick={addNewPhotoLink} className="px-4 py-2 bg-surface border border-border/60 rounded-xl text-sm font-semibold text-foreground hover:bg-background">{X.ui.addLink}</button>
+                </div>
+                {newPhotos.length > 0 && (
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                    {newPhotos.map((p, i) => (
+                      <div key={p.id} className="relative rounded-lg overflow-hidden ring-1 ring-border/50 bg-surface aspect-[4/3]">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={p.preview} alt={X.ui.photo} className="w-full h-full object-cover" />
+                        {i === 0 && <span className="absolute top-1 left-1 px-1.5 py-0.5 rounded bg-primary text-background text-[10px] font-semibold">{X.ui.cover}</span>}
+                        <div className="absolute bottom-0 inset-x-0 flex justify-between bg-black/50 text-white text-xs">
+                          <button type="button" aria-label={X.ui.moveLeft} disabled={i === 0} onClick={() => moveNewPhoto(i, -1)} className="px-2 py-1 disabled:opacity-30">◀</button>
+                          <button type="button" onClick={() => removeNewPhoto(p.id)} className="px-2 py-1">{X.ui.removePhoto}</button>
+                          <button type="button" aria-label={X.ui.moveRight} disabled={i === newPhotos.length - 1} onClick={() => moveNewPhoto(i, 1)} className="px-2 py-1 disabled:opacity-30">▶</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="block font-sans text-sm font-semibold text-foreground/60 mb-2">{X.ui.virtualTourLabel}</label>
+                <input
+                  type="url"
+                  name="virtualTourUrl"
+                  value={formData.virtualTourUrl}
+                  onChange={handleChange}
+                  placeholder="https://"
+                  className="w-full px-4 py-3 bg-background border border-border/60 rounded-xl text-base text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all shadow-sm"
                 />
               </div>
 
