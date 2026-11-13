@@ -22,6 +22,12 @@
 ## [未发布]
 
 #### 修复 / Fixed
+- 工作台的“新增线索”以前点了没反应，现在直接打开新增客户表单。
+  *"New lead" on the dashboard did nothing; it now opens the add-client form directly.*
+- 交易漏斗的“列表视图”和“新建交易”以前都跳到“交易办理”；现在“列表视图”在本页切换为表格（可直接改阶段，并记住你的选择），“新建交易”在本页弹出表单。交易办理页的新建交易改用同一个表单，保存失败时会提示原因。
+  *"List view" and "New deal" on the pipeline both jumped to Transactions; "List view" now switches to a table on the same page (stage editable, choice remembered) and "New deal" opens a form in place. Transactions uses the same form, which now shows why a save failed.*
+- 新建日程时日期改为从日历里选、时间从下拉列表选（每 15 分钟一档），不能再手工输入出错（例如年份 123333）；服务器也会拒绝不合理的年份。
+  *New appointments: the date is picked from a calendar and the time from a dropdown (15-minute steps), so typos like the year 123333 are no longer possible; the server also rejects impossible years.*
 - 多语言补漏：首页和报表图表的月份、营销页的套餐标签（PRO / ELITE）、线索来源（转介绍、看板来电、老客户等）和营销设置里的品牌语气示例，以前在中文 / 西语界面下显示英文，现在都跟随所选语言；线索来源仍按原名保存，旧数据不受影响。
   *Translation gaps closed: chart months on the dashboard and Reports, the plan tags (PRO / ELITE) on Marketing, lead sources (referral, sign call, past client…) and the brand-voice example in Marketing settings used to show English in Chinese / Spanish; they now follow the chosen language. Lead sources are still stored under their original names, so existing data is unaffected.*
 - 部署：数据库迁移改用直连（不经过 Neon 连接池），避免迁移锁残留在连接池里、导致之后每次部署都超时失败。新增可选环境变量 `DIRECT_DATABASE_URL`，不设置时自动由 `DATABASE_URL` 推出。

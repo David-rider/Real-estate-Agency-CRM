@@ -130,6 +130,8 @@ async function main() {
         const r = await call('POST', '/api/appointments', a, { title: 'Showing', type: 'SHOWING', date: new Date(Date.now() + 3600000).toISOString(), clientId, propertyId });
         assert.equal(r.status, 201, JSON.stringify(r.body));
         apptId = r.body.id;
+        const badYear = await call('POST', '/api/appointments', a, { title: 'Typo', date: '123333-03-31T03:33:00Z' });
+        assert.equal(badYear.status, 400, 'an impossible year is refused');
         const u = await call('PATCH', `/api/appointments/${apptId}`, a, { status: 'CONFIRMED', location: 'Lobby' });
         assert.equal(u.status, 200);
         assert.equal(u.body.status, 'CONFIRMED');
