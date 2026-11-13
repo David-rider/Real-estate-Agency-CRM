@@ -1,5 +1,6 @@
 "use client";
 
+import { sourceLabel } from "@/lib/format";
 import { Suspense } from "react";
 import React, { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -243,7 +244,7 @@ function ClientProfilePage() {
               {client.source && (
                 <div>
                   <label className="block text-xs uppercase tracking-widest text-foreground/30 font-bold mb-1">{X.crm.source}</label>
-                  <p className="font-sans text-base text-foreground/80">{client.source}</p>
+                  <p className="font-sans text-base text-foreground/80">{sourceLabel(X.ui.sources as Record<string, string>, client.source)}</p>
                 </div>
               )}
               {client.tags && (

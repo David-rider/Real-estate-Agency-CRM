@@ -1,5 +1,6 @@
 "use client";
 
+import { planName } from "@/lib/plans";
 import React, { useEffect, useState } from "react";
 import { useI18n } from "@/lib/i18n/I18nContext";
 import { useAuth } from "@/lib/auth/AuthContext";
@@ -195,7 +196,7 @@ export default function MarketingPage() {
                     {type.label}
                     {type.locked && (
                       <span className="absolute -top-1 -right-1 bg-surface ring-1 ring-border text-[8px] px-1 rounded shadow-sm text-foreground/40">
-                        PRO
+                        {planName(t, "PRO")}
                       </span>
                     )}
                   </button>
@@ -208,7 +209,7 @@ export default function MarketingPage() {
                 {t.marketing.tone}
                 {!canTone && (
                   <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded font-bold tracking-tighter">
-                    ELITE
+                    {planName(t, "ELITE")}
                   </span>
                 )}
               </label>

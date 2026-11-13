@@ -1,5 +1,6 @@
 "use client";
 
+import { monthLabel } from "@/lib/format";
 import PerformanceTab from "@/components/reports/PerformanceTab";
 import { useExtra } from "@/lib/i18n/extra";
 import React, { useState, useEffect, useCallback } from "react";
@@ -36,7 +37,7 @@ interface FinanceMetrics {
 }
 
 export default function ReportsPage() {
-    const { t } = useI18n();
+    const { t, language } = useI18n();
     const T = (t as any).reports ?? {};
     const Tpipe = (t as any).pipeline ?? {};
 
@@ -77,11 +78,11 @@ export default function ReportsPage() {
 
     useEffect(() => { fetchData(); }, [fetchData]);
 
-    const monthlyChart = dashData?.monthlyData || MONTH_NAMES.slice(0, 6).map((m) => ({
+    const monthlyChart = (dashData?.monthlyData || MONTH_NAMES.slice(0, 6).map((m) => ({
         month: m,
         deals: 0,
         commission: 0,
-    }));
+    }))).map((r) => ({ ...r, month: monthLabel(r.month, language) }));
 
     const pipelineData = dashData?.pipeline || [
         { stage: Tpipe.columns?.OFFER_REVIEW,    count: 0 },
