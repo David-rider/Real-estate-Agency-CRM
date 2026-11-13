@@ -2,7 +2,8 @@ import { Router } from 'express';
 import { prisma } from '../server';
 import { authenticateToken, AuthRequest } from '../middleware/authMiddleware';
 import { sendEmail, escapeHtml } from '../lib/email';
-import { EMAIL, Lang, NotificationKey, normalizeLang, notificationText } from '../lib/messages';
+import { EMAIL, Lang, NotificationKey, normalizeLang, notificationText, renderStoredNotification } from '../lib/messages';
+import { requestLang } from '../lib/errorMessages';
 
 const router = Router();
 router.use(authenticateToken);
@@ -117,7 +118,10 @@ router.get('/', async (req: AuthRequest, res) => {
             }),
         ]);
 
-        res.json({ notifications, unreadCount });
+        // Text in the reader's current language (not the language at creation time)
+        const lang = requestLang(req);
+        const localized = notifications.map((n) => ({ ...n, ...renderStoredNotification(lang, n.title, n.message, n.metadata) }));
+        res.json({ notifications: localized, unreadCount });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Failed to fetch notifications' });
@@ -193,7 +197,10 @@ export async function createNotification(
                     title:    text.title,
                     message:  text.message,
                     link,
-                    metadata: metadata ? JSON.stringify(metadata) : null,
+                    // Keep the catalog key so the text can be shown later in whatever language the reader uses
+                    metadata: (metadata || typeof title === 'object')
+                        ? JSON.stringify({ ...(metadata ?? {}), ...(typeof title === 'object' ? { i18n: { key: title.key, params: title.params ?? {} } } : {}) })
+                        : null,
                 },
             });
         }

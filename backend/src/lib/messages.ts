@@ -14,11 +14,18 @@ export function normalizeLang(v: unknown): Lang {
 
 const LOCALES: Record<Lang, string> = { en: 'en-US', 'zh-CN': 'zh-CN', 'zh-TW': 'zh-TW', es: 'es-US' };
 
-function fmtWhen(lang: Lang, d: Date): string {
+// Dates arrive as Date objects when a notification is created, and as ISO strings when it is re-rendered from storage
+const asDate = (d: Date | string | null | undefined): Date | null => (d ? (d instanceof Date ? d : new Date(d)) : null);
+
+function fmtWhen(lang: Lang, raw: Date | string): string {
+    const d = asDate(raw);
+    if (!d || isNaN(d.getTime())) return String(raw ?? '');
     return d.toLocaleString(LOCALES[lang], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 }
 
-function fmtUtc(d: Date | null | undefined): string {
+function fmtUtc(raw: Date | string | null | undefined): string {
+    const d = asDate(raw);
+    if (d && isNaN(d.getTime())) return String(raw);
     return d ? d.toISOString().replace('T', ' ').slice(0, 16) + ' UTC' : '';
 }
 
@@ -137,6 +144,53 @@ export type NotificationKey = keyof typeof N;
 
 export function notificationText(lang: Lang, key: NotificationKey, params: Record<string, unknown> = {}): NotificationText {
     return N[key][lang](params);
+}
+
+export function isNotificationKey(v: unknown): v is NotificationKey {
+    return typeof v === 'string' && v in N;
+}
+
+// ── Notifications stored before the catalog key was saved: recognise the English wording ──
+
+const reverse = (table: Record<string, Record<Lang, string>>, text: string) =>
+    Object.keys(table).find((k) => table[k].en === text) ?? text;
+const amount = (s: string) => Number(s.replace(/,/g, ''));
+
+type Legacy = { title: RegExp; message?: RegExp; key: NotificationKey; params?: (t: RegExpMatchArray, m: RegExpMatchArray | null) => Record<string, unknown>; titleOnly?: boolean };
+const LEGACY: Legacy[] = [
+    { title: /^Deal status updated$/, message: /^Deal moved to (.+)\.$/, key: 'dealStatus', params: (_t, m) => ({ status: reverse(DEAL_STATUS, m![1]) }) },
+    { title: /^Payout approved$/, message: /^Your commission payout of \$([\d,.]+) was approved\.$/, key: 'payoutApproved', params: (_t, m) => ({ amount: amount(m![1]) }) },
+    { title: /^Payout request returned$/, key: 'payoutReturned' },
+    { title: /^New referral$/, key: 'referralReceived' },
+    { title: /^New offer received$/, message: /^An offer of \$([\d,.]+) was submitted for (.+)\.$/, key: 'offerReceived', params: (_t, m) => ({ amount: amount(m![1]), address: m![2] }) },
+    { title: /^Offer (.+)$/, message: /^Your offer of \$([\d,.]+) on (.+) was (.+)\.$/, key: 'offerStatus', params: (_t, m) => ({ amount: amount(m![1]), address: m![2], status: reverse(OFFER_STATUS, m![3]) }) },
+    { title: /^(New client assigned to you|Client assigned to you)$/, message: /^(.+) was assigned to you\.$/, key: 'clientAssigned', params: (t, m) => ({ isNew: t[1].startsWith('New'), name: m![1] }) },
+    { title: /^Task overdue: (.+)$/, message: /^"(.+)" is past its due time \((.+)\)\.$/, key: 'taskOverdue', params: (t, m) => ({ title: t[1], date: m![2] }) },
+    { title: /^New (open house|website) lead$/, message: /^(.+) (?:signed in at the open house for|asked about) (.+?)\. (?:Follow up within 24 hours|Reach out within 5 minutes)\.$/, key: 'leadInquiry', params: (t, m) => ({ isNew: true, openHouse: t[1] === 'open house', name: m![1], address: m![2] }) },
+    // Wording with values that cannot be rebuilt reliably: translate the title, keep the message as stored
+    { title: /^Upcoming appointment$/, key: 'appointmentUpcoming', titleOnly: true },
+    { title: /^Appointment scheduled$/, key: 'appointmentScheduled', titleOnly: true },
+];
+
+/** The text of a stored notification in `lang`: from its saved catalog key, else by recognising old English wording. */
+export function renderStoredNotification(lang: Lang, title: string, message: string, metadata: string | null): NotificationText {
+    let saved: { key?: unknown; params?: Record<string, unknown> } | undefined;
+    try { saved = metadata ? JSON.parse(metadata)?.i18n : undefined; } catch { saved = undefined; }
+    if (saved && isNotificationKey(saved.key)) {
+        try { return notificationText(lang, saved.key, saved.params ?? {}); } catch { /* fall through */ }
+    }
+    if (lang === 'en') return { title, message };
+    for (const rule of LEGACY) {
+        const t = title.match(rule.title);
+        if (!t) continue;
+        const m = rule.message ? message.match(rule.message) : null;
+        if (rule.message && !m) continue;
+        try {
+            const text = notificationText(lang, rule.key, rule.params ? rule.params(t, m) : {});
+            return rule.titleOnly ? { title: text.title, message } : text;
+        } catch { return { title, message }; }
+    }
+    return { title, message };
 }
 
 // ── Emails ───────────────────────────────────────────────────────────────────

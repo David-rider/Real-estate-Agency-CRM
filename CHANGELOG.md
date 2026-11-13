@@ -27,6 +27,10 @@
 - 前端改为静态网站，为迁移到 Cloudflare 做准备。房源公开页、开放日签到海报和客户详情页的地址变成 `/property?id=…`、`/property/sign?id=…`、`/client?id=…`；新生成的二维码使用新地址。**以前打印的二维码和分享出去的旧链接会自动跳转到新地址，开放日参数保留，照常可用。**
   *The frontend is now a static site, in preparation for moving to Cloudflare. The public listing page, the open-house sign and the client detail page move to `/property?id=…`, `/property/sign?id=…` and `/client?id=…`; new QR codes use the new addresses. **QR codes printed earlier and old shared links redirect automatically to the new addresses, with the open-house parameter kept, and keep working.***
 
+#### 修复 / Fixed
+- 站内通知现在跟随你当前选择的语言显示，切换语言后立即生效；以前生成的旧通知（例如“Deal status updated”“Payout approved”）也会被翻译。以前通知的文字在生成时就固定下来，切换语言不会改变。
+  *In-app notifications now follow your current language and change as soon as you switch; older ones (such as "Deal status updated" or "Payout approved") are translated too. Before, the text was frozen when the notification was created and ignored the language switch.*
+
 ---
 
 ## [1.4.2.0] — 2026-11-12 · 错误提示与过户清单多语言、移除访问控制栏目、数据库结构说明同步 / Localized error messages and checklist titles, Access Control section removed, schema description synced
