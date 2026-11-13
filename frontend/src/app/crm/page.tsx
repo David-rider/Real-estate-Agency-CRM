@@ -404,7 +404,7 @@ export default function CRMPage() {
                     onChange={handleChange}
                     type="text"
                     className="w-full px-4 py-3 bg-background border border-border/60 rounded-xl text-base text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all placeholder:text-foreground/30 shadow-sm"
-                    placeholder="John"
+                    placeholder={X.ui.phFirstName}
                   />
                 </div>
                 <div>
@@ -418,7 +418,7 @@ export default function CRMPage() {
                     onChange={handleChange}
                     type="text"
                     className="w-full px-4 py-3 bg-background border border-border/60 rounded-xl text-base text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all placeholder:text-foreground/30 shadow-sm"
-                    placeholder="Doe"
+                    placeholder={X.ui.phLastName}
                   />
                 </div>
               </div>
@@ -434,7 +434,7 @@ export default function CRMPage() {
                   onChange={handleChange}
                   type="email"
                   className="w-full px-4 py-3 bg-background border border-border/60 rounded-xl text-base text-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all placeholder:text-foreground/30 shadow-sm"
-                  placeholder="john@example.com"
+                  placeholder={X.ui.phEmail}
                 />
               </div>
 
@@ -615,11 +615,11 @@ export default function CRMPage() {
                   <table className="w-full text-xs text-left">
                     <thead className="bg-surface border-b border-border text-foreground/50">
                       <tr>
-                        <th className="p-2">Name</th>
-                        <th className="p-2">Email</th>
-                        <th className="p-2">Phone</th>
-                        <th className="p-2">Type</th>
-                        <th className="p-2">Budget</th>
+                        <th className="p-2">{X.ui.colName}</th>
+                        <th className="p-2">{X.ui.colEmail}</th>
+                        <th className="p-2">{X.ui.colPhone}</th>
+                        <th className="p-2">{X.ui.colType}</th>
+                        <th className="p-2">{X.ui.colBudget}</th>
                       </tr>
                     </thead>
                     <tbody>

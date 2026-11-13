@@ -398,12 +398,9 @@ function ClientProfilePage() {
                     onChange={e => setEditForm({...editForm, funnelStage: e.target.value})}
                     className="w-full bg-background ring-1 ring-border/50 px-4 py-2.5 rounded-xl text-base outline-none appearance-none"
                   >
-                    <option value="LEAD">LEAD</option>
-                    <option value="QUALIFIED">QUALIFIED</option>
-                    <option value="SHOWING">SHOWING</option>
-                    <option value="OFFERING">OFFERING</option>
-                    <option value="IN_CONTRACT">IN CONTRACT</option>
-                    <option value="CLOSED">CLOSED</option>
+                    {(["LEAD", "QUALIFIED", "SHOWING", "OFFERING", "IN_CONTRACT", "CLOSED"] as const).map((s) => (
+                      <option key={s} value={s}>{X.ui.stages[s]}</option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -507,7 +504,7 @@ function ClientProfilePage() {
                   type="text" 
                   value={logForm.subject} 
                   onChange={e => setLogForm({...logForm, subject: e.target.value})}
-                  placeholder="Summarize the interaction..."
+                  placeholder={X.ui.phSummary}
                   className="w-full bg-background ring-1 ring-border/50 px-4 py-2.5 rounded-xl text-base outline-none focus:ring-primary/50 transition-all placeholder:text-foreground/20"
                 />
               </div>
@@ -517,7 +514,7 @@ function ClientProfilePage() {
                   value={logForm.content} 
                   onChange={e => setLogForm({...logForm, content: e.target.value})}
                   rows={4}
-                  placeholder="Record key takeaways or next steps..."
+                  placeholder={X.ui.phTakeaways}
                   className="w-full bg-background ring-1 ring-border/50 px-4 py-3 rounded-xl text-base outline-none focus:ring-primary/50 transition-all resize-none placeholder:text-foreground/20"
                 />
               </div>

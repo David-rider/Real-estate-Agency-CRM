@@ -234,7 +234,7 @@ export default function DocumentsPage() {
                     colSpan={5}
                     className="p-12 text-center text-foreground/40 font-sans text-sm uppercase tracking-widest"
                   >
-                    Loading...
+                    {X.ui.loading}
                   </td>
                 </tr>
               ) : filteredDocs.length === 0 ? (
@@ -391,7 +391,7 @@ export default function DocumentsPage() {
                   onChange={handleChange}
                   type="text"
                   className="w-full px-4 py-3 bg-surface border border-border rounded-none text-base text-foreground focus:border-primary outline-none transition-colors placeholder:text-foreground/20"
-                  placeholder="e.g. Signed Offer Sheet.pdf"
+                  placeholder={X.ui.phDocName}
                 />
               </div>
 

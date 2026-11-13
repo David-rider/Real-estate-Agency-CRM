@@ -901,7 +901,7 @@ const base = {
     upgrade: {
       title: "Unlock Elite Capabilities",
       adminOnly: "Plans cover your whole firm — ask your Firm Admin to upgrade.",
-      subtitle: "Join the top 1% of producing agents with Real Estate Brokerage Management Platform premium tools.",
+      subtitle: "Join the top 1% of producing agents with Real Estate CRM premium tools.",
       monthly: "Monthly",
       annual: "Annually",
       save: "Save 20%",
@@ -1940,7 +1940,7 @@ const base = {
     upgrade: {
       title: "解锁精英专属能力",
       adminOnly: "订阅方案适用于整个公司——请联系贵公司管理员进行升级。",
-      subtitle: "加入前 1% 的顶级经纪人行列，尊享 Real Estate Brokerage Management Platform 专属工具。",
+      subtitle: "加入前 1% 的顶级经纪人行列，尊享 Real Estate CRM 专属工具。",
       monthly: "按月付款",
       annual: "按年付款",
       save: "省 20%",
@@ -2979,7 +2979,7 @@ const base = {
     upgrade: {
       title: "解鎖精英專屬能力",
       adminOnly: "訂閱方案適用於整個公司——請聯繫貴公司管理員進行升級。",
-      subtitle: "加入前 1% 的頂級經紀人行列，尊享 Real Estate Brokerage Management Platform 專屬工具。",
+      subtitle: "加入前 1% 的頂級經紀人行列，尊享 Real Estate CRM 專屬工具。",
       monthly: "按月付款",
       annual: "按年付款",
       save: "省 20%",
@@ -3781,7 +3781,7 @@ const base = {
     upgrade: {
       title: "Desbloquear Capacidades de Élite",
       adminOnly: "Los planes cubren a toda su firma — pida a su Administrador que actualice el plan.",
-      subtitle: "Únete al 1% de los mejores agentes con herramientas de Real Estate Brokerage Management Platform.",
+      subtitle: "Únete al 1% de los mejores agentes con las herramientas premium de Real Estate CRM.",
       monthly: "Mensual",
       annual: "Anual",
       save: "Ahorra 20%",

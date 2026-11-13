@@ -43,6 +43,8 @@ export default function ReportsPage() {
     const [dashData,    setDashData]    = useState<DashData | null>(null);
     const [finMetrics,  setFinMetrics]  = useState<FinanceMetrics | null>(null);
     const [loading,     setLoading]     = useState(true);
+    // Real lead counts per source this fiscal year (from the performance report)
+    const [leadSources, setLeadSources] = useState<{ source: string; count: number }[]>([]);
     const [activeTab,   setActiveTab]   = useState("overview");
     const XR = useExtra();
 
@@ -58,12 +60,17 @@ export default function ReportsPage() {
         setLoading(true);
         try {
             const headers = { Authorization: `Bearer ${token()}` };
-            const [dashRes, finRes] = await Promise.all([
+            const [dashRes, finRes, perfRes] = await Promise.all([
                 fetch(`${API}/api/dashboard`, { headers }),
                 fetch(`${API}/api/finance/metrics`, { headers }),
+                fetch(`${API}/api/reports/performance`, { headers }),
             ]);
             if (dashRes.ok) setDashData(await dashRes.json());
             if (finRes.ok)  setFinMetrics(await finRes.json());
+            if (perfRes.ok) {
+                const perf = await perfRes.json();
+                setLeadSources((perf.sources ?? []).slice(0, 8).map((r: { source: string; leads: number }) => ({ source: r.source, count: r.leads })));
+            }
         } catch {}
         finally { setLoading(false); }
     }, []);
@@ -199,16 +206,12 @@ export default function ReportsPage() {
 
                     <div className="bg-surface border border-border rounded-xl p-6">
                         <h3 className="text-sm font-semibold text-foreground mb-4">{T.charts?.leadSource}</h3>
+                        {leadSources.length === 0 ? (
+                            <p className="text-sm text-foreground/50 py-16 text-center">{XR.ui.noSourceData}</p>
+                        ) : (
                         <ResponsiveContainer width="100%" height={220}>
                             <BarChart layout="vertical"
-                                data={[
-                                    { source: "Referral",    count: 42 },
-                                    { source: "StreetEasy",  count: 31 },
-                                    { source: "Zillow",      count: 24 },
-                                    { source: "Website",     count: 18 },
-                                    { source: "Cold Call",   count: 11 },
-                                    { source: "Open House",  count: 9 },
-                                ]}
+                                data={leadSources.map((r) => ({ ...r, source: (XR.ui.sources as Record<string, string>)[r.source] ?? r.source }))}
                                 margin={{ top: 0, right: 20, bottom: 0, left: 60 }}>
                                 <XAxis type="number" tick={{ fontSize: 11, fill: "var(--color-foreground)", opacity: 0.5 }} axisLine={false} tickLine={false} />
                                 <YAxis dataKey="source" type="category" tick={{ fontSize: 11, fill: "var(--color-foreground)", opacity: 0.5 }} axisLine={false} tickLine={false} />
@@ -216,6 +219,7 @@ export default function ReportsPage() {
                                 <Bar dataKey="count" fill="var(--color-primary)" radius={[0, 4, 4, 0]} />
                             </BarChart>
                         </ResponsiveContainer>
+                        )}
                     </div>
                 </div>
             )}

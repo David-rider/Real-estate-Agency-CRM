@@ -402,10 +402,10 @@ export default function SettingsPage() {
       <div>
         <SectionHeader title={P.title ?? "Profile"} description={P.desc ?? "Your personal information visible to teammates"} />
         <SettingRow label={P.fullName ?? "Full Name"} description={P.fullNameDesc}>
-          <input className={INPUT_CLS} value={profile.name} onChange={(e) => setProfile({ ...profile, name: e.target.value })} placeholder="Jane Smith" />
+          <input className={INPUT_CLS} value={profile.name} onChange={(e) => setProfile({ ...profile, name: e.target.value })} placeholder={XE.ui.phFullName} />
         </SettingRow>
         <SettingRow label={P.professionalTitle ?? "Professional Title"} description={P.professionalTitleDesc}>
-          <input className={INPUT_CLS} value={profile.title} onChange={(e) => setProfile({ ...profile, title: e.target.value })} placeholder="Senior Broker Associate" />
+          <input className={INPUT_CLS} value={profile.title} onChange={(e) => setProfile({ ...profile, title: e.target.value })} placeholder={XE.ui.phTitle} />
         </SettingRow>
         <SettingRow label={P.phone ?? "Phone"} description={P.phoneDesc}>
           <input className={INPUT_CLS} value={profile.phone} onChange={(e) => setProfile({ ...profile, phone: e.target.value })} placeholder="+1 (212) 555-0101" />
@@ -418,14 +418,14 @@ export default function SettingsPage() {
         </SettingRow>
         <SettingRow label={P.timezone ?? "Timezone"}>
           <select className={SELECT_CLS} value={profile.timezone} onChange={(e) => setProfile({ ...profile, timezone: e.target.value })}>
-            <option value="America/New_York">Eastern (ET)</option>
-            <option value="America/Chicago">Central (CT)</option>
-            <option value="America/Denver">Mountain (MT)</option>
-            <option value="America/Los_Angeles">Pacific (PT)</option>
+            <option value="America/New_York">{XE.ui.tzET}</option>
+            <option value="America/Chicago">{XE.ui.tzCT}</option>
+            <option value="America/Denver">{XE.ui.tzMT}</option>
+            <option value="America/Los_Angeles">{XE.ui.tzPT}</option>
           </select>
         </SettingRow>
         <SettingRow label={P.bio ?? "Bio"} description={P.bioDesc}>
-          <textarea className={TEXTAREA_CLS} style={{ width: 280 }} rows={3} value={profile.bio} onChange={(e) => setProfile({ ...profile, bio: e.target.value })} placeholder="NYC specialist with 10+ years..." />
+          <textarea className={TEXTAREA_CLS} style={{ width: 280 }} rows={3} value={profile.bio} onChange={(e) => setProfile({ ...profile, bio: e.target.value })} placeholder={XE.ui.phBio} />
         </SettingRow>
         <SaveBtn label={saving ? "…" : (P.save ?? "Save Profile")} onClick={saveProfile} />
       </div>
@@ -495,7 +495,7 @@ export default function SettingsPage() {
           <div className="flex items-center gap-2 flex-wrap">
             {orgSettings.logoUrl && (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={orgSettings.logoUrl} alt="Logo" className="w-8 h-8 object-contain rounded border border-border bg-surface" />
+              <img src={orgSettings.logoUrl} alt={XE.ui.logo} className="w-8 h-8 object-contain rounded border border-border bg-surface" />
             )}
             <input className={INPUT_CLS} style={{ width: 220 }} value={orgSettings.logoUrl} onChange={(e) => setOrgSettings({ ...orgSettings, logoUrl: e.target.value })} placeholder="https://cdn.example.com/logo.png" />
             {isFirmAdmin && (
@@ -553,12 +553,12 @@ export default function SettingsPage() {
           <div className="text-xs font-semibold uppercase tracking-widest text-foreground/40 mb-4">{O.subscription ?? "Subscription"}</div>
           <div className="flex items-center justify-between p-4 bg-surface rounded-lg border border-border">
             <div>
-              <div className="text-sm font-semibold text-foreground">{user?.tier || "CORE"} Plan</div>
+              <div className="text-sm font-semibold text-foreground">{fmt(XE.ui.planLabel, { tier: user?.tier || "CORE" })}</div>
               {orgPlan && (
                 <div className="text-xs text-foreground/50 mt-0.5">
                   {orgPlan.seats.limit === null
-                    ? `${orgPlan.seats.used} members · unlimited seats`
-                    : `${orgPlan.seats.used} / ${orgPlan.seats.limit} seats used${orgPlan.seats.pendingInvites ? ` · ${orgPlan.seats.pendingInvites} pending invite(s)` : ""}`}
+                    ? fmt(XE.ui.seatsUnlimited, { used: orgPlan.seats.used })
+                    : fmt(XE.ui.seatsUsed, { used: orgPlan.seats.used, limit: orgPlan.seats.limit }) + (orgPlan.seats.pendingInvites ? fmt(XE.ui.pendingInvites, { n: orgPlan.seats.pendingInvites }) : "")}
                 </div>
               )}
             </div>
@@ -823,15 +823,15 @@ export default function SettingsPage() {
               </SettingRow>
               <SettingRow label={AP.dateFormat ?? "Date Format"}>
                 <select className={SELECT_CLS}>
-                  <option value="MM/DD/YYYY">MM/DD/YYYY (US)</option>
-                  <option value="DD/MM/YYYY">DD/MM/YYYY (EU)</option>
-                  <option value="YYYY-MM-DD">YYYY-MM-DD (ISO)</option>
+                  <option value="MM/DD/YYYY">MM/DD/YYYY ({XE.ui.fmtUS})</option>
+                  <option value="DD/MM/YYYY">DD/MM/YYYY ({XE.ui.fmtEU})</option>
+                  <option value="YYYY-MM-DD">YYYY-MM-DD ({XE.ui.fmtISO})</option>
                 </select>
               </SettingRow>
               <SettingRow label={AP.numberFormat ?? "Number Format"}>
                 <select className={SELECT_CLS}>
-                  <option value="1,234,567">1,234,567 (US)</option>
-                  <option value="1.234.567">1.234.567 (EU)</option>
+                  <option value="1,234,567">1,234,567 ({XE.ui.fmtUS})</option>
+                  <option value="1.234.567">1.234.567 ({XE.ui.fmtEU})</option>
                 </select>
               </SettingRow>
             </>
@@ -931,7 +931,7 @@ export default function SettingsPage() {
         {mktTab === "personal" && (
           <div>
             <SettingRow label={M.emailSignature ?? "Email Signature"} description={M.emailSignatureDesc}>
-              <textarea className={TEXTAREA_CLS} style={{ width: 300 }} rows={4} value={mktPersonal.emailSignature} onChange={(e) => setMktPersonal({ ...mktPersonal, emailSignature: e.target.value })} placeholder="Jane Smith | Senior Broker | +1 (212) 555-0101" />
+              <textarea className={TEXTAREA_CLS} style={{ width: 300 }} rows={4} value={mktPersonal.emailSignature} onChange={(e) => setMktPersonal({ ...mktPersonal, emailSignature: e.target.value })} placeholder={XE.ui.phSignature} />
             </SettingRow>
             <SettingRow label={M.defaultTemplate ?? "Default Listing Template"}>
               <select className={SELECT_CLS} value={mktPersonal.defaultListingTemplate} onChange={(e) => setMktPersonal({ ...mktPersonal, defaultListingTemplate: e.target.value })}>
@@ -944,7 +944,7 @@ export default function SettingsPage() {
             </SettingRow>
             <SettingRow label={M.preferredChannel ?? "Preferred Channel"}>
               <select className={SELECT_CLS} value={mktPersonal.preferredChannel} onChange={(e) => setMktPersonal({ ...mktPersonal, preferredChannel: e.target.value })}>
-                <option value="email">Email</option><option value="instagram">Instagram</option>
+                <option value="email">{XE.ui.colEmail}</option><option value="instagram">Instagram</option>
                 <option value="facebook">Facebook</option><option value="linkedin">LinkedIn</option><option value="twitter">Twitter / X</option>
               </select>
             </SettingRow>
@@ -1110,10 +1110,10 @@ export default function SettingsPage() {
                 <label className="block text-xs text-foreground/50 mb-1">{LR.sourceLabel}</label>
                 <select className={`${SELECT_CLS} w-full`} value={newRule.source} onChange={(e) => setNewRule({ ...newRule, source: e.target.value })}>
                   <option value="">{LR.anySource}</option>
-                  <option value="Website">Website</option>
-                  <option value="Open House">Open House</option>
-                  <option value="Zillow">Zillow</option>
-                  <option value="StreetEasy">StreetEasy</option>
+                  <option value="Website">{XE.ui.sources["Website"]}</option>
+                  <option value="Open House">{XE.ui.sources["Open House"]}</option>
+                  <option value="Zillow">{XE.ui.sources["Zillow"]}</option>
+                  <option value="StreetEasy">{XE.ui.sources["StreetEasy"]}</option>
                 </select>
               </div>
               <div>
@@ -1168,9 +1168,9 @@ export default function SettingsPage() {
               <div>
                 <label className="block text-xs text-foreground/50 mb-1">{LR.sourceLabel}</label>
                 <select className={`${SELECT_CLS} w-full`} value={simInput.source} onChange={(e) => setSimInput({ ...simInput, source: e.target.value })}>
-                  <option value="Website">Website</option>
-                  <option value="Open House">Open House</option>
-                  <option value="Zillow">Zillow</option>
+                  <option value="Website">{XE.ui.sources["Website"]}</option>
+                  <option value="Open House">{XE.ui.sources["Open House"]}</option>
+                  <option value="Zillow">{XE.ui.sources["Zillow"]}</option>
                 </select>
               </div>
               <div>
@@ -1178,7 +1178,7 @@ export default function SettingsPage() {
                 <input className={`${INPUT_CLS} w-full`} value={simInput.city} onChange={(e) => setSimInput({ ...simInput, city: e.target.value })} />
               </div>
               <div>
-                <label className="block text-xs text-foreground/50 mb-1">Price ($)</label>
+                <label className="block text-xs text-foreground/50 mb-1">{XE.ui.priceUsd}</label>
                 <input type="number" className={`${INPUT_CLS} w-full`} value={simInput.price} onChange={(e) => setSimInput({ ...simInput, price: e.target.value })} />
               </div>
             </div>

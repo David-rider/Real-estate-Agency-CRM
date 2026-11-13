@@ -468,7 +468,7 @@ export default function AppointmentsPage() {
                   onChange={handleChange}
                   type="text"
                   className="w-full px-4 py-3 bg-surface border border-border rounded-none text-base text-foreground focus:border-primary outline-none transition-colors placeholder:text-foreground/20"
-                  placeholder="e.g. Property Showing at 123 Main St"
+                  placeholder={X.ui.phApptTitle}
                 />
               </div>
 
@@ -582,7 +582,7 @@ export default function AppointmentsPage() {
                   onChange={handleChange}
                   rows={3}
                   className="w-full px-4 py-3 bg-surface border border-border rounded-none text-base text-foreground focus:border-primary outline-none transition-colors placeholder:text-foreground/20"
-                  placeholder="Optional notes for the meeting..."
+                  placeholder={X.ui.phApptNotes}
                 ></textarea>
               </div>
 

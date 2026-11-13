@@ -1,5 +1,6 @@
 "use client";
 
+import { useExtra } from "@/lib/i18n/extra";
 import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useI18n } from "@/lib/i18n/I18nContext";
@@ -551,6 +552,7 @@ const COPY: Record<string, LandingCopy> = {
 
 export default function LandingPageClient() {
   const { language, setLanguage, t } = useI18n();
+  const UI = useExtra().ui;
   const { theme, setTheme } = useTheme();
   const { token } = useAuth();
 
@@ -606,7 +608,7 @@ export default function LandingPageClient() {
             <div className="relative" ref={themeRef}>
               <button
                 onClick={() => setIsThemeOpen((v) => !v)}
-                title="Switch Theme"
+                title={UI.switchTheme}
                 className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-border bg-surface hover:bg-surface-hover text-xs font-medium text-foreground transition-colors"
               >
                 <span
@@ -652,7 +654,7 @@ export default function LandingPageClient() {
             <div className="relative" ref={langRef}>
               <button
                 onClick={() => setIsLangOpen((v) => !v)}
-                title="Switch Language / 切换语言"
+                title={UI.switchLanguage}
                 className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-border bg-surface hover:bg-surface-hover text-xs font-medium text-foreground transition-colors"
               >
                 <svg className="w-3.5 h-3.5 text-foreground/50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -854,7 +856,7 @@ export default function LandingPageClient() {
               key: "pro",
               name: U.pro.name,
               price: billingCycle === "annual" ? U.pro.priceA : U.pro.priceM,
-              period: billingCycle === "annual" ? "/yr" : "/mo",
+              period: billingCycle === "annual" ? `/${UI.perYear}` : `/${UI.perMonth}`,
               desc: U.pro.desc,
               features: U.pro.features,
               highlight: true,
@@ -865,7 +867,7 @@ export default function LandingPageClient() {
               key: "elite",
               name: U.elite.name,
               price: billingCycle === "annual" ? U.elite.priceA : U.elite.priceM,
-              period: billingCycle === "annual" ? "/yr" : "/mo",
+              period: billingCycle === "annual" ? `/${UI.perYear}` : `/${UI.perMonth}`,
               desc: U.elite.desc,
               features: U.elite.features,
               highlight: false,

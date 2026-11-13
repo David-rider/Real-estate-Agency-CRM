@@ -28,6 +28,10 @@
   *The frontend is now a static site, in preparation for moving to Cloudflare. The public listing page, the open-house sign and the client detail page move to `/property?id=…`, `/property/sign?id=…` and `/client?id=…`; new QR codes use the new addresses. **QR codes printed earlier and old shared links redirect automatically to the new addresses, with the open-house parameter kept, and keep working.***
 
 #### 修复 / Fixed
+- 全站多语言补全：房源“暂无照片”、房产类型（共管公寓、合作公寓等）、客户类型和阶段、交易看板日期、导入预览表头、输入框示例、登录页“即将推出”、套餐与席位、时区、404 和出错页面、读屏标签等，以前在中文 / 西语界面下仍显示英文，现在都跟随所选语言。
+  *Site-wide translation gaps closed: "No photo", property types (condo, co-op…), client types and stages, pipeline dates, import-preview headers, input examples, the sign-in "Coming soon", plan and seats, time zones, the 404 and error pages, screen-reader labels and more used to stay in English in Chinese / Spanish; they now follow the chosen language.*
+- 报表“线索来源”图表以前显示的是写死的示例数字，现在显示本财年的真实线索数据；没有数据时如实提示。
+  *The Reports "Lead sources" chart used to show made-up sample numbers; it now shows the real lead counts for the fiscal year, and says so when there are none.*
 - 站内通知现在跟随你当前选择的语言显示，切换语言后立即生效；以前生成的旧通知（例如“Deal status updated”“Payout approved”）也会被翻译。以前通知的文字在生成时就固定下来，切换语言不会改变。
   *In-app notifications now follow your current language and change as soon as you switch; older ones (such as "Deal status updated" or "Payout approved") are translated too. Before, the text was frozen when the notification was created and ignored the language switch.*
 

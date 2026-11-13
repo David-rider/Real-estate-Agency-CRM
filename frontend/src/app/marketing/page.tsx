@@ -156,7 +156,7 @@ export default function MarketingPage() {
         <div className="lg:col-span-5 bg-surface border border-border p-8 flex flex-col">
           <h2 className="font-serif text-2xl font-light text-foreground mb-8 flex items-center gap-3">
             <span className="text-primary font-sans text-base tracking-widest uppercase">
-              Copilot
+              {X.ui.aiTag}
             </span>{" "}
             {t.marketing.copilot}
             {!AI_ASSISTANT_ENABLED && (

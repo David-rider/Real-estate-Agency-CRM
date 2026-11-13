@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import Sidebar from "@/components/layout/Sidebar";
 import Header from "@/components/layout/Header";
 import { useAuth } from '@/lib/auth/AuthContext';
+import { useExtra } from '@/lib/i18n/extra';
 
 const PUBLIC_ROUTES = [
     '/login', '/signup', '/forgot-password', '/reset-password',
@@ -14,6 +15,7 @@ const PUBLIC_ROUTES = [
 export default function AuthLayoutWrapper({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
     const { isLoading } = useAuth();
+    const U = useExtra().ui;
     const [sidebarOpen, setSidebarOpen] = useState(false);
 
     // "/" is the public marketing landing page
@@ -47,7 +49,7 @@ export default function AuthLayoutWrapper({ children }: { children: React.ReactN
     if (isLoading) {
         return (
             <div className="flex-1 flex items-center justify-center bg-background text-foreground/50 tracking-widest uppercase text-sm">
-                Loading...
+                {U.loading}
             </div>
         );
     }
