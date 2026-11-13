@@ -78,7 +78,7 @@ function shouldSendEmailForType(prefs: NotificationPrefs, type: string): boolean
 
 function buildNotificationEmailHtml(userName: string, title: string, message: string, link: string | undefined, lang: Lang): string {
     const t = EMAIL[lang].notification;
-    const appUrl = (process.env.FRONTEND_URL || process.env.APP_URL || 'http://localhost:3000').split(',')[0].trim();
+    const appUrl = (process.env.FRONTEND_URL || process.env.APP_URL || 'http://localhost:3000').split(',')[0].trim().replace(/\/+$/, '');
     const actionHref = link ? `${appUrl.replace(/\/$/, '')}${link.startsWith('/') ? link : `/${link}`}` : appUrl;
     return `
 <!DOCTYPE html>
