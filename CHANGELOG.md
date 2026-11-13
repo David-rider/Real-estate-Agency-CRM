@@ -21,6 +21,8 @@
 
 ## [未发布]
 
+## [1.5.5.0] — 2026-11-13 · Google 日历订阅链接、交易漏斗与日程改进、邮件链接与部署修复、多语言补漏 / Google Calendar subscription link, pipeline and appointment fixes, email-link and deploy fixes, translation gaps
+
 #### 新增 / Added
 - 日程与 Google 日历同步（第一步）：在“日程安排”点“与 Google 日历同步”，生成只属于你的日历链接，添加到 Google 日历（也支持 Apple 日历、Outlook）后，你的日程会自动出现在那里。单向同步，Google 每隔几小时刷新；链接可随时重新生成或停用。
   *Appointments sync with Google Calendar (step 1): on Appointments click "Sync with Google Calendar" to create your private calendar link; once added to Google Calendar (Apple Calendar and Outlook work too) your appointments appear there automatically. One-way, refreshed by Google every few hours; the link can be regenerated or turned off at any time.*
@@ -42,6 +44,8 @@
 #### 移除 / Removed
 - 设置 → 外观里 4 个从未生效的预览选项（侧边栏位置、布局密度、日期格式、数字格式）和“即将推出”提示；主题照常可用，日期和数字继续跟随所选语言显示。
   *The 4 never-working preview options in Settings → Appearance (sidebar position, density, date format, number format) and their "Coming soon" banner; themes work as before, and dates and numbers keep following the chosen language.*
+
+---
 
 ## [1.5.0.0] — 2026-11-13 · Google 登录、迁移到 Cloudflare、全站多语言补全、新增房源可加照片、隐私政策与服务条款 / Sign in with Google, move to Cloudflare, site-wide translation, photos on new listings, privacy policy and terms
 
