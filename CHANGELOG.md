@@ -22,6 +22,8 @@
 ## [未发布]
 
 #### 修复 / Fixed
+- 多语言补漏：首页和报表图表的月份、营销页的套餐标签（PRO / ELITE）、线索来源（转介绍、看板来电、老客户等）和营销设置里的品牌语气示例，以前在中文 / 西语界面下显示英文，现在都跟随所选语言；线索来源仍按原名保存，旧数据不受影响。
+  *Translation gaps closed: chart months on the dashboard and Reports, the plan tags (PRO / ELITE) on Marketing, lead sources (referral, sign call, past client…) and the brand-voice example in Marketing settings used to show English in Chinese / Spanish; they now follow the chosen language. Lead sources are still stored under their original names, so existing data is unaffected.*
 - 部署：数据库迁移改用直连（不经过 Neon 连接池），避免迁移锁残留在连接池里、导致之后每次部署都超时失败。新增可选环境变量 `DIRECT_DATABASE_URL`，不设置时自动由 `DATABASE_URL` 推出。
   *Deployment: database migrations now use a direct connection (not Neon's connection pool), so the migration lock can no longer get stuck in the pool and make every later deploy time out. New optional env var `DIRECT_DATABASE_URL`; when unset it is derived from `DATABASE_URL`.*
 - 重置密码、邀请、登录提醒等邮件里的链接，在网站地址末尾带斜杠时会出现双斜杠（`//reset-password`），现在统一修正。

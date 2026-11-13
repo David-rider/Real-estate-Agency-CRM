@@ -137,7 +137,12 @@ const num = (v: string) => (v.trim() === "" ? 0 : Number(v));
 // ─── CRM ─────────────────────────────────────────────────────────────────────────
 
 export function CrmSettings() {
-  const X = useExtra().policy;
+  const XA = useExtra();
+  const X = XA.policy;
+  // Lead sources are stored by their canonical (English) names and shown in the UI language
+  const SRC = XA.ui.sources as Record<string, string>;
+  const toLabel = (k: string) => SRC[k] ?? k;
+  const toKey = (label: string) => Object.keys(SRC).find((k) => SRC[k] === label) ?? label;
   const C = X.crm;
   const { policies, preferences, savePolicies, savePreferences } = useSettings();
   const p = policies.crm, u = preferences.crm;
@@ -149,7 +154,7 @@ export function CrmSettings() {
       orgTab={(canEdit) => (
         <DraftForm
           key={JSON.stringify(p)}
-          initial={{ requiredFields: p.requiredFields, maxClients: str(p.maxClientsPerAgent), visibility: p.clientVisibility, duplicateCheck: p.duplicateCheck, sources: p.leadSources.join("\n") }}
+          initial={{ requiredFields: p.requiredFields, maxClients: str(p.maxClientsPerAgent), visibility: p.clientVisibility, duplicateCheck: p.duplicateCheck, sources: p.leadSources.map(toLabel).join("\n") }}
           canEdit={canEdit}
           saveLabel={X.save}
           onSave={async (d) => {
@@ -158,7 +163,7 @@ export function CrmSettings() {
               maxClientsPerAgent: num(d.maxClients),
               clientVisibility: d.visibility as "own" | "all",
               duplicateCheck: d.duplicateCheck,
-              leadSources: d.sources.split("\n").map((s) => s.trim()).filter(Boolean),
+              leadSources: d.sources.split("\n").map((s) => s.trim()).filter(Boolean).map(toKey),
             } });
           }}
         >

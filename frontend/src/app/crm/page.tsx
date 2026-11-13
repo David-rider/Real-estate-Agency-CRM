@@ -1,5 +1,6 @@
 "use client";
 
+import { sourceLabel } from "@/lib/format";
 import React from "react";
 import { useI18n } from "@/lib/i18n/I18nContext";
 import { useToast } from "@/components/ui/Toast";
@@ -520,7 +521,7 @@ export default function CRMPage() {
                   />
                   <datalist id="lead-sources">
                     {policies.crm.leadSources.map((s) => (
-                      <option key={s} value={s} />
+                      <option key={s} value={s} label={sourceLabel(X.ui.sources as Record<string, string>, s)} />
                     ))}
                   </datalist>
                 </div>

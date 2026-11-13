@@ -29,7 +29,7 @@ const MATRIX_ROLES = ["MANAGER", "AGENT", "OFFICE_SUPPORT", "MARKETING", "ATTORN
 // ─── Default state ───────────────────────────────────────────────────────────────
 const DEFAULT_PROFILE    = { name: "", phone: "", title: "", timezone: "America/New_York", bio: "", licenseNumber: "", linkedIn: "" };
 const DEFAULT_NOTIF      = { emailNewClient: true, emailAppointmentReminder: true, emailTransactionUpdate: true, emailOfferReceived: true, emailCommissionPaid: true, emailTaskOverdue: true, emailWeeklyReport: true, inAppAll: true, inAppMentions: true, smsUrgent: false, digestFrequency: "daily" };
-const DEFAULT_MKT_ORG    = { aiContentEnabled: true, allowedChannels: "email,instagram,facebook", brandVoice: "Professional, sophisticated, and trustworthy.", requireManagerApproval: false, autoCloseCampaignDays: "30", defaultHashtags: "#NYCRealEstate #LuxuryHomes" };
+const DEFAULT_MKT_ORG    = { aiContentEnabled: true, allowedChannels: "email,instagram,facebook", brandVoice: "", requireManagerApproval: false, autoCloseCampaignDays: "30", defaultHashtags: "#NYCRealEstate #LuxuryHomes" };
 const DEFAULT_MKT_PREF   = { emailSignature: "", defaultListingTemplate: "", preferredChannel: "email", autoScheduleEnabled: false };
 
 // ─── Main component ──────────────────────────────────────────────────────────────
@@ -884,7 +884,7 @@ export default function SettingsPage() {
               <input className={INPUT_CLS} style={{ width: 280 }} value={mktOrg.allowedChannels} onChange={(e) => setMktOrg({ ...mktOrg, allowedChannels: e.target.value })} />
             </LockedRow>
             <LockedRow label={M.brandVoice ?? "Brand Voice Guidelines"} description={M.brandVoiceDesc} minRoleLabel={roleLabel("MANAGER")} canEdit={isManager}>
-              <textarea className={TEXTAREA_CLS} style={{ width: 320 }} rows={3} value={mktOrg.brandVoice} onChange={(e) => setMktOrg({ ...mktOrg, brandVoice: e.target.value })} />
+              <textarea className={TEXTAREA_CLS} style={{ width: 320 }} rows={3} value={mktOrg.brandVoice} placeholder={XE.ui.brandVoicePlaceholder} onChange={(e) => setMktOrg({ ...mktOrg, brandVoice: e.target.value })} />
             </LockedRow>
             <LockedRow label={M.requireApproval ?? "Require Manager Approval"} description={M.requireApprovalDesc} minRoleLabel={roleLabel("FIRMADMIN")} canEdit={isFirmAdmin}>
               <Toggle checked={mktOrg.requireManagerApproval} onChange={(v) => setMktOrg({ ...mktOrg, requireManagerApproval: v })} disabled={!isFirmAdmin} />

@@ -1,5 +1,6 @@
 "use client";
 
+import { monthLabel } from "@/lib/format";
 import { useI18n } from "@/lib/i18n/I18nContext";
 import {
   ResponsiveContainer,
@@ -21,7 +22,7 @@ import { api } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
 
 export default function DashboardPage() {
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   const D = t.dashboard as any;
   const X = useExtra();
   const toast = useToast();
@@ -324,7 +325,7 @@ export default function DashboardPage() {
           <div className="h-72 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart
-                data={dashboardData.chartData}
+                data={dashboardData.chartData.map((r) => ({ ...r, name: monthLabel(r.name, language) }))}
                 margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
               >
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
