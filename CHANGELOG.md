@@ -22,6 +22,8 @@
 ## [未发布]
 
 #### 修复 / Fixed
+- 部署：数据库迁移改用直连（不经过 Neon 连接池），避免迁移锁残留在连接池里、导致之后每次部署都超时失败。新增可选环境变量 `DIRECT_DATABASE_URL`，不设置时自动由 `DATABASE_URL` 推出。
+  *Deployment: database migrations now use a direct connection (not Neon's connection pool), so the migration lock can no longer get stuck in the pool and make every later deploy time out. New optional env var `DIRECT_DATABASE_URL`; when unset it is derived from `DATABASE_URL`.*
 - 重置密码、邀请、登录提醒等邮件里的链接，在网站地址末尾带斜杠时会出现双斜杠（`//reset-password`），现在统一修正。
   *Links in password-reset, invitation and sign-in alert emails got a double slash (`//reset-password`) when the site address ended in a slash; now fixed everywhere.*
 
