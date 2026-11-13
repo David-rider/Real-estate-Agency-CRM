@@ -10,7 +10,7 @@ import { passwordPolicyError, orgPasswordPolicy } from '../lib/passwordPolicy';
 import { EMAIL, Lang, isLang, normalizeLang } from '../lib/messages';
 import { getSeatUsage } from '../lib/seats';
 import { orgSlug } from '../lib/slug';
-import { recordLogin } from '../lib/loginAlert';
+import { issueSession } from '../lib/session';
 import { ipAllowed, IP_BLOCKED } from '../lib/ipAllowlist';
 import { signChallenge, readChallenge, verifyTotp, decryptSecret, useRecoveryCode } from '../lib/totp';
 
@@ -108,18 +108,7 @@ router.post('/login', authLimiter, async (req, res) => {
 
 // Issue the session for a fully authenticated user (password, plus 2FA when on)
 function finishLogin(req: express.Request, res: express.Response, user: { id: string; name: string; email: string; role: string; tier: string; orgId: string }) {
-    const token = jwt.sign(
-        { userId: user.id, role: user.role, tier: user.tier, orgId: user.orgId },
-        JWT_SECRET,
-        { expiresIn: '24h' }
-    );
-    setAuthCookie(res, token);
-    void recordLogin(prisma, user.id, String(req.headers['user-agent'] ?? ''), req.ip ?? '');
-    res.json({
-        message: 'Login successful',
-        token,
-        user: { id: user.id, name: user.name, email: user.email, role: user.role, tier: user.tier, orgId: user.orgId },
-    });
+    issueSession(prisma, req, res, user);
 }
 
 // POST /api/auth/login/2fa { challenge, code } — second step: a 6-digit code or a one-time recovery code

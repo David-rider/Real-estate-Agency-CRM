@@ -1,5 +1,7 @@
 "use client";
 
+import GoogleSignInButton from "@/components/auth/GoogleSignInButton";
+import { GOOGLE_CLIENT_ID } from "@/lib/features";
 import { langHeader } from "@/lib/api";
 import React, { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -78,6 +80,28 @@ function SignupForm() {
       } else {
         setError(data.error || S.registrationFailed);
       }
+    } catch {
+      setError(S.serverError);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Google sign-up / sign-in (an account with 2FA finishes on the sign-in page)
+  const handleGoogle = async (idToken: string) => {
+    setError("");
+    setIsLoading(true);
+    try {
+      const res = await fetch(`${API}/api/oauth/google`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json", "X-CSRF-Protection": "1", ...langHeader() },
+        body: JSON.stringify({ idToken }),
+      });
+      const data = await res.json();
+      if (res.ok && data.token) login(data.token, data.user);
+      else if (res.ok && data.twoFactorRequired) setError(X.ui.finishOnLogin);
+      else setError(data.error || S.registrationFailed);
     } catch {
       setError(S.serverError);
     } finally {
@@ -250,6 +274,7 @@ function SignupForm() {
 
                   {/* OAuth buttons — coming soon */}
                   <div className="space-y-3">
+                    {GOOGLE_CLIENT_ID && !isInviteMode ? <GoogleSignInButton text="signup_with" onCredential={handleGoogle} /> : (
                     <button type="button" disabled title={X.ui.oauthSoon}
                       className="w-full py-2.5 bg-surface border border-border text-foreground/40 text-sm uppercase tracking-widest flex items-center justify-center gap-3 cursor-not-allowed opacity-60 rounded-lg">
                       <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
@@ -261,6 +286,7 @@ function SignupForm() {
                       {S.continueGoogle}
                       <span className="text-[10px] text-foreground/30 ml-1">{X.ui.comingSoon}</span>
                     </button>
+                    )}
 
                     <button type="button" disabled title={X.ui.oauthSoon}
                       className="w-full py-2.5 bg-surface border border-border text-foreground/40 text-sm uppercase tracking-widest flex items-center justify-center gap-3 cursor-not-allowed opacity-60 rounded-lg">

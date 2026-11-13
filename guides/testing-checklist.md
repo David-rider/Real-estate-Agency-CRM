@@ -62,6 +62,10 @@ happen; note anything that doesn't.
       *“发送重置链接”会发出真实的重置邮件；重设密码后，另一台设备上已打开的会话会被退出（开启“改密码后退出”时）。*
 - [ ] A manager or agent sees the security rules but cannot save changes.
       *经理和经纪人能看到安全规则，但不能保存修改。*
+- [ ] **Sign in with Google** (once the Google client ID is configured): on the sign-in page click the Google button and choose the Google account that uses your CRM email — you land in your own account (not a new brokerage). Sign out and sign in with Google again — it goes straight in. With 2FA on, Google sign-in still asks for the 6-digit code.
+      *用 Google 登录（配置 Google 客户端 ID 之后）：在登录页点 Google 按钮，选择与 CRM 邮箱相同的 Google 账号——进入的是你原来的账号（不会新建公司）。退出后再用 Google 登录——直接进入。开启两步验证时，用 Google 登录也会要求输入 6 位验证码。*
+- [ ] Settings → Security shows **Google account: Linked**; click **Unlink**, then link it again with the Google button there.
+      *“设置 → 安全”显示“Google 账号：已关联”；点“取消关联”，再用那里的 Google 按钮重新关联。*
 - [ ] **Login alerts** (on by default): sign in from a different browser or your phone — you receive a "New sign-in to your account" email with the device, IP and time. Signing in again from the same browser sends nothing. Turn the switch off and the alert stops.
       *登录提醒（默认开启）：换一个浏览器或用手机登录，会收到“你的账号有新的登录”邮件，写明设备、IP 和时间；同一浏览器再次登录不会发送。关闭开关后不再提醒。*
 - [ ] **Two-factor authentication**: Settings → Security → Set up, scan the QR code with an authenticator app, enter the code — 10 recovery codes are shown. Sign out and back in: after the password you are asked for the 6-digit code. A wrong code is refused; a recovery code works once.

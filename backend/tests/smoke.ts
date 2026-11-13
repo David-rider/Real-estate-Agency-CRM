@@ -1002,6 +1002,63 @@ async function main() {
         assert.equal(zh.unreadCount, 3);
     });
 
+    await step('Google sign-in: auto-link a verified email, refuse unverified, 2FA and deactivation still apply, link / unlink in settings', async () => {
+        const g = (body: Record<string, unknown>) => call('POST', '/api/oauth/google', undefined, { idToken: 'dev', ...body });
+        // Existing password account + Google with the same verified email → linked automatically, same account
+        const owner = await register('glink');
+        const email = `glink-${run}@smoke.test`;
+        const ownerOrg = (await call('GET', '/api/settings/organization', owner)).body.id;
+        const linked = await g({ email: email.toUpperCase(), googleId: `g-link-${run}`, emailVerified: true });
+        if (linked.status === 503) return; // a real GOOGLE_CLIENT_ID is configured: the dev-mode identity is (correctly) refused
+        assert.equal(linked.status, 200, JSON.stringify(linked.body));
+        assert.equal(linked.body.user.email, email, 'signed into the existing account (email match is case-insensitive)');
+        assert.equal((await call('GET', '/api/settings/organization', linked.body.token)).body.id, ownerOrg);
+        const row = await db().user.findUnique({ where: { email }, select: { googleId: true, id: true } });
+        assert.equal(row!.googleId, `g-link-${run}`);
+        assert.ok(await db().auditLog.findFirst({ where: { userId: row!.id, action: 'LINK_GOOGLE' } }), 'the automatic link is audited');
+        // Signing in again with the linked Google account works without the email check
+        assert.equal((await g({ email: 'whatever@example.com', googleId: `g-link-${run}` })).status, 200);
+
+        // Unverified email for an existing account → refused, nothing linked
+        await register('gunver');
+        const unver = await g({ email: `gunver-${run}@smoke.test`, googleId: `g-unver-${run}`, emailVerified: false });
+        assert.equal(unver.status, 409);
+        assert.equal((await db().user.findUnique({ where: { email: `gunver-${run}@smoke.test` }, select: { googleId: true } }))!.googleId, null);
+
+        // New email → its own brokerage, no password (social-only)
+        const fresh = await g({ email: `gnew-${run}@example.com`, googleId: `g-new-${run}`, name: 'Gina New' });
+        assert.equal(fresh.status, 200);
+        assert.notEqual((await call('GET', '/api/settings/organization', fresh.body.token)).body.id, ownerOrg);
+        const social = await call('GET', '/api/settings/social', fresh.body.token);
+        assert.deepEqual([social.body.google, social.body.hasPassword], [true, false]);
+        const unlinkSolo = await call('DELETE', '/api/settings/social/google', fresh.body.token);
+        assert.equal(unlinkSolo.status, 400, 'a social-only account cannot unlink its only way in');
+        assert.equal(unlinkSolo.body.code, 'NEEDS_PASSWORD');
+
+        // 2FA still applies to Google sign-in
+        await db().user.update({ where: { email }, data: { totpEnabled: true, totpSecret: 'x' } });
+        const twoFa = await g({ email, googleId: `g-link-${run}` });
+        assert.equal(twoFa.body.twoFactorRequired, true);
+        assert.equal(twoFa.body.token, undefined);
+        await db().user.update({ where: { email }, data: { totpEnabled: false, totpSecret: null } });
+
+        // Link / unlink from Settings while signed in
+        const other = await register('glink2');
+        assert.equal((await call('POST', '/api/settings/social/google', other, { idToken: 'dev', email: 'x@example.com', googleId: `g-link-${run}` })).status, 409, 'a Google account linked to someone else is refused');
+        assert.equal((await call('POST', '/api/settings/social/google', other, { idToken: 'dev', email: 'y@example.com', googleId: `g-link2-${run}` })).status, 200);
+        assert.equal((await call('GET', '/api/settings/social', other)).body.google, true);
+        assert.equal((await call('DELETE', '/api/settings/social/google', other)).status, 200, 'an account with a password can unlink');
+        assert.equal((await call('GET', '/api/settings/social', other)).body.google, false);
+
+        // Deactivated accounts cannot get in through Google either
+        await db().user.update({ where: { email }, data: { isActive: false } });
+        assert.equal((await g({ email, googleId: `g-link-${run}` })).status, 403);
+        await db().user.update({ where: { email }, data: { isActive: true } });
+
+        // Apple stays unavailable until it is configured
+        assert.equal((await call('POST', '/api/oauth/apple', undefined, { identityToken: 'x' })).status, 503);
+    });
+
     await step('security policy is saved and enforced', async () => {
         if (!process.env.DATABASE_URL || !process.env.JWT_SECRET) {
             console.log('    (skipped: set DATABASE_URL and JWT_SECRET to run the security policy checks)');

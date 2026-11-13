@@ -1,5 +1,7 @@
 "use client";
 
+import GoogleLinkPanel from "@/components/settings/GoogleLinkPanel";
+import { GOOGLE_CLIENT_ID } from "@/lib/features";
 import TwoFactorPanel from "@/components/settings/TwoFactorPanel";
 import { api } from "@/lib/api";
 import React from "react";
@@ -735,6 +737,7 @@ export default function SettingsPage() {
             <button className="px-3 py-1.5 bg-surface border border-border rounded-lg text-xs text-foreground hover:bg-background" onClick={sendPasswordResetLink}>{SC.sendResetLink ?? "Send Reset Link"}</button>
           </SettingRow>
           <SettingRow label={SC.twoFA ?? "Two-Factor Authentication"} description={XE.twoFactor.desc}><TwoFactorPanel /></SettingRow>
+          {GOOGLE_CLIENT_ID && <SettingRow label={XE.ui.googleTitle} description={XE.ui.googleDesc}><GoogleLinkPanel /></SettingRow>}
           <SettingRow label={SC.loginAlerts ?? "Login Alerts"} description={XS.secLoginAlertsDesc}>
             <Toggle checked={loginAlerts} onChange={saveLoginAlerts} />
           </SettingRow>

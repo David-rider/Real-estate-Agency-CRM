@@ -38,6 +38,10 @@
   *In-app notifications now follow your current language and change as soon as you switch; older ones (such as "Deal status updated" or "Payout approved") are translated too. Before, the text was frozen when the notification was created and ignored the language switch.*
 
 #### 新增 / Added
+- Google 账号登录：登录页和注册页可以用 Google 一键登录（使用 Google 官方按钮）。已有邮箱账号的人用同一个邮箱登录 Google 时，只要 Google 确认该邮箱已验证，就会自动关联到原账号；新邮箱会创建自己的公司，与邮箱注册相同。两步验证、账号停用和 IP 白名单照常生效。在“设置 → 安全”里可以关联或取消关联 Google（只有 Google 登录、没有密码的账号不能取消，以免无法登录）。配置 Google 客户端 ID 之前，按钮继续显示“即将推出”。
+  *Sign in with Google: the sign-in and sign-up pages offer one-click Google sign-in (Google's official button). Someone who already has an email account is linked to it automatically when Google confirms the same email is verified; a new email gets its own brokerage, as with email sign-up. 2FA, deactivation and the IP whitelist still apply. Settings → Security can link or unlink Google (a Google-only account without a password cannot unlink, so nobody locks themselves out). Until a Google client ID is configured, the button keeps showing "Coming soon".*
+- Apple 账号登录的服务器端校验已经写好（用 Apple 公钥验证身份令牌，关联规则与 Google 相同）；需要 Apple 开发者账号配置后才会开放，按钮暂时保持“即将推出”。
+  *Server-side verification for Sign in with Apple is ready (identity tokens checked against Apple's public keys, same linking rules as Google); it opens once an Apple developer account is configured, and the button stays "Coming soon" until then.*
 - 新增房源时可以直接加照片：从电脑上传，或粘贴图片链接；可预览、移除、调整顺序（第一张是封面），保存房源时一起保存，并遵守公司的每房源照片上限。也可以填写虚拟看房链接。以前要先保存房源，再到“相册管理”里加照片。
   *Photos can now be added while creating a listing: upload from your computer or paste image links, preview, remove and reorder them (the first is the cover); they are saved with the listing and respect the brokerage's photo limit. A virtual-tour link can be entered too. Before, photos could only be added afterwards under "Photos".*
 
@@ -538,6 +542,7 @@
 | 后端<br>*Backend* | `DISABLE_IP_ALLOWLIST` | 可选，紧急开关：设为 `true` 时忽略所有公司的 IP 白名单（管理员被锁在外面时使用），平时不要设置<br>*Optional emergency switch: `true` ignores every brokerage's IP allowlist (for when admins are locked out); leave unset normally* |
 | 后端<br>*Backend* | `DISABLE_JOBS` | 可选，设为 `true` 关闭预约提醒任务<br>*Optional; `true` turns off the appointment-reminder job* |
 | 后端<br>*Backend* | `SEED_PASSWORD` / `ALLOW_SEED` | 仅种子脚本使用<br>*Used only by the seed script* |
+| 前端<br>*Frontend* | `NEXT_PUBLIC_GOOGLE_CLIENT_ID` | Google 登录的 OAuth 客户端 ID（公开值，不是密钥）；与后端 `GOOGLE_CLIENT_ID` 填同一个值。未设置时 Google 按钮显示“即将推出”<br>*Google sign-in OAuth client ID (a public value, not a secret); same value as the backend `GOOGLE_CLIENT_ID`. When unset, the Google button shows "Coming soon"* |
 | 前端<br>*Frontend* | `NEXT_PUBLIC_AI_ASSISTANT_ENABLED` | AI 助手开关，默认 `false`<br>*AI assistant switch, default `false`* |
 | 前端<br>*Frontend* | `NEXT_PUBLIC_FEATURED_BROKERAGE_SLUG` | 可选：首页 “Browse Listings” 链接到哪家公司<br>*Optional: which company the home page “Browse Listings” links to* |
 | 后端<br>*Backend* | `SENTRY_DSN` | 可选：后端 Sentry 错误上报 DSN，未填时静默不启用<br>*Optional: backend Sentry DSN; silently disabled when empty* |
