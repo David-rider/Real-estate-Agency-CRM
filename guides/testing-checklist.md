@@ -68,6 +68,8 @@ happen; note anything that doesn't.
       *在登录页点“忘记密码”，输入邮箱——会收到 noreply@notify.apexzone.xyz 发来的重置邮件（语言与所选一致）；点按钮打开新网站的重置页面并能设置新密码。*
 - [ ] Dashboard → **New lead** opens the add-client form. Pipeline → **List view** shows a table (change a stage there) and **Board view** goes back; **New deal** opens a form without leaving the page. New appointment: pick the date from the calendar and the time from the dropdown — typing a date is not possible.
       *工作台 → “新增线索”打开新增客户表单。交易漏斗 → “列表视图”显示表格（可在表格里改阶段），“看板视图”切回；“新建交易”不离开本页直接弹出表单。新建日程：日期从日历选、时间从下拉列表选，不能手工输入日期。*
+- [ ] Appointments → **Sync with Google Calendar** → **Create my calendar link** → add it in Google Calendar (Other calendars → + → From URL). Your appointments appear in Google Calendar (allow a few hours for updates). **Turn off this link** stops it.
+      *日程安排 → “与 Google 日历同步” → “生成我的日历链接” → 在 Google 日历里添加（其他日历 → + → 通过网址添加）。你的日程会出现在 Google 日历里（更新可能要几小时）。“停用这个链接”后不再更新。*
 - [ ] Signed out, open the home page footer links **Privacy Policy** and **Terms of Service** — both open without signing in and follow the language switcher.
       *未登录时，点首页底部的“隐私政策”和“服务条款”——不用登录就能打开，并随语言切换。*
 - [ ] Settings → Security shows **Google account: Linked**; click **Unlink**, then link it again with the Google button there.

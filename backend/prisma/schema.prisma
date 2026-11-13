@@ -80,6 +80,7 @@ model User {
   password          String?
   googleId          String?      @unique
   appleId           String?      @unique
+  calendarFeedTokenHash String? @unique
   name              String
   role              Role         @default(AGENT)
   tier              Tier         @default(CORE)
