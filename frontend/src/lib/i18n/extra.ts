@@ -3,6 +3,25 @@
 import { useI18n } from "./I18nContext";
 
 const en = {
+  calFeed: {
+    button: "Sync with Google Calendar",
+    title: "Sync with Google Calendar",
+    close: "Close",
+    intro: "Get a private link to your own appointments and add it to Google Calendar (Apple Calendar and Outlook work too). New and changed appointments then show up there automatically.",
+    create: "Create my calendar link",
+    newLink: "Create a new link",
+    activeHint: "A link is already active. For security it is only shown once; creating a new one stops the old one.",
+    yourLink: "Your private calendar link",
+    copy: "Copy",
+    copied: "Link copied",
+    keepPrivate: "Anyone with this link can see your appointments. Do not share it.",
+    howTitle: "Add it to Google Calendar",
+    steps: ["Copy the link above.", "Open Google Calendar on a computer (calendar.google.com).", "On the left, next to \"Other calendars\", click + and choose \"From URL\".", "Paste the link and click \"Add calendar\"."],
+    note: "This is one-way: appointments flow from the CRM to Google Calendar, and Google refreshes the calendar every few hours, so changes are not instant. Edit appointments in the CRM.",
+    revoke: "Turn off this link",
+    revokeConfirm: "Turn off the calendar link? Calendars subscribed to it will stop updating.",
+    revoked: "Calendar link turned off",
+  },
   ui: {
     noImage: "No photo",
     comingSoon: "(Coming soon)",
@@ -364,6 +383,25 @@ const en = {
 type Dict = typeof en;
 
 const zhCN: Dict = {
+  calFeed: {
+    button: "与 Google 日历同步",
+    title: "与 Google 日历同步",
+    close: "关闭",
+    intro: "生成一个只属于你的日程链接，添加到 Google 日历（也支持 Apple 日历和 Outlook）。之后新建或修改的日程会自动出现在那里。",
+    create: "生成我的日历链接",
+    newLink: "生成新链接",
+    activeHint: "你已经有一个有效链接。为了安全，链接只在生成时显示一次；生成新链接后旧链接会失效。",
+    yourLink: "你的私人日历链接",
+    copy: "复制",
+    copied: "链接已复制",
+    keepPrivate: "拿到这个链接的人都能看到你的日程，请不要分享。",
+    howTitle: "添加到 Google 日历",
+    steps: ["复制上面的链接。", "在电脑上打开 Google 日历（calendar.google.com）。", "左侧“其他日历”旁点“+”，选择“通过网址添加”。", "粘贴链接，点“添加日历”。"],
+    note: "这是单向同步：日程从 CRM 同步到 Google 日历；Google 每隔几小时刷新一次，所以改动不会立刻出现。修改日程请在 CRM 里进行。",
+    revoke: "停用这个链接",
+    revokeConfirm: "确定停用日历链接？已订阅的日历将不再更新。",
+    revoked: "日历链接已停用",
+  },
   ui: {
     noImage: "暂无照片",
     comingSoon: "（即将推出）",
@@ -723,6 +761,25 @@ const zhCN: Dict = {
 };
 
 const zhTW: Dict = {
+  calFeed: {
+    button: "與 Google 日曆同步",
+    title: "與 Google 日曆同步",
+    close: "關閉",
+    intro: "產生一個只屬於你的日程連結，加入 Google 日曆（也支援 Apple 日曆和 Outlook）。之後新增或修改的日程會自動出現在那裡。",
+    create: "產生我的日曆連結",
+    newLink: "產生新連結",
+    activeHint: "你已經有一個有效連結。為了安全，連結只在產生時顯示一次；產生新連結後舊連結會失效。",
+    yourLink: "你的私人日曆連結",
+    copy: "複製",
+    copied: "連結已複製",
+    keepPrivate: "拿到這個連結的人都能看到你的日程，請不要分享。",
+    howTitle: "加入 Google 日曆",
+    steps: ["複製上面的連結。", "在電腦上開啟 Google 日曆（calendar.google.com）。", "左側「其他日曆」旁點「+」，選擇「透過網址新增」。", "貼上連結，點「新增日曆」。"],
+    note: "這是單向同步：日程從 CRM 同步到 Google 日曆；Google 每隔幾小時重新整理一次，所以變更不會立刻出現。修改日程請在 CRM 裡進行。",
+    revoke: "停用這個連結",
+    revokeConfirm: "確定停用日曆連結？已訂閱的日曆將不再更新。",
+    revoked: "日曆連結已停用",
+  },
   ui: {
     noImage: "暫無照片",
     comingSoon: "（即將推出）",
@@ -1082,6 +1139,25 @@ const zhTW: Dict = {
 };
 
 const es: Dict = {
+  calFeed: {
+    button: "Sincronizar con Google Calendar",
+    title: "Sincronizar con Google Calendar",
+    close: "Cerrar",
+    intro: "Obtenga un enlace privado con sus propias citas y agréguelo a Google Calendar (también funciona con Apple Calendar y Outlook). Las citas nuevas o modificadas aparecerán allí automáticamente.",
+    create: "Crear mi enlace de calendario",
+    newLink: "Crear un enlace nuevo",
+    activeHint: "Ya tiene un enlace activo. Por seguridad solo se muestra una vez; crear uno nuevo desactiva el anterior.",
+    yourLink: "Su enlace privado de calendario",
+    copy: "Copiar",
+    copied: "Enlace copiado",
+    keepPrivate: "Cualquiera con este enlace puede ver sus citas. No lo comparta.",
+    howTitle: "Agregarlo a Google Calendar",
+    steps: ["Copie el enlace de arriba.", "Abra Google Calendar en una computadora (calendar.google.com).", "A la izquierda, junto a \"Otros calendarios\", haga clic en + y elija \"Desde URL\".", "Pegue el enlace y haga clic en \"Añadir calendario\"."],
+    note: "Es unidireccional: las citas pasan del CRM a Google Calendar, y Google actualiza el calendario cada pocas horas, así que los cambios no son inmediatos. Edite las citas en el CRM.",
+    revoke: "Desactivar este enlace",
+    revokeConfirm: "¿Desactivar el enlace del calendario? Los calendarios suscritos dejarán de actualizarse.",
+    revoked: "Enlace de calendario desactivado",
+  },
   ui: {
     noImage: "Sin foto",
     comingSoon: "(Próximamente)",

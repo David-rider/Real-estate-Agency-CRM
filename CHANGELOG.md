@@ -21,6 +21,10 @@
 
 ## [未发布]
 
+#### 新增 / Added
+- 日程与 Google 日历同步（第一步）：在“日程安排”点“与 Google 日历同步”，生成只属于你的日历链接，添加到 Google 日历（也支持 Apple 日历、Outlook）后，你的日程会自动出现在那里。单向同步，Google 每隔几小时刷新；链接可随时重新生成或停用。
+  *Appointments sync with Google Calendar (step 1): on Appointments click "Sync with Google Calendar" to create your private calendar link; once added to Google Calendar (Apple Calendar and Outlook work too) your appointments appear there automatically. One-way, refreshed by Google every few hours; the link can be regenerated or turned off at any time.*
+
 #### 修复 / Fixed
 - 工作台的“新增线索”以前点了没反应，现在直接打开新增客户表单。
   *"New lead" on the dashboard did nothing; it now opens the add-client form directly.*

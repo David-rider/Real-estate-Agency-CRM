@@ -1061,6 +1061,32 @@ async function main() {
         assert.equal((await call('POST', '/api/oauth/apple', undefined, { identityToken: 'x' })).status, 503);
     });
 
+    await step('calendar subscription link: private ICS feed of my appointments, revocable', async () => {
+        const me = await register('icsfeed');
+        const ap = await call('POST', '/api/appointments', me, { title: 'Feed showing, 2BR', type: 'SHOWING', date: new Date(Date.now() + 86400000).toISOString(), location: '1 Main St' });
+        assert.equal(ap.status, 201, JSON.stringify(ap.body));
+        assert.equal((await call('GET', '/api/settings/calendar-feed', me)).body.active, false);
+        const created = await call('POST', '/api/settings/calendar-feed', me);
+        assert.equal(created.status, 200);
+        const path = new URL(created.body.url).pathname;
+        assert.match(path, /^\/api\/calendar\/[a-f0-9]{64}\.ics$/);
+        const feed = await fetch(`${API}${path}`);
+        assert.equal(feed.status, 200);
+        assert.match(feed.headers.get('content-type') || '', /text\/calendar/);
+        const ics = await feed.text();
+        assert.ok(ics.startsWith('BEGIN:VCALENDAR') && ics.includes('BEGIN:VEVENT'), 'a calendar with the event');
+        assert.ok(ics.includes('SUMMARY:Feed showing\\, 2BR'), 'title escaped per RFC 5545');
+        // Only a hash is stored
+        const row = await db().user.findFirst({ where: { email: `icsfeed-${run}@smoke.test` }, select: { calendarFeedTokenHash: true } });
+        assert.ok(row!.calendarFeedTokenHash && !created.body.url.includes(row!.calendarFeedTokenHash));
+        // A new link replaces the old one; revoking turns it off
+        const again = await call('POST', '/api/settings/calendar-feed', me);
+        assert.equal((await fetch(`${API}${path}`)).status, 404, 'the old link stops working');
+        assert.equal((await call('DELETE', '/api/settings/calendar-feed', me)).status, 200);
+        assert.equal((await fetch(`${API}${new URL(again.body.url).pathname}`)).status, 404, 'revoked');
+        assert.equal((await fetch(`${API}/api/calendar/not-a-token.ics`)).status, 404);
+    });
+
     await step('security policy is saved and enforced', async () => {
         if (!process.env.DATABASE_URL || !process.env.JWT_SECRET) {
             console.log('    (skipped: set DATABASE_URL and JWT_SECRET to run the security policy checks)');
