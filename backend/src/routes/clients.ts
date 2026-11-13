@@ -192,7 +192,7 @@ router.post('/', async (req: AuthRequest, res) => {
 
     if (agentId !== user.userId) {
         await createNotification(agentId, user.orgId, 'NEW_CLIENT',
-            { key: 'clientAssigned', params: { isNew: true, name: `${client.firstName} ${client.lastName}` } }, undefined, `/crm/${client.id}`);
+            { key: 'clientAssigned', params: { isNew: true, name: `${client.firstName} ${client.lastName}` } }, undefined, `/client?id=${client.id}`);
     }
     res.status(201).json(client);
 });
@@ -400,7 +400,7 @@ router.patch('/:id', async (req: AuthRequest, res) => {
     if (data.agentId) {
         await audit(req, 'REASSIGN_CLIENT', 'Client', id, { agentId: existing.agentId }, { agentId: data.agentId });
         await createNotification(String(data.agentId), user.orgId, 'NEW_CLIENT',
-            { key: 'clientAssigned', params: { isNew: false, name: `${client.firstName} ${client.lastName}` } }, undefined, `/crm/${client.id}`);
+            { key: 'clientAssigned', params: { isNew: false, name: `${client.firstName} ${client.lastName}` } }, undefined, `/client?id=${client.id}`);
     }
     res.json(client);
 });

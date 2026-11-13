@@ -330,7 +330,7 @@ export default function CRMPage() {
                     </td>
                     <td className={`${cellPad} text-right`}>
                       <Link
-                        href={`/crm/${client.id}`}
+                        href={`/client?id=${client.id}`}
                         className="text-primary hover:text-primary-hover font-sans text-base font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300"
                       >
                         {t.crm.table.viewProfile} &rarr;

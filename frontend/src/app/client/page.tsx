@@ -1,7 +1,8 @@
 "use client";
 
+import { Suspense } from "react";
 import React, { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useI18n } from "@/lib/i18n/I18nContext";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { useExtra, fmt } from "@/lib/i18n/extra";
@@ -19,8 +20,8 @@ interface TimelineEvent {
   status?: string;
 }
 
-export default function ClientProfilePage() {
-  const { id } = useParams();
+function ClientProfilePage() {
+  const id = useSearchParams().get("id") ?? "";
   const router = useRouter();
   const { t } = useI18n();
   const { token } = useAuth();
@@ -550,5 +551,14 @@ export default function ClientProfilePage() {
         </div>
       )}
     </div>
+  );
+}
+
+// Static export: the id comes from the query string (?id=), read inside a Suspense boundary
+export default function ClientProfilePageRoute() {
+  return (
+    <Suspense fallback={null}>
+      <ClientProfilePage />
+    </Suspense>
   );
 }

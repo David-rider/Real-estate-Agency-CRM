@@ -8,7 +8,7 @@ import { useAuth } from '@/lib/auth/AuthContext';
 
 const PUBLIC_ROUTES = [
     '/login', '/signup', '/forgot-password', '/reset-password',
-    '/verify-email', '/public-listings', '/not-found',
+    '/verify-email', '/public-listings', '/property', '/not-found',
 ];
 
 export default function AuthLayoutWrapper({ children }: { children: React.ReactNode }) {

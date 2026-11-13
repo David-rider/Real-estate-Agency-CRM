@@ -199,7 +199,7 @@ export default function Header({ onMenuToggle }: HeaderProps) {
                                         {(t as any).header?.searchClients || 'Clients'}
                                     </div>
                                     {searchResults.clients.map(c => (
-                                        <Link key={c.id} href={`/crm/${c.id}`} onClick={() => { setSearchOpen(false); setSearchQuery(''); }}
+                                        <Link key={c.id} href={`/client?id=${c.id}`} onClick={() => { setSearchOpen(false); setSearchQuery(''); }}
                                             className="flex items-center gap-3 px-3 py-2.5 hover:bg-surface-hover transition-colors">
                                             <div className="w-7 h-7 rounded-full bg-primary/15 flex items-center justify-center text-primary text-xs font-bold flex-shrink-0">
                                                 {c.firstName[0]}{c.lastName[0]}

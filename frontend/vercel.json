@@ -6,5 +6,70 @@
   "regions": [
     "iad1"
   ],
-  "ignoreCommand": "bash scripts/vercel-ignore.sh"
+  "ignoreCommand": "bash scripts/vercel-ignore.sh",
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), microphone=(), geolocation=(self)"
+        },
+        {
+          "key": "Strict-Transport-Security",
+          "value": "max-age=31536000; includeSubDomains"
+        },
+        {
+          "key": "Content-Security-Policy-Report-Only",
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://*.onrender.com https://*.sentry.io https://*.ingest.sentry.io https://*.ingest.us.sentry.io; frame-src 'self' https://accounts.google.com https://js.stripe.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
+        }
+      ]
+    },
+    {
+      "source": "/manifest.json",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/manifest+json"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400"
+        }
+      ]
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/public-listings/:id/sign",
+      "destination": "/property/sign?id=:id",
+      "permanent": false
+    },
+    {
+      "source": "/public-listings/:id",
+      "destination": "/property?id=:id",
+      "permanent": false
+    },
+    {
+      "source": "/crm/:id",
+      "destination": "/client?id=:id",
+      "permanent": false
+    }
+  ]
 }

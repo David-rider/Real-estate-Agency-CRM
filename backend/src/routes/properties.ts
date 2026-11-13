@@ -184,7 +184,7 @@ router.post('/public/:id/inquiry', inquiryLimiter, async (req, res) => {
     await createNotification(
         targetAgentId, property.orgId, 'NEW_CLIENT',
         { key: 'leadInquiry', params: { isNew, name, address: property.address, openHouse: source === 'Open House' } }, undefined,
-        `/crm/${client.id}`,
+        `/client?id=${client.id}`,
     );
     res.status(201).json({ ok: true });
 });

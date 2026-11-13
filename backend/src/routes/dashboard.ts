@@ -115,7 +115,7 @@ router.get('/', async (req: AuthRequest, res) => {
             subtitle: c.lastContactedAt
                 ? `No contact for ${Math.floor((now.getTime() - c.lastContactedAt.getTime()) / DAY)} days`
                 : 'Never contacted',
-            actionLabel: 'Open Client', link: `/crm/${c.id}`,
+            actionLabel: 'Open Client', link: `/client?id=${c.id}`,
             params: { name: `${c.firstName} ${c.lastName}`, days: c.lastContactedAt ? Math.floor((now.getTime() - c.lastContactedAt.getTime()) / DAY) : null },
         })),
         ...pendingGifts.map(g => ({

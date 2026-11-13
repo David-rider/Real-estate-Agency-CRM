@@ -1,7 +1,8 @@
 "use client";
 
+import { Suspense } from "react";
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useI18n } from "@/lib/i18n/I18nContext";
 import { useExtra } from "@/lib/i18n/extra";
@@ -14,8 +15,8 @@ const INPUT = "w-full px-3 py-2.5 bg-background border border-border rounded-lg 
  * Add ?openhouse=1 to the URL (e.g. on a QR code at the door) to use it as an
  * open-house sign-in sheet.
  */
-export default function PublicListingPage() {
-  const { id } = useParams<{ id: string }>();
+function PublicListingPage() {
+  const id = useSearchParams().get("id") ?? "";
   const { t, language, setLanguage } = useI18n();
   void t;
   const X = useExtra();
@@ -175,5 +176,14 @@ export default function PublicListingPage() {
         </aside>
       </main>
     </div>
+  );
+}
+
+// Static export: the id comes from the query string (?id=), read inside a Suspense boundary
+export default function PublicListingPageRoute() {
+  return (
+    <Suspense fallback={null}>
+      <PublicListingPage />
+    </Suspense>
   );
 }

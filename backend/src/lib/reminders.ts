@@ -53,7 +53,7 @@ export async function sendAppointmentReminders() {
             'TASK_DUE',
             { key: 'taskOverdue', params: { title: t.title, date: t.dueDate } },
             undefined,
-            t.linkedClientId ? `/crm/${t.linkedClientId}` : '/tasks',
+            t.linkedClientId ? `/client?id=${t.linkedClientId}` : '/tasks',
         );
         await prisma.task.update({ where: { id: t.id }, data: { overdueNotified: true } });
     }

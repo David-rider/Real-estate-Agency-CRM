@@ -213,7 +213,7 @@ export default function DashboardPage() {
                 const d = c.lastContactedAt ? Math.floor((now - new Date(c.lastContactedAt).getTime()) / 86400000) : null;
                 return (
                   <li key={c.id} className="text-sm flex justify-between gap-2">
-                    <Link href={`/crm/${c.id}`} className="text-foreground/80 hover:text-primary truncate">{c.firstName} {c.lastName}</Link>
+                    <Link href={`/client?id=${c.id}`} className="text-foreground/80 hover:text-primary truncate">{c.firstName} {c.lastName}</Link>
                     <span className="text-foreground/50 text-xs whitespace-nowrap">{d === null ? X.crm.never : fmt(X.crm.daysAgo, { n: d })}</span>
                   </li>
                 );
