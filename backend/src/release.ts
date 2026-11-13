@@ -18,9 +18,27 @@ import { PrismaClient } from '@prisma/client';
 const BASELINE = '20260303200258_init_multi_tenant';
 const BACKEND_DIR = path.resolve(__dirname, '..');
 
+/**
+ * Migrations take a session-level advisory lock. Through a transaction pooler (Neon's "-pooler" host,
+ * PgBouncer) that lock can stay on a pooled server connection after the command ends and block every
+ * later deploy, so migrations use a direct connection: DIRECT_DATABASE_URL, or DATABASE_URL with
+ * "-pooler" removed from the host.
+ */
+export function directDatabaseUrl(url = process.env.DATABASE_URL || ''): string {
+    if (process.env.DIRECT_DATABASE_URL) return process.env.DIRECT_DATABASE_URL;
+    try {
+        const u = new URL(url);
+        u.hostname = u.hostname.replace('-pooler.', '.');
+        u.searchParams.delete('pgbouncer');
+        return u.toString();
+    } catch {
+        return url;
+    }
+}
+
 function prisma(args: string) {
     console.log(`[release] prisma ${args}`);
-    execSync(`npx prisma ${args}`, { cwd: BACKEND_DIR, stdio: 'inherit', env: process.env });
+    execSync(`npx prisma ${args}`, { cwd: BACKEND_DIR, stdio: 'inherit', env: { ...process.env, DATABASE_URL: directDatabaseUrl() } });
 }
 
 export async function runRelease() {
