@@ -28,6 +28,9 @@ happen; note anything that doesn't.
       the agent gets a notification, a new **Hot** client with source *Website*, and an urgent call-back task.
 - [ ] Click **QR** on the listing card and open the copied link — the form becomes an open-house sign-in.
 
+- [ ] **New listing with photos**: on Listings click **+ Add listing**, upload a photo from your computer and paste one image link, use the arrows to put the link first, then save — the card shows that photo as the cover, and **Photos** lists both in that order.
+      *新增房源带照片：在“房源中心”点“发布房源”，从电脑上传一张照片、再粘贴一个图片链接，用箭头把链接那张移到第一位后保存——卡片封面就是那张，“相册管理”里两张照片按这个顺序排列。*
+
 ## 4. Offers, deals, commission
 - [ ] **Transactions → Add Offer** for a client on a listing.
 - [ ] **Counter** (enter an amount), then **Accept** → a deal is created, the listing shows *In Contract*,

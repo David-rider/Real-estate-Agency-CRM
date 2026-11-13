@@ -122,7 +122,7 @@ export default function CRMPage() {
           return handleAddClient(e, true);
         }
       } else {
-        toast.error(err instanceof Error ? err.message : "Failed to add client. Please try again.");
+        toast.error(err instanceof Error ? err.message : X.common.error);
       }
     } finally {
       setIsSubmitting(false);

@@ -148,7 +148,7 @@ export default function DocumentsPage() {
       fetchDocuments();
     } catch (error) {
       console.error(error);
-      toast.error(error instanceof Error ? error.message : "Failed to upload document. Please try again.");
+      toast.error(error instanceof Error ? error.message : X.common.error);
     } finally {
       setIsSubmitting(false);
     }

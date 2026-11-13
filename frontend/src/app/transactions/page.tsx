@@ -177,7 +177,7 @@ export default function TransactionsPage() {
       setOfferFormData({ propertyId: "", clientId: "", amount: "" });
     } catch (error) {
       console.error(error);
-      toast.error("Failed to record offer. Please try again.");
+      toast.error(X.common.error);
     } finally {
       setIsSubmitting(false);
     }
