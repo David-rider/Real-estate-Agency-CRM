@@ -80,7 +80,7 @@ export default function Header({ onMenuToggle }: HeaderProps) {
         if (!token) return;
         try {
             const res = await fetch(`${API}/api/notifications?limit=15`, {
-                headers: { Authorization: `Bearer ${token}` },
+                headers: { Authorization: `Bearer ${token}`, "X-Lang": language },
             });
             if (res.ok) {
                 const d = await res.json();
@@ -88,7 +88,7 @@ export default function Header({ onMenuToggle }: HeaderProps) {
                 setUnreadCount(d.unreadCount || 0);
             }
         } catch {}
-    }, []);
+    }, [language]); // re-fetch when the language changes so the text follows it
 
     useEffect(() => {
         fetchNotifications();

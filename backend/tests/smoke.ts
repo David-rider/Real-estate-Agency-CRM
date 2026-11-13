@@ -980,6 +980,28 @@ async function main() {
         assert.deepEqual(t2.map((t) => t.title), ['Schedule home inspection']);
     });
 
+    await step('notifications are shown in the reader\'s current language (new and older ones)', async () => {
+        const owner = await register('notiflang');
+        const me = await db().user.findUnique({ where: { email: `notiflang-${run}@smoke.test` }, select: { id: true, orgId: true } });
+        // New style: catalog key saved with the notification
+        await db().notification.create({ data: { userId: me!.id, orgId: me!.orgId, type: 'TRANSACTION_UPDATE', title: 'Deal status updated', message: 'Deal moved to in contract.', metadata: JSON.stringify({ i18n: { key: 'dealStatus', params: { status: 'IN_CONTRACT' } } }) } });
+        // Older style: English text only
+        await db().notification.create({ data: { userId: me!.id, orgId: me!.orgId, type: 'COMMISSION_PAID', title: 'Payout approved', message: 'Your commission payout of $12,500 was approved.' } });
+        await db().notification.create({ data: { userId: me!.id, orgId: me!.orgId, type: 'SYSTEM', title: 'Something custom', message: 'Free text stays as is.' } });
+        const read = (lang: string) => fetch(`${API}/api/notifications`, { headers: { Authorization: `Bearer ${owner}`, 'X-Lang': lang } }).then((r) => r.json());
+        const zh = await read('zh-CN');
+        const titles = zh.notifications.map((n: any) => n.title);
+        assert.ok(titles.includes('交易状态已更新'), JSON.stringify(titles));
+        assert.ok(zh.notifications.some((n: any) => n.message === '交易已进入“合同中”状态。'));
+        assert.ok(zh.notifications.some((n: any) => n.title === '佣金发放已批准' && n.message.includes('$12,500')), 'older English rows are translated');
+        assert.ok(titles.includes('Something custom'), 'unknown text passes through');
+        const es = await read('es');
+        assert.ok(es.notifications.some((n: any) => n.title === 'Estado de la operación actualizado'));
+        const en = await read('en');
+        assert.ok(en.notifications.some((n: any) => n.title === 'Deal status updated'));
+        assert.equal(zh.unreadCount, 3);
+    });
+
     await step('security policy is saved and enforced', async () => {
         if (!process.env.DATABASE_URL || !process.env.JWT_SECRET) {
             console.log('    (skipped: set DATABASE_URL and JWT_SECRET to run the security policy checks)');

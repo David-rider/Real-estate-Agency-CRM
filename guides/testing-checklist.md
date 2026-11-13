@@ -92,8 +92,8 @@ happen; note anything that doesn't.
       *退出登录，清除浏览器网站数据（或换一个浏览器），再登录——界面会使用你上次用的语言。*
 - [ ] In Español, open **Settings** and click through every section, then the **Dashboard** action cards and the **Marketing** AI skills — no English is left (place names and brand names excepted).
       *切到西班牙语，逐个点开“设置”的每个栏目，再看仪表盘的待办卡片和营销页的 AI 技能——不应再有英文（地名和品牌名除外）。*
-- [ ] Notifications created *before* the language was saved stay in the language they were created in.
-      *在保存语言之前生成的旧通知，保持生成时的语言，不会被改写。*
+- [ ] Switch the language and open the notification bell — existing notifications, including ones created before the switch, are shown in the new language.
+      *切换语言后打开右上角的通知铃铛——已有的通知（包括切换前生成的旧通知）都改用新语言显示。*
 - [ ] In 简体中文, sign in with a wrong password, then try to save a client without a first name — both error messages are in Chinese. Repeat in Español.
       *切到简体中文，用错误的密码登录，再试着保存一个没填名字的客户——两条错误提示都是中文；切到西班牙语再试一次。*
 
