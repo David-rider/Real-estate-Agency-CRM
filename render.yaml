@@ -33,6 +33,10 @@ services:
       # --- Google OAuth (optional) ---
       - key: GOOGLE_CLIENT_ID
         sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false          # Google Calendar push (server-side OAuth); paste in the dashboard, never commit
+      - key: TOKEN_ENCRYPTION_KEY
+        sync: false          # Optional: key for encrypting stored Google tokens (defaults to one derived from JWT_SECRET)
       # --- AI assistant (in development, off) ---
       - key: AI_ASSISTANT_ENABLED
         value: "false"

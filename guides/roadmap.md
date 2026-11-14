@@ -58,7 +58,7 @@ This file lists what to do after the trial launch, in priority order by stage. E
 | 1.3.0.0 | 2.3 统一收件箱<br>*Unified inbox* | ⬜ | |
 | 1.3.0.0 | 2.4 开放日增强<br>*Open-house enhancements* | ✅ | 签到问题（经纪人/预算/时间）、必选同意联系并记录时间、24 小时跟进任务、可打印二维码签到页<br>*Sign-in questions (agent / budget / timeline), required consent with timestamp, 24-hour follow-up task, printable QR sign* |
 | 1.4.0.0 | 3.1 DocuSign | ⬜ | |
-| 1.4.0.0 | 3.2 Google 日历同步<br>*Google Calendar sync* | 🟡 | 第一步：私人订阅链接（单向，ICS）已上线；第二步 OAuth 实时推送需 Google 审核<br>*Step 1: private subscription link (one-way ICS) is live; step 2, OAuth instant push, needs Google review* |
+| 1.4.0.0 | 3.2 Google 日历同步<br>*Google Calendar sync* | 🟡 | 订阅链接已上线；实时推送代码已上线，等 Google 日历权限审核后对所有人开放<br>*Subscription link live; instant push code live, opens to everyone after Google reviews the calendar scope* |
 | 1.4.0.0 | 3.3b MLS / StreetEasy 自动同步<br>*MLS / StreetEasy automatic sync* | ⬜ | 需 REBNY RLS / RESO 数据授权<br>*Needs REBNY RLS / RESO data authorisation* |
 | 1.4.0.0 | 3.4 Apple 登录（带校验）<br>*Apple sign-in (with verification)* | 🟡 | 服务器端校验已写好（2026-11-13）；等 Apple 开发者账号（每年 $99）后配置并做前端按钮<br>*Server-side verification written (2026-11-13); configure it and add the frontend button once there is an Apple developer account ($99/year)* |
 | 1.4.0.0 | 3.5 交易流程增强<br>*Deal-flow enhancements* | ✅ | 交易详情面板（关键日期时间轴、清单勾选、佣金比例）、合作经纪人按比例分佣、按公司自定义过户清单模板<br>*Deal detail panel (key-date timeline, checklist ticking, commission rate), co-agent commission split, per-company custom closing-checklist template* |

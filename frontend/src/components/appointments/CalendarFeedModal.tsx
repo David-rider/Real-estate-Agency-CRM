@@ -4,6 +4,7 @@ import React from "react";
 import { api } from "@/lib/api";
 import { useExtra } from "@/lib/i18n/extra";
 import { useToast } from "@/components/ui/Toast";
+import { fmt } from "@/lib/i18n/extra";
 
 /**
  * "Sync with Google Calendar" (subscription link): a private ICS link of the user's own appointments that
@@ -16,11 +17,13 @@ export default function CalendarFeedModal({ open, onClose }: { open: boolean; on
   const [active, setActive] = React.useState<boolean | null>(null);
   const [url, setUrl] = React.useState("");
   const [busy, setBusy] = React.useState(false);
+  const [live, setLive] = React.useState<{ available: boolean; connected: boolean; email: string | null } | null>(null);
 
   React.useEffect(() => {
     if (!open) return;
     setUrl("");
     api("/api/settings/calendar-feed").then((r) => setActive(!!r.active)).catch(() => setActive(false));
+    api("/api/calendar-sync").then(setLive).catch(() => setLive(null));
   }, [open]);
 
   if (!open) return null;
@@ -38,6 +41,18 @@ export default function CalendarFeedModal({ open, onClose }: { open: boolean; on
     catch (err) { toast.error(err instanceof Error ? err.message : X.common.error); }
     finally { setBusy(false); }
   };
+  const connect = async () => {
+    setBusy(true);
+    try { const r = await api("/api/calendar-sync/connect"); window.location.href = r.url; }
+    catch (err) { toast.error(err instanceof Error ? err.message : X.common.error); setBusy(false); }
+  };
+  const disconnectLive = async () => {
+    if (!window.confirm(C.disconnectConfirm)) return;
+    setBusy(true);
+    try { await api("/api/calendar-sync", { method: "DELETE" }); setLive((l) => (l ? { ...l, connected: false, email: null } : l)); toast.success(C.disconnectedToast); }
+    catch (err) { toast.error(err instanceof Error ? err.message : X.common.error); }
+    finally { setBusy(false); }
+  };
   const copy = async () => {
     try { await navigator.clipboard.writeText(url); toast.success(C.copied); } catch { /* the field stays selectable */ }
   };
@@ -50,6 +65,22 @@ export default function CalendarFeedModal({ open, onClose }: { open: boolean; on
           <button onClick={onClose} aria-label={C.close} className="text-foreground/50 hover:text-primary text-3xl leading-none">&times;</button>
         </div>
         <div className="p-6 overflow-y-auto space-y-5 text-sm text-foreground/80">
+          <div className="p-4 rounded-lg border border-primary/30 bg-primary/5 space-y-3">
+            <div className="font-semibold text-foreground">{C.liveTitle}</div>
+            <p>{C.liveDesc}</p>
+            {live?.connected ? (
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="px-2 py-0.5 rounded-full bg-green-500/10 border border-green-500/30 text-green-500 text-xs">{fmt(C.connectedAs, { email: live.email ?? "Google" })}</span>
+                <button onClick={disconnectLive} disabled={busy} className="text-xs text-red-500 hover:underline disabled:opacity-50">{C.disconnect}</button>
+              </div>
+            ) : live?.available ? (
+              <button onClick={connect} disabled={busy} className="px-4 py-2 bg-primary text-background rounded-lg text-sm font-semibold disabled:opacity-50">{C.connect}</button>
+            ) : (
+              <p className="text-xs text-foreground/50">{C.liveUnavailable}</p>
+            )}
+          </div>
+
+          <div className="font-semibold text-foreground">{C.linkTitle}</div>
           <p>{C.intro}</p>
 
           {url ? (

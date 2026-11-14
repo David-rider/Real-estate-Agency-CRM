@@ -21,6 +21,10 @@
 
 ## [未发布]
 
+#### 新增 / Added
+- Google 日历实时同步（第二步）：在“日程安排 → 与 Google 日历同步”点“连接 Google 日历”并授权后，新建、修改、取消和删除的日程会立即写进你的 Google 日历，连接时还会补上接下来的日程；可随时断开。订阅链接仍可使用。
+  *Google Calendar instant sync (step 2): under Appointments → Sync with Google Calendar, click "Connect Google Calendar" and grant access; new, changed, cancelled and deleted appointments are then written to your Google Calendar right away, and your upcoming appointments are added when you connect. You can disconnect any time; the subscription link still works.*
+
 ## [1.5.5.0] — 2026-11-13 · Google 日历订阅链接、交易漏斗与日程改进、邮件链接与部署修复、多语言补漏 / Google Calendar subscription link, pipeline and appointment fixes, email-link and deploy fixes, translation gaps
 
 #### 新增 / Added
@@ -575,6 +579,8 @@
 | 后端<br>*Backend* | `DISABLE_JOBS` | 可选，设为 `true` 关闭预约提醒任务<br>*Optional; `true` turns off the appointment-reminder job* |
 | 后端<br>*Backend* | `SEED_PASSWORD` / `ALLOW_SEED` | 仅种子脚本使用<br>*Used only by the seed script* |
 | 前端<br>*Frontend* | `NEXT_PUBLIC_GOOGLE_CLIENT_ID` | Google 登录的 OAuth 客户端 ID（公开值，不是密钥）；与后端 `GOOGLE_CLIENT_ID` 填同一个值。未设置时 Google 按钮显示“即将推出”<br>*Google sign-in OAuth client ID (a public value, not a secret); same value as the backend `GOOGLE_CLIENT_ID`. When unset, the Google button shows "Coming soon"* |
+| 后端<br>*Backend* | `GOOGLE_CLIENT_SECRET` | Google 日历实时推送用的 OAuth 客户端密钥（密钥，只填在 Render，不入库）。未设置时“连接 Google 日历”不显示<br>*OAuth client secret for Google Calendar push (a secret: Render only, never committed). When unset, "Connect Google Calendar" is hidden* |
+| 后端<br>*Backend* | `TOKEN_ENCRYPTION_KEY` | 可选：加密保存 Google 令牌的密钥；不设置时由 `JWT_SECRET` 推出（更换后用户需重新连接）<br>*Optional: key for encrypting stored Google tokens; derived from `JWT_SECRET` when unset (changing it means users reconnect)* |
 | 前端<br>*Frontend* | `NEXT_PUBLIC_AI_ASSISTANT_ENABLED` | AI 助手开关，默认 `false`<br>*AI assistant switch, default `false`* |
 | 前端<br>*Frontend* | `NEXT_PUBLIC_FEATURED_BROKERAGE_SLUG` | 可选：首页 “Browse Listings” 链接到哪家公司<br>*Optional: which company the home page “Browse Listings” links to* |
 | 后端<br>*Backend* | `SENTRY_DSN` | 可选：后端 Sentry 错误上报 DSN，未填时静默不启用<br>*Optional: backend Sentry DSN; silently disabled when empty* |
