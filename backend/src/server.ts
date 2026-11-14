@@ -54,6 +54,7 @@ import tasksRoutes from './routes/tasks';
 import notificationsRoutes from './routes/notifications';
 import searchRoutes from './routes/search';
 import uploadsRoutes from './routes/uploads';
+import calendarSyncRoutes from './routes/calendarSync';
 import { publicFeed as calendarFeedRoutes, feedSettings as calendarFeedSettingsRoutes } from './routes/calendarFeed';
 
 import { authenticateToken, AuthRequest } from './middleware/authMiddleware';
@@ -108,6 +109,7 @@ app.use('/api/settings/2fa', authenticateToken, twoFactorRoutes);
 app.use('/api/settings/social', authenticateToken, socialLinkRoutes);
 app.use('/api/settings/calendar-feed', calendarFeedSettingsRoutes);
 app.use('/api/calendar', calendarFeedRoutes); // public, token in the URL
+app.use('/api/calendar-sync', calendarSyncRoutes); // per-route auth; /callback is public (signed state)
 app.use('/api/settings', authenticateToken, settingsRoutes);
 app.use('/api/settings/users', authenticateToken, importExportRoutes);
 app.use('/api/offers', authenticateToken, offersRoutes);

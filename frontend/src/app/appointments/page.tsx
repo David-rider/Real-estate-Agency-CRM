@@ -49,6 +49,15 @@ export default function AppointmentsPage() {
   const [viewMode, setViewMode] = React.useState<"list" | "calendar">("list");
   const [isAddModalOpen, setIsAddModalOpen] = React.useState(false);
   const [feedOpen, setFeedOpen] = React.useState(false);
+  // Back from Google's consent screen: /appointments?gcal=connected|denied|error
+  React.useEffect(() => {
+    const r = new URLSearchParams(window.location.search).get("gcal");
+    if (!r) return;
+    if (r === "connected") toast.success(X.calFeed.connectedToast);
+    else if (r === "denied") toast.error(X.calFeed.deniedToast);
+    else toast.error(X.calFeed.errorToast);
+    window.history.replaceState(null, "", "/appointments");
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   // Form data for new appointment

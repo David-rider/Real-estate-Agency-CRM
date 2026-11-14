@@ -1087,6 +1087,49 @@ async function main() {
         assert.equal((await fetch(`${API}/api/calendar/not-a-token.ics`)).status, 404);
     });
 
+    await step('Google Calendar push: connect, create / change / cancel / delete reach the calendar, disconnect', async () => {
+        const me = await register('gcalpush');
+        const until = async (check: () => Promise<boolean>) => { for (let i = 0; i < 30; i++) { if (await check()) return true; await new Promise(r => setTimeout(r, 100)); } return false; };
+        const events = async () => (await call('GET', '/api/calendar-sync/fake-events', me)).body as { id: string; summary: string }[];
+        const status0 = (await call('GET', '/api/calendar-sync', me)).body;
+        if (!status0.available) return; // a real Google client secret is configured here: the fake calendar is (correctly) off
+        assert.equal(status0.connected, false);
+        // A forged / missing state is refused
+        const bad = await fetch(`${API}/api/calendar-sync/callback?code=x&state=forged`, { redirect: 'manual' });
+        assert.equal(bad.status, 302);
+        assert.match(bad.headers.get('location') || '', /gcal=error/);
+        // Connect
+        const { url } = (await call('GET', '/api/calendar-sync/connect', me)).body;
+        const cb = await fetch(url, { redirect: 'manual' });
+        assert.equal(cb.status, 302);
+        assert.match(cb.headers.get('location') || '', /\/appointments\?gcal=connected$/);
+        const st = (await call('GET', '/api/calendar-sync', me)).body;
+        assert.deepEqual([st.connected, st.email], [true, 'calendar@fake.test']);
+        const row = await db().user.findFirst({ where: { email: `gcalpush-${run}@smoke.test` }, select: { gcalRefreshTokenEnc: true } });
+        assert.ok(row!.gcalRefreshTokenEnc!.startsWith('v1.') && !row!.gcalRefreshTokenEnc!.includes('fake-refresh-token'), 'the refresh token is stored encrypted');
+        // Create → an event appears
+        const ap = await call('POST', '/api/appointments', me, { title: 'Push showing', type: 'SHOWING', date: new Date(Date.now() + 86400000).toISOString() });
+        assert.equal(ap.status, 201);
+        assert.ok(await until(async () => !!(await db().appointment.findUnique({ where: { id: ap.body.id } }))?.gcalEventId), 'linked to a Google event');
+        const evId = (await db().appointment.findUnique({ where: { id: ap.body.id } }))!.gcalEventId!;
+        assert.equal((await events()).find(e => e.id === evId)?.summary, 'Push showing');
+        // Change → the event follows
+        await call('PATCH', `/api/appointments/${ap.body.id}`, me, { title: 'Push showing (moved)' });
+        assert.ok(await until(async () => (await events()).find(e => e.id === evId)?.summary === 'Push showing (moved)'));
+        // Cancel → the event is removed
+        await call('PATCH', `/api/appointments/${ap.body.id}`, me, { status: 'CANCELLED' });
+        assert.ok(await until(async () => !(await events()).some(e => e.id === evId)), 'cancelled appointments leave the calendar');
+        // Delete → the event is removed
+        const ap2 = await call('POST', '/api/appointments', me, { title: 'Push meeting', date: new Date(Date.now() + 2 * 86400000).toISOString() });
+        assert.ok(await until(async () => !!(await db().appointment.findUnique({ where: { id: ap2.body.id } }))?.gcalEventId));
+        const ev2 = (await db().appointment.findUnique({ where: { id: ap2.body.id } }))!.gcalEventId!;
+        await call('DELETE', `/api/appointments/${ap2.body.id}`, me);
+        assert.ok(await until(async () => !(await events()).some(e => e.id === ev2)), 'deleted appointments leave the calendar');
+        // Disconnect
+        assert.equal((await call('DELETE', '/api/calendar-sync', me)).status, 200);
+        assert.equal((await call('GET', '/api/calendar-sync', me)).body.connected, false);
+    });
+
     await step('security policy is saved and enforced', async () => {
         if (!process.env.DATABASE_URL || !process.env.JWT_SECRET) {
             console.log('    (skipped: set DATABASE_URL and JWT_SECRET to run the security policy checks)');

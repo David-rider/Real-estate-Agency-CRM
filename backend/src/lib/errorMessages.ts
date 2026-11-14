@@ -168,6 +168,7 @@ export const ERROR_TEXT: Record<string, T3> = {
     "Routing rule not found": ["找不到该分配规则", "找不到該分配規則", "No se encontró la regla de asignación"],
     "Rule name is required": ["请填写规则名称", "請填寫規則名稱", "Se requiere el nombre de la regla"],
     "Search failed": ["搜索失败", "搜尋失敗", "La búsqueda falló"],
+    "Google Calendar sync is not configured": ["Google 日历同步尚未配置", "Google 日曆同步尚未設定", "La sincronización con Google Calendar no está configurada"],
     "Social and Email generation require the Pro plan.": ["社交媒体和邮件内容生成需要专业版。", "社群與郵件內容產生需要專業版。", "La generación de redes sociales y correo requiere el plan Pro."],
     "Start the setup first": ["请先开始设置", "請先開始設定", "Primero inicie la configuración"],
     "Target agent not found in your organization": ["在你的公司里找不到目标经纪人", "在你的公司裡找不到目標經紀人", "No se encontró el agente en su organización"],

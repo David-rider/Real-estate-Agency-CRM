@@ -81,6 +81,8 @@ model User {
   googleId          String?      @unique
   appleId           String?      @unique
   calendarFeedTokenHash String? @unique
+  gcalRefreshTokenEnc String?
+  gcalEmail         String?
   name              String
   role              Role         @default(AGENT)
   tier              Tier         @default(CORE)
@@ -420,6 +422,7 @@ model Appointment {
   confirmationSent  Boolean  @default(false)
   reminderSent      Boolean  @default(false)
   colorCode         String?
+  gcalEventId       String?
 
   agentId      String
   agent        User          @relation(fields: [agentId], references: [id])

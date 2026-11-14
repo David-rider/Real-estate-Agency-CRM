@@ -1,3 +1,4 @@
+import { syncAppointment, removeEvent, syncInBackground } from '../lib/googleCalendar';
 import express from 'express';
 import { prisma } from '../server';
 import { AuthRequest } from '../middleware/authMiddleware';
@@ -130,6 +131,7 @@ router.post('/', async (req: AuthRequest, res) => {
             data: { funnelStage: 'SHOWING' },
         });
     }
+    syncInBackground(() => syncAppointment(appointment.id));
     await audit(req, 'CREATE_APPOINTMENT', 'Appointment', appointment.id, undefined, { title: appointment.title, type: appointment.type, date: appointment.date.toISOString() });
     res.status(201).json(appointment);
 });
@@ -166,6 +168,7 @@ router.patch('/:id', async (req: AuthRequest, res) => {
     }
 
     const updated = await prisma.appointment.update({ where: { id: found.appt!.id }, data });
+    syncInBackground(() => syncAppointment(updated.id));
     const changes = diffFields(found.appt!, data);
     if (Object.keys(changes.after).length > 0) await audit(req, 'UPDATE_APPOINTMENT', 'Appointment', found.appt!.id, changes.before, changes.after);
     // A completed meeting counts as contact with the client
@@ -181,6 +184,7 @@ router.delete('/:id', async (req: AuthRequest, res) => {
     if (found.error === 404) return res.status(404).json({ error: 'Appointment not found' });
     if (found.error === 403) return res.status(403).json({ error: 'Forbidden' });
     await prisma.appointment.delete({ where: { id: found.appt!.id } });
+    syncInBackground(() => removeEvent(found.appt!.agentId, found.appt!.gcalEventId));
     await audit(req, 'DELETE_APPOINTMENT', 'Appointment', found.appt!.id, { title: found.appt!.title, date: found.appt!.date.toISOString() });
     res.json({ message: 'Appointment deleted' });
 });
