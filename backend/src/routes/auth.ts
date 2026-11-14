@@ -41,6 +41,9 @@ const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET as string;
 
 const hashToken = (t: string) => crypto.createHash('sha256').update(t).digest('hex');
+// Email addresses are compared without regard to case or surrounding spaces
+const normEmail = (v: unknown) => (typeof v === 'string' ? v.trim().toLowerCase() : '');
+const byEmail = (email: string) => ({ email: { equals: email, mode: 'insensitive' as const } });
 if (!JWT_SECRET) {
     console.error('FATAL ERROR: JWT_SECRET is not defined in environment variables.');
     process.exit(1);
@@ -49,13 +52,14 @@ if (!JWT_SECRET) {
 // POST /api/auth/login
 router.post('/login', authLimiter, async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const email = normEmail(req.body?.email);
+        const password = req.body?.password;
 
-        if (!email || !password) {
+        if (!email || typeof password !== 'string' || !password) {
             return res.status(400).json({ error: 'Email and password are required' });
         }
 
-        const user = await prisma.user.findUnique({ where: { email } });
+        const user = await prisma.user.findFirst({ where: byEmail(email) });
         if (!user) {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
@@ -145,11 +149,17 @@ router.post('/login/2fa', authLimiter, async (req, res) => {
 // POST /api/auth/register
 router.post('/register', authLimiter, async (req, res) => {
     try {
-        const { name, email, password, orgName } = req.body;
+        const { password } = req.body;
+        const name = typeof req.body.name === 'string' ? req.body.name.trim().slice(0, 120) : '';
+        const orgName = typeof req.body.orgName === 'string' ? req.body.orgName.slice(0, 200) : '';
+        const email = normEmail(req.body.email);
         const lang: Lang = normalizeLang(req.body.language);
 
         if (!name || !email || !password) {
             return res.status(400).json({ error: 'Name, email, and password are required' });
+        }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) {
+            return res.status(400).json({ error: 'Invalid email address' });
         }
 
         if (!orgName || !orgName.trim()) {
@@ -159,7 +169,7 @@ router.post('/register', authLimiter, async (req, res) => {
             return res.status(400).json({ error: 'Password must be at least 8 characters' });
         }
 
-        const existingUser = await prisma.user.findUnique({ where: { email } });
+        const existingUser = await prisma.user.findFirst({ where: byEmail(email) });
         if (existingUser) {
             return res.status(400).json({ error: 'Email already in use' });
         }
@@ -232,10 +242,10 @@ router.post('/register', authLimiter, async (req, res) => {
 // POST /api/auth/forgot-password
 router.post('/forgot-password', authLimiter, async (req, res) => {
     try {
-        const { email } = req.body;
+        const email = normEmail(req.body?.email);
         if (!email) return res.status(400).json({ error: 'Email is required' });
 
-        const user = await prisma.user.findUnique({ where: { email } });
+        const user = await prisma.user.findFirst({ where: byEmail(email) });
 
         // Always respond 200 to prevent email enumeration
         if (!user) return res.status(200).json({ message: 'If that email exists, a reset link has been sent.' });
@@ -247,7 +257,7 @@ router.post('/forgot-password', authLimiter, async (req, res) => {
 
         // Only a hash is stored: a leaked database must not yield usable reset links
         await prisma.user.update({
-            where: { email },
+            where: { id: user.id },
             data: { passwordResetToken: hashToken(token), passwordResetExpiry: expiresAt }
         });
 
@@ -255,7 +265,7 @@ router.post('/forgot-password', authLimiter, async (req, res) => {
         const resetUrl = `${appUrl}/reset-password?token=${token}`;
 
         await sendEmail({
-            to: email,
+            to: user.email,
             subject: EMAIL[lang].reset.subject,
             html: passwordResetEmail(resetUrl, user.name, lang),
             text: `${EMAIL[lang].reset.title}: ${resetUrl}`
@@ -293,7 +303,8 @@ router.post('/reset-password', authLimiter, async (req, res) => {
 
         await prisma.user.update({
             where: { id: user.id },
-            data: { password: hashedPassword, passwordResetToken: null, passwordResetExpiry: null, passwordChangedAt: new Date() }
+            // The reset link was delivered to this mailbox, which proves the address belongs to the person
+            data: { password: hashedPassword, passwordResetToken: null, passwordResetExpiry: null, passwordChangedAt: new Date(), emailVerified: true, emailVerifyToken: null }
         });
         invalidateAccount(user.id);
 
@@ -315,7 +326,7 @@ router.post('/accept-invite', authLimiter, async (req, res) => {
         if (!name || !email || !password || !inviteToken) {
             return res.status(400).json({ error: 'Name, email, password, and invite token are required' });
         }
-        if (password.length < 8) {
+        if (typeof password !== 'string' || typeof email !== 'string' || typeof inviteToken !== 'string' || password.length < 8 || password.length > 200) {
             return res.status(400).json({ error: 'Password must be at least 8 characters' });
         }
 
@@ -400,12 +411,12 @@ router.post('/accept-invite', authLimiter, async (req, res) => {
 // POST /api/auth/resend-verification
 router.post('/resend-verification', authLimiter, async (req, res) => {
     try {
-        const { email } = req.body;
+        const email = normEmail(req.body?.email);
         if (!email) return res.status(400).json({ error: 'Email is required' });
 
         // Always respond 200 to prevent email enumeration
         const okMsg = { message: 'If that email exists and is unverified, a new link has been sent.' };
-        const user = await prisma.user.findUnique({ where: { email: email.trim().toLowerCase() } });
+        const user = await prisma.user.findFirst({ where: byEmail(email) });
         if (!user || user.emailVerified) return res.status(200).json(okMsg);
 
         const verifyToken = crypto.randomBytes(32).toString('hex');
@@ -436,6 +447,9 @@ router.post('/refresh', authenticateToken, async (req: AuthRequest, res) => {
         const user = await prisma.user.findUnique({ where: { id: req.user.userId } });
         if (!user) return res.status(404).json({ error: 'User not found' });
         if (!user.isActive) return res.status(403).json({ error: 'This account has been deactivated.' });
+        if (!user.emailVerified && emailServiceConfigured()) {
+            return res.status(403).json({ error: 'Please verify your email address before logging in. Check your inbox, or request a new link.', code: 'EMAIL_NOT_VERIFIED' });
+        }
 
         const token = jwt.sign(
             { userId: user.id, role: user.role, tier: user.tier, orgId: user.orgId },
@@ -463,9 +477,9 @@ router.post('/refresh', authenticateToken, async (req: AuthRequest, res) => {
 });
 
 // POST /api/auth/verify-email
-router.post('/verify-email', async (req, res) => {
+router.post('/verify-email', authLimiter, async (req, res) => {
     try {
-        const { token } = req.body;
+        const token = typeof req.body?.token === 'string' ? req.body.token : '';
         if (!token) return res.status(400).json({ error: 'Token is required' });
 
         const user = await prisma.user.findFirst({

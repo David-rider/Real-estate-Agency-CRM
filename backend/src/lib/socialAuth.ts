@@ -7,6 +7,7 @@ import { orgSlug } from './slug';
 import { issueSession } from './session';
 import { signChallenge } from './totp';
 import { ipAllowed, IP_BLOCKED } from './ipAllowlist';
+import { invalidateAccount } from '../middleware/authMiddleware';
 
 /*
  * Social sign-in (Google today; Apple ready for when a developer account exists).
@@ -103,8 +104,26 @@ export async function signInWithIdentity(prisma: PrismaClient, req: express.Requ
             // Same email, not linked yet: link only when the provider has verified the email
             if (!id.emailVerified) throw new SocialAuthError(409, 'An account with this email already exists. Please log in with your password and link Google from account settings.');
             if (existing[field] && existing[field] !== id.subject) throw new SocialAuthError(409, 'An account with this email already exists. Please log in with your password and link Google from account settings.');
-            user = await prisma.user.update({ where: { id: existing.id }, data: { [field]: id.subject, emailVerified: true } });
-            await auditDirect(prisma, req, user.id, user.orgId, id.provider === 'google' ? 'LINK_GOOGLE' : 'LINK_APPLE', { automatic: true });
+            // Nobody ever proved they own this mailbox, so whoever created the account may not be its owner.
+            // The verified owner takes it over: the old password, 2FA, links and sessions stop working.
+            const unproven = !existing.emailVerified;
+            user = await prisma.user.update({
+                where: { id: existing.id },
+                data: {
+                    [field]: id.subject, emailVerified: true,
+                    ...(unproven ? {
+                        password: null, passwordResetToken: null, passwordResetExpiry: null, emailVerifyToken: null,
+                        totpEnabled: false, totpSecret: null, totpRecoveryCodes: [], totpLastStep: null,
+                        calendarFeedTokenHash: null, sessionsRevokedAt: new Date(),
+                    } : {}),
+                },
+            });
+            await auditDirect(prisma, req, user.id, user.orgId, id.provider === 'google' ? 'LINK_GOOGLE' : 'LINK_APPLE', { automatic: true, ...(unproven ? { credentialsReset: true } : {}) });
+            if (unproven) {
+                invalidateAccount(user.id);
+                // The new session must start after the revocation second, or it would be refused too
+                await new Promise((r) => setTimeout(r, 1100));
+            }
         } else {
             // First sign-in creates the person's own brokerage; joining one only happens through an invitation
             const display = id.name || id.email.split('@')[0];

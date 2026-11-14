@@ -66,7 +66,9 @@ router.get('/metrics', async (req: AuthRequest, res) => {
         });
 
         // Finance policy: the brokerage can hide other agents' production. Management always sees it.
-        const grossHidden = !financePolicy.showAgentGross && !isManager(req.user!);
+        // Outside parties on a deal (attorney, lender, title company) never see the firm's production
+        const outsideParty = ['ATTORNEY', 'LENDER', 'TITLECO'].includes(req.user!.role);
+        const grossHidden = outsideParty || (!financePolicy.showAgentGross && !isManager(req.user!));
         const leaderboard = Object.values(agentTotals)
             .sort((a, b) => b.gross - a.gross)
             .map((agent, index) => ({
@@ -89,7 +91,7 @@ router.get('/metrics', async (req: AuthRequest, res) => {
             ytdNet,
             topPercent,
             grossHidden,
-            leaderboard: leaderboard.slice(0, 5), // Top 5
+            leaderboard: outsideParty ? [] : leaderboard.slice(0, 5), // Top 5
             userRank: userRankIndex !== -1 ? leaderboard[userRankIndex] : null
         });
 
@@ -106,8 +108,8 @@ router.get('/commissions', async (req: AuthRequest, res) => {
     try {
         const userId = req.user?.userId;
         const orgId = req.user?.orgId;
-        const page = parseInt(req.query.page as string) || 1;
-        const limit = parseInt(req.query.limit as string) || 10;
+        const page = Math.max(1, parseInt(req.query.page as string) || 1);
+        const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 10));
         const skip = (page - 1) * limit;
 
         if (!userId || !orgId) {

@@ -29,7 +29,7 @@ router.post('/', async (req: AuthRequest, res) => {
     const clientId = req.body.clientId;
     if (!item) return res.status(400).json({ error: 'Gift item is required' });
     if (!clientId) return res.status(400).json({ error: 'Choose a client' });
-    const refErr = await checkRefs(user.orgId, { clientId });
+    const refErr = await checkRefs(user.orgId, { clientId }, user);
     if (refErr) return res.status(400).json({ error: refErr });
     const gift = await prisma.giftOrder.create({
         data: {

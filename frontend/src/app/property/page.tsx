@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useI18n } from "@/lib/i18n/I18nContext";
 import { useExtra } from "@/lib/i18n/extra";
 import { api } from "@/lib/api";
+import { LEGAL } from "@/lib/i18n/legal";
 
 const INPUT = "w-full px-3 py-2.5 bg-background border border-border rounded-lg text-sm text-foreground focus:border-primary outline-none";
 
@@ -18,6 +19,7 @@ const INPUT = "w-full px-3 py-2.5 bg-background border border-border rounded-lg 
 function PublicListingPage() {
   const id = useSearchParams().get("id") ?? "";
   const { t, language, setLanguage } = useI18n();
+  const LG = LEGAL[language] ?? LEGAL.en;
   void t;
   const X = useExtra();
   const P = X.publicListing;
@@ -170,6 +172,10 @@ function PublicListingPage() {
                 <button disabled={sending} className="w-full py-2.5 bg-primary text-background rounded-lg text-sm font-semibold hover:opacity-90 disabled:opacity-50">
                   {sending ? P.sending : P.send}
                 </button>
+                <p className="text-[11px] text-foreground/50">
+                  {LG.inquiryNotice}{" "}
+                  <Link href="/privacy" className="underline hover:text-primary">{LG.privacyLink}</Link>
+                </p>
               </form>
             )}
           </div>

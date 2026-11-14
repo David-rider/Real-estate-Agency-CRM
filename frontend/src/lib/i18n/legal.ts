@@ -3,15 +3,18 @@
 import type { Language } from "./translations";
 
 export type LegalDoc = { title: string; updated: string; intro: string; sections: { h: string; p: string[] }[] };
-type LegalSet = { privacy: LegalDoc; terms: LegalDoc; back: string; privacyLink: string; termsLink: string };
+type LegalSet = { privacy: LegalDoc; terms: LegalDoc; back: string; privacyLink: string; termsLink: string; agree: string; and: string; inquiryNotice: string };
 
 const CONTACT = "support@apexzone.xyz";
-const DATE = "2026-11-13";
+const DATE = "2026-11-14";
 
 const en: LegalSet = {
   back: "Back to home",
   privacyLink: "Privacy Policy",
   termsLink: "Terms of Service",
+  agree: "By creating an account, you agree to the",
+  and: "and the",
+  inquiryNotice: "By sending this form, you agree that the listing brokerage may contact you about this property. See our",
   privacy: {
     title: "Privacy Policy",
     updated: `Last updated: ${DATE}`,
@@ -21,10 +24,13 @@ const en: LegalSet = {
         "Account information: your name, email address, password (stored only as a secure hash), role, language and time-zone preferences.",
         "Business data your brokerage enters: clients, properties, listings, appointments, transactions, documents, photos and notes. Your brokerage controls this data; we process it on its behalf.",
         "Technical information: sign-in times, IP address and browser type, used for security alerts, audit logs and preventing abuse.",
+        "Enquiries from public listing pages: if you send a message or sign in at an open house, your name, contact details and answers go to the brokerage that published the listing, which decides how to use them.",
+        "Browser storage: we use a sign-in cookie and your browser's local storage to keep you signed in and remember your language and display choices. We do not use advertising or tracking cookies.",
       ] },
       { h: "2. Sign in with Google", p: [
         "If you choose Sign in with Google, we receive from Google only your name, email address, whether Google has verified that email, and your Google account ID.",
-        "We use this information solely to create your account or sign you in, and to link your Google account to an existing account with the same verified email. We do not request access to your Gmail, contacts, files or any other Google data.",
+        "We use this information solely to create your account or sign you in, and to link your Google account to an existing account with the same verified email. We do not request access to your Gmail, contacts or files.",
+        "If you choose to connect Google Calendar (Appointments → Sync with Google Calendar), we ask Google for permission to create, change and delete calendar events. We use it only to write the appointments you keep in the service to your own Google Calendar, and to update or remove those same events. We do not read, analyse or share the other events in your calendar. The authorization is stored encrypted; you can disconnect at any time, and you can also revoke access in your Google account.",
         "Our use of information received from Google APIs adheres to the Google API Services User Data Policy, including the Limited Use requirements. You can unlink Google at any time in Settings → Security.",
       ] },
       { h: "3. How we use information", p: [
@@ -34,6 +40,7 @@ const en: LegalSet = {
       { h: "4. Sharing and service providers", p: [
         "Data is visible only to members of your own brokerage, according to their roles. Public listing pages show only the listing details your brokerage chooses to publish.",
         "We use infrastructure providers to run the service, including hosting, database, file storage and content delivery (for example Render, Neon, Cloudflare and Vercel). They process data only to provide those services to us.",
+        "Service emails are delivered through an email provider (Resend). Payments for paid plans are processed by Stripe; we never receive or store card numbers.",
         "We may disclose information if required by law or to protect the rights and safety of users.",
       ] },
       { h: "5. Security and retention", p: [
@@ -88,6 +95,9 @@ const zhCN: LegalSet = {
   back: "返回首页",
   privacyLink: "隐私政策",
   termsLink: "服务条款",
+  agree: "创建账号即表示你同意",
+  and: "和",
+  inquiryNotice: "提交即表示你同意发布该房源的经纪公司就此房源与你联系。详见",
   privacy: {
     title: "隐私政策",
     updated: `最后更新：${DATE}`,
@@ -97,10 +107,13 @@ const zhCN: LegalSet = {
         "账户信息：姓名、邮箱、密码（只保存安全哈希值）、角色、语言和时区偏好。",
         "经纪公司录入的业务数据：客户、房产、房源、预约、交易、文档、照片和备注。这些数据由你所在的经纪公司控制，我们代其处理。",
         "技术信息：登录时间、IP 地址和浏览器类型，用于安全提醒、审计日志和防止滥用。",
+        "公开房源页面上的咨询：如果你在房源页面留言或在开放看房时登记，你的姓名、联系方式和填写的内容会交给发布该房源的经纪公司，由该公司决定如何使用。",
+        "浏览器存储：我们使用登录 Cookie 和浏览器本地存储来保持登录状态，并记住你的语言和显示偏好。我们不使用广告或跟踪 Cookie。",
       ] },
       { h: "2. 使用 Google 登录", p: [
         "如果你选择用 Google 登录，我们只从 Google 获取你的姓名、邮箱、Google 是否已验证该邮箱，以及你的 Google 账号 ID。",
-        "这些信息只用于创建账户或让你登录，以及把你的 Google 账号关联到邮箱相同且已验证的现有账户。我们不会请求访问你的 Gmail、联系人、文件或任何其他 Google 数据。",
+        "这些信息只用于创建账户或让你登录，以及把你的 Google 账号关联到邮箱相同且已验证的现有账户。我们不会请求访问你的 Gmail、联系人或文件。",
+        "如果你选择连接 Google 日历（日程安排 → 与 Google 日历同步），我们会向 Google 申请创建、修改和删除日历活动的权限。这项权限只用于把你在本服务中的日程写入你自己的 Google 日历，并更新或删除这些日程对应的活动。我们不会读取、分析或分享你日历中的其他活动。授权信息加密保存；你可以随时断开连接，也可以在 Google 账号中撤销授权。",
         "我们对通过 Google API 获得的信息的使用，遵守《Google API 服务用户数据政策》，包括其中的“有限使用”要求。你可以随时在“设置 → 安全”中取消关联 Google。",
       ] },
       { h: "3. 我们如何使用信息", p: [
@@ -110,6 +123,7 @@ const zhCN: LegalSet = {
       { h: "4. 共享与服务提供商", p: [
         "数据只对你所在经纪公司的成员按角色可见。公开房源页面只显示经纪公司选择公开的房源信息。",
         "我们使用基础设施提供商来运行本服务，包括托管、数据库、文件存储和内容分发（例如 Render、Neon、Cloudflare 和 Vercel）。它们只为向我们提供这些服务而处理数据。",
+        "服务邮件通过邮件服务商（Resend）发送。付费套餐的付款由 Stripe 处理；我们不会接收或保存银行卡号。",
         "在法律要求或为保护用户权利与安全时，我们可能披露信息。",
       ] },
       { h: "5. 安全与保存期限", p: [
@@ -164,6 +178,9 @@ const zhTW: LegalSet = {
   back: "返回首頁",
   privacyLink: "隱私權政策",
   termsLink: "服務條款",
+  agree: "建立帳號即表示您同意",
+  and: "和",
+  inquiryNotice: "送出即表示您同意發布該房源的經紀公司就此房源與您聯絡。詳見",
   privacy: {
     title: "隱私權政策",
     updated: `最後更新：${DATE}`,
@@ -173,10 +190,13 @@ const zhTW: LegalSet = {
         "帳戶資訊：姓名、電子郵件、密碼（只保存安全雜湊值）、角色、語言和時區偏好。",
         "經紀公司輸入的業務資料：客戶、房產、房源、預約、交易、文件、照片和備註。這些資料由您所屬的經紀公司控制，我們代其處理。",
         "技術資訊：登入時間、IP 位址和瀏覽器類型，用於安全提醒、稽核紀錄和防止濫用。",
+        "公開房源頁面上的諮詢：如果您在房源頁面留言或在開放看房時登記，您的姓名、聯絡方式和填寫的內容會交給發布該房源的經紀公司，由該公司決定如何使用。",
+        "瀏覽器儲存：我們使用登入 Cookie 和瀏覽器本機儲存來保持登入狀態，並記住您的語言和顯示偏好。我們不使用廣告或追蹤 Cookie。",
       ] },
       { h: "2. 使用 Google 登入", p: [
         "若您選擇使用 Google 登入，我們只從 Google 取得您的姓名、電子郵件、Google 是否已驗證該電子郵件，以及您的 Google 帳號 ID。",
-        "這些資訊只用於建立帳戶或讓您登入，以及將您的 Google 帳號連結到電子郵件相同且已驗證的現有帳戶。我們不會要求存取您的 Gmail、聯絡人、檔案或任何其他 Google 資料。",
+        "這些資訊只用於建立帳戶或讓您登入，以及將您的 Google 帳號連結到電子郵件相同且已驗證的現有帳戶。我們不會要求存取您的 Gmail、聯絡人或檔案。",
+        "如果您選擇連結 Google 日曆（日程安排 → 與 Google 日曆同步），我們會向 Google 申請建立、修改和刪除日曆活動的權限。這項權限只用於將您在本服務中的日程寫入您自己的 Google 日曆，並更新或刪除這些日程對應的活動。我們不會讀取、分析或分享您日曆中的其他活動。授權資訊加密儲存；您可以隨時中斷連結，也可以在 Google 帳號中撤銷授權。",
         "我們對透過 Google API 取得之資訊的使用，遵守《Google API 服務使用者資料政策》，包括其中的「有限使用」規定。您可以隨時在「設定 → 安全」中取消連結 Google。",
       ] },
       { h: "3. 我們如何使用資訊", p: [
@@ -186,6 +206,7 @@ const zhTW: LegalSet = {
       { h: "4. 分享與服務供應商", p: [
         "資料只對您所屬經紀公司的成員依角色可見。公開房源頁面只顯示經紀公司選擇公開的房源資訊。",
         "我們使用基礎設施供應商來運行本服務，包括主機、資料庫、檔案儲存和內容傳遞（例如 Render、Neon、Cloudflare 和 Vercel）。它們只為向我們提供這些服務而處理資料。",
+        "服務郵件透過郵件服務商（Resend）寄送。付費方案的付款由 Stripe 處理；我們不會接收或儲存卡號。",
         "在法律要求或為保護使用者權利與安全時，我們可能揭露資訊。",
       ] },
       { h: "5. 安全與保存期間", p: [
@@ -240,6 +261,9 @@ const es: LegalSet = {
   back: "Volver al inicio",
   privacyLink: "Política de privacidad",
   termsLink: "Términos del servicio",
+  agree: "Al crear una cuenta, acepta los",
+  and: "y la",
+  inquiryNotice: "Al enviar este formulario, acepta que la agencia que publica la propiedad le contacte sobre ella. Consulte nuestra",
   privacy: {
     title: "Política de privacidad",
     updated: `Última actualización: ${DATE}`,
@@ -249,10 +273,13 @@ const es: LegalSet = {
         "Información de la cuenta: nombre, correo electrónico, contraseña (guardada solo como hash seguro), rol y preferencias de idioma y zona horaria.",
         "Datos que introduce su agencia: clientes, propiedades, anuncios, citas, transacciones, documentos, fotos y notas. Su agencia controla estos datos; nosotros los tratamos en su nombre.",
         "Información técnica: horas de inicio de sesión, dirección IP y tipo de navegador, usados para alertas de seguridad, registros de auditoría y prevención de abusos.",
+        "Consultas desde las páginas públicas de propiedades: si envía un mensaje o se registra en una jornada de puertas abiertas, su nombre, datos de contacto y respuestas se entregan a la agencia que publicó la propiedad, que decide cómo usarlos.",
+        "Almacenamiento del navegador: usamos una cookie de sesión y el almacenamiento local del navegador para mantener su sesión y recordar sus preferencias de idioma y visualización. No usamos cookies de publicidad ni de seguimiento.",
       ] },
       { h: "2. Iniciar sesión con Google", p: [
         "Si elige iniciar sesión con Google, recibimos de Google solo su nombre, su correo electrónico, si Google ha verificado ese correo y el ID de su cuenta de Google.",
-        "Usamos esta información únicamente para crear su cuenta o iniciar su sesión, y para vincular su cuenta de Google a una cuenta existente con el mismo correo verificado. No solicitamos acceso a su Gmail, contactos, archivos ni a ningún otro dato de Google.",
+        "Usamos esta información únicamente para crear su cuenta o iniciar su sesión, y para vincular su cuenta de Google a una cuenta existente con el mismo correo verificado. No solicitamos acceso a su Gmail, contactos ni archivos.",
+        "Si decide conectar Google Calendar (Citas → Sincronizar con Google Calendar), pedimos a Google permiso para crear, modificar y eliminar eventos del calendario. Lo usamos únicamente para escribir en su propio Google Calendar las citas que mantiene en el servicio, y para actualizar o eliminar esos mismos eventos. No leemos, analizamos ni compartimos los demás eventos de su calendario. La autorización se guarda cifrada; puede desconectarla en cualquier momento y también revocar el acceso en su cuenta de Google.",
         "El uso que hacemos de la información recibida de las API de Google cumple la Política de datos de usuario de los servicios de API de Google, incluidos los requisitos de Uso limitado. Puede desvincular Google en cualquier momento en Configuración → Seguridad.",
       ] },
       { h: "3. Cómo usamos la información", p: [
@@ -262,6 +289,7 @@ const es: LegalSet = {
       { h: "4. Divulgación y proveedores", p: [
         "Los datos solo son visibles para los miembros de su propia agencia, según su rol. Las páginas públicas de anuncios muestran solo los datos que su agencia decide publicar.",
         "Usamos proveedores de infraestructura para operar el servicio, incluidos alojamiento, base de datos, almacenamiento de archivos y distribución de contenido (por ejemplo Render, Neon, Cloudflare y Vercel). Solo tratan los datos para prestarnos esos servicios.",
+        "Los correos del servicio se envían mediante un proveedor de correo (Resend). Los pagos de los planes de pago los procesa Stripe; nunca recibimos ni almacenamos números de tarjeta.",
         "Podemos divulgar información si la ley lo exige o para proteger los derechos y la seguridad de los usuarios.",
       ] },
       { h: "5. Seguridad y conservación", p: [

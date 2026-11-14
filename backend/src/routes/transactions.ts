@@ -101,7 +101,7 @@ router.post('/', async (req: AuthRequest, res) => {
     const price = optNumber(req.body.price);
     if (price === undefined || price <= 0) return res.status(400).json({ error: 'A valid price is required' });
 
-    const refErr = await checkRefs(user.orgId, { propertyId, clientId });
+    const refErr = await checkRefs(user.orgId, { propertyId, clientId }, user);
     if (refErr) return res.status(400).json({ error: refErr });
 
     const commissionRate = optNumber(req.body.commissionRate);
@@ -183,7 +183,22 @@ router.patch('/:id', async (req: AuthRequest, res) => {
         }
     }
 
+    // A closed deal has a commission behind it: only management may change its outcome or its money fields
+    if (existing.status === 'CLOSED' && !isManager(user)) {
+        const locked = ['status', 'price', 'acceptedPrice', 'commissionRate', 'coAgentId', 'coAgentSplit'];
+        if (locked.some(f => f in data && data[f] !== (existing as any)[f])) {
+            return res.status(403).json({ error: 'A closed deal can only be changed by a manager', code: 'DEAL_CLOSED' });
+        }
+    }
+    const reopening = existing.status === 'CLOSED' && data.status !== undefined && data.status !== 'CLOSED';
+    if (reopening) {
+        const paid = await prisma.commission.count({ where: { transactionId: id, status: 'PAID' } });
+        if (paid > 0) return res.status(400).json({ error: 'This deal has a paid commission and cannot be reopened', code: 'COMMISSION_PAID' });
+    }
+
     const updated = await prisma.transaction.update({ where: { id }, data });
+    // Reopening a closed deal withdraws its unpaid commissions; closing it again creates them afresh
+    if (reopening) await prisma.commission.deleteMany({ where: { transactionId: id, status: { not: 'PAID' } } });
     if (data.status && data.status !== existing.status) {
         await audit(req, 'UPDATE_DEAL_STATUS', 'Transaction', id, { status: existing.status }, { status: data.status });
         await onTransactionStatusChange(updated, existing.status);

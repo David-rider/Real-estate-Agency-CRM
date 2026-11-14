@@ -104,7 +104,7 @@ router.post('/', async (req: AuthRequest, res) => {
     const data = parseFields(req.body);
     if (!data.title) return res.status(400).json({ error: 'Title is required' });
     if (!data.date) return res.status(400).json({ error: 'A valid date is required' });
-    const refErr = await checkRefs(user.orgId, { clientId: data.clientId, propertyId: data.propertyId });
+    const refErr = await checkRefs(user.orgId, { clientId: data.clientId, propertyId: data.propertyId }, user);
     if (refErr) return res.status(400).json({ error: refErr });
 
     // Personal preferences (Settings > Appointments > My preferences): default length and auto-confirm
@@ -152,7 +152,7 @@ router.patch('/:id', async (req: AuthRequest, res) => {
 
     const data = parseFields(req.body);
     if ('title' in data && !data.title) return res.status(400).json({ error: 'Title cannot be empty' });
-    const refErr = await checkRefs(req.user!.orgId, { clientId: data.clientId, propertyId: data.propertyId });
+    const refErr = await checkRefs(req.user!.orgId, { clientId: data.clientId, propertyId: data.propertyId }, req.user!);
     if (refErr) return res.status(400).json({ error: refErr });
 
     // Brokerage policy: rescheduling (or reopening) must not overlap another appointment of the same agent
@@ -167,6 +167,8 @@ router.patch('/:id', async (req: AuthRequest, res) => {
         if (clash) return res.status(409).json(conflictResponse(clash, req.user!.policies.appointments.bufferMinutes));
     }
 
+    // A new time needs a new reminder
+    if (data.date && data.date.getTime() !== appt.date.getTime()) data.reminderSent = false;
     const updated = await prisma.appointment.update({ where: { id: found.appt!.id }, data });
     syncInBackground(() => syncAppointment(updated.id));
     const changes = diffFields(found.appt!, data);

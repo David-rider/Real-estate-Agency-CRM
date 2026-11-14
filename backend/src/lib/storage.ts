@@ -255,6 +255,7 @@ export function verifySignedPrivateFileToken(fileId: string, orgId: string, expR
         .createHmac('sha256', secret)
         .update(`private-file:${fileId}:${orgId}:${exp}`)
         .digest('hex');
-    if (expected.length !== sigRaw.length) return false;
-    return crypto.timingSafeEqual(Buffer.from(expected, 'utf8'), Buffer.from(sigRaw, 'utf8'));
+    const a = Buffer.from(expected, 'utf8');
+    const b = Buffer.from(sigRaw, 'utf8');
+    return a.length === b.length && crypto.timingSafeEqual(a, b);
 }

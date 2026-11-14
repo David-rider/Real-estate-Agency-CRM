@@ -137,6 +137,16 @@ export async function createClosingChecklist(tx: Transaction) {
 export async function onTransactionStatusChange(tx: Transaction, previous: string | null) {
     if (tx.status === previous) return;
 
+    // A closed deal that is reopened: the listing is no longer sold and the client is no longer closed
+    if (previous === 'CLOSED') {
+        const fell = tx.status === 'FALLEN_THROUGH';
+        await prisma.property.updateMany({ where: { id: tx.propertyId, status: 'SOLD' }, data: { status: fell ? 'ACTIVE' : 'IN_CONTRACT' } });
+        await prisma.client.updateMany({
+            where: { id: tx.clientId, status: 'CLOSED' },
+            data: fell ? { status: 'ACTIVE', funnelStage: 'SHOWING' } : { status: 'IN_CONTRACT', funnelStage: 'IN_CONTRACT' },
+        });
+    }
+
     if (['IN_CONTRACT', 'BOARD_PACKAGE', 'CLEARED_TO_CLOSE'].includes(tx.status)) {
         await prisma.property.updateMany({ where: { id: tx.propertyId, status: { in: ['ACTIVE', 'COMING_SOON'] } }, data: { status: 'IN_CONTRACT' } });
         await prisma.client.updateMany({ where: { id: tx.clientId, status: { notIn: ['CLOSED', 'ARCHIVED'] } }, data: { status: 'IN_CONTRACT', funnelStage: 'IN_CONTRACT' } });

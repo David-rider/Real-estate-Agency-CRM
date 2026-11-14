@@ -787,10 +787,19 @@ router.patch('/lead-routing/:id', authorizeRole(['SUPERADMIN', 'FIRMADMIN', 'MAN
     if (req.body.source !== undefined) data.source = clean(req.body.source, 80) ?? null;
     if (req.body.city !== undefined) data.city = clean(req.body.city, 80) ?? null;
     if (req.body.propertyType !== undefined) data.propertyType = clean(req.body.propertyType, 60) ?? null;
-    if (req.body.minPrice !== undefined) data.minPrice = req.body.minPrice === null || req.body.minPrice === '' ? null : Number(req.body.minPrice);
-    if (req.body.maxPrice !== undefined) data.maxPrice = req.body.maxPrice === null || req.body.maxPrice === '' ? null : Number(req.body.maxPrice);
+    for (const f of ['minPrice', 'maxPrice']) {
+        if (req.body[f] === undefined) continue;
+        const n = req.body[f] === null || req.body[f] === '' ? NaN : Number(req.body[f]);
+        data[f] = Number.isFinite(n) ? n : null;
+    }
     if (req.body.strategy !== undefined && VALID_STRATEGIES.includes(req.body.strategy)) data.strategy = req.body.strategy;
-    if (req.body.targetAgentId !== undefined) data.targetAgentId = req.body.targetAgentId || null;
+    if (req.body.targetAgentId !== undefined) {
+        const target = typeof req.body.targetAgentId === 'string' && req.body.targetAgentId.trim() ? req.body.targetAgentId.trim() : null;
+        if (target && !(await prisma.user.count({ where: { id: target, orgId: user.orgId, isActive: true } }))) {
+            return res.status(400).json({ error: 'Target agent not found in your organization' });
+        }
+        data.targetAgentId = target;
+    }
 
     const updated = await prisma.leadRoutingRule.update({ where: { id: existing.id }, data });
     res.json(updated);
