@@ -33,10 +33,13 @@ export function canEditClient(user: AuthUser, client: { agentId: string; coAgent
 export async function checkRefs(
     orgId: string,
     refs: { clientId?: string | null; propertyId?: string | null; transactionId?: string | null; userId?: string | null },
+    // When given, a referenced client must also be one this user may see (an agent cannot attach a colleague's client)
+    user?: AuthUser,
 ): Promise<string | null> {
     const checks: Promise<string | null>[] = [];
     if (refs.clientId) {
-        checks.push(prisma.client.count({ where: { id: refs.clientId, orgId } }).then(n => (n ? null : 'Client not found')));
+        const where = user ? { id: String(refs.clientId), ...clientScope(user) } : { id: String(refs.clientId), orgId };
+        checks.push(prisma.client.count({ where }).then(n => (n ? null : 'Client not found')));
     }
     if (refs.propertyId) {
         checks.push(prisma.property.count({ where: { id: refs.propertyId, orgId } }).then(n => (n ? null : 'Property not found')));

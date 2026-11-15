@@ -81,6 +81,7 @@ const ACCOUNT_CACHE_MS = 30 * 1000;
 interface CachedAccount {
     role: string; tier: string; orgId: string; lang: string;
     passwordChangedAtSec: number | null;
+    sessionsRevokedAtSec: number | null;
     sessionTimeoutMinutes: number;
     logoutOnPasswordChange: boolean;
     ipAllowlist: string[];
@@ -104,13 +105,14 @@ async function currentAccount(userId: string) {
     const u = await prisma.user.findUnique({
         where: { id: userId },
         select: {
-            role: true, tier: true, orgId: true, isActive: true, passwordChangedAt: true, preferredLanguage: true,
+            role: true, tier: true, orgId: true, isActive: true, passwordChangedAt: true, sessionsRevokedAt: true, preferredLanguage: true,
             organization: { select: { sessionTimeoutMinutes: true, logoutOnPasswordChange: true, ipAllowlist: true, policies: true } },
         },
     });
     const user: CachedAccount | null = u && u.isActive ? {
         role: u.role, tier: u.tier, orgId: u.orgId, lang: u.preferredLanguage,
         passwordChangedAtSec: u.passwordChangedAt ? Math.floor(u.passwordChangedAt.getTime() / 1000) : null,
+        sessionsRevokedAtSec: u.sessionsRevokedAt ? Math.ceil(u.sessionsRevokedAt.getTime() / 1000) : null,
         sessionTimeoutMinutes: u.organization.sessionTimeoutMinutes,
         logoutOnPasswordChange: u.organization.logoutOnPasswordChange,
         ipAllowlist: u.organization.ipAllowlist,
@@ -166,6 +168,10 @@ export const authenticateToken = async (req: AuthRequest, res: Response, next: N
         // Organization security policy: sessions end after the configured time, and a password
         // change signs out every session that started before it.
         const issuedAt = (decoded as any).iat as number | undefined;
+        // Sessions that were revoked for this account (not a brokerage setting: always enforced)
+        if (account.sessionsRevokedAtSec !== null && (!issuedAt || issuedAt < account.sessionsRevokedAtSec)) {
+            return res.status(401).json({ error: 'Invalid or expired token' });
+        }
         if (issuedAt) {
             const ageMinutes = (Date.now() / 1000 - issuedAt) / 60;
             if (ageMinutes > account.sessionTimeoutMinutes) {

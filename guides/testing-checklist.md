@@ -72,6 +72,12 @@ happen; note anything that doesn't.
       *日程安排 → “与 Google 日历同步” → “生成我的日历链接” → 在 Google 日历里添加（其他日历 → + → 通过网址添加）。你的日程会出现在 Google 日历里（更新可能要几小时）。“停用这个链接”后不再更新。*
 - [ ] Appointments → **Sync with Google Calendar** → **Connect Google Calendar** → approve in Google. Back on Appointments you see "Google Calendar connected"; create an appointment and it appears in Google Calendar within seconds; change its time, then cancel it — Google follows. **Disconnect** stops it.
       *日程安排 → “与 Google 日历同步” → “连接 Google 日历” → 在 Google 页面授权。回到日程安排显示“已连接 Google 日历”；新建一个日程，几秒内出现在 Google 日历；改时间、再取消——Google 日历同步变化。“断开连接”后停止同步。*
+- [ ] Two agents in one brokerage: agent A submits an offer on agent B's listing. A cannot accept it (only withdraw); B counters; A can then accept the counter and the deal opens.
+      *同一公司的两位经纪人：A 对 B 的房源提交报价。A 不能自己接受（只能撤回）；B 还价后，A 可以接受还价，交易随即建立。*
+- [ ] Close a deal as the agent, then try to change its status or commission rate: refused. As a manager, move it back: the unpaid commission disappears and the listing is for sale again.
+      *用经纪人账号把交易改为已成交，再改状态或佣金比例：被拒绝。用经理账号改回：未发放的佣金消失，房源恢复在售。*
+- [ ] Sign-up page shows the Terms of Service and Privacy Policy links in all four languages; the enquiry form on a public listing shows who receives the details.
+      *注册页在四种语言下都显示服务条款和隐私政策链接；公开房源的咨询表单显示信息会交给谁。*
 - [ ] Signed out, open the home page footer links **Privacy Policy** and **Terms of Service** — both open without signing in and follow the language switcher.
       *未登录时，点首页底部的“隐私政策”和“服务条款”——不用登录就能打开，并随语言切换。*
 - [ ] Settings → Security shows **Google account: Linked**; click **Unlink**, then link it again with the Google button there.

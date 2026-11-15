@@ -25,6 +25,36 @@
 - Google 日历实时同步（第二步）：在“日程安排 → 与 Google 日历同步”点“连接 Google 日历”并授权后，新建、修改、取消和删除的日程会立即写进你的 Google 日历，连接时还会补上接下来的日程；可随时断开。订阅链接仍可使用。
   *Google Calendar instant sync (step 2): under Appointments → Sync with Google Calendar, click "Connect Google Calendar" and grant access; new, changed, cancelled and deleted appointments are then written to your Google Calendar right away, and your upcoming appointments are added when you connect. You can disconnect any time; the subscription link still works.*
 
+#### 安全 / Security
+- 用 Google 登录一个邮箱从未验证过的账号时，原来的密码、两步验证、日历链接和已登录的会话全部作废，账号交给验证过邮箱的本人。
+  *When someone signs in with Google to an account whose email was never verified, the old password, two-step verification, calendar link and open sessions all stop working, and the account goes to the person who proved they own the mailbox.*
+- 邮箱地址不再区分大小写：登录、注册、找回密码都按同一个地址处理，同一个邮箱不能用不同大小写注册两次。
+  *Email addresses are no longer case-sensitive: sign-in, sign-up and password reset treat them as the same address, so one mailbox cannot register twice with different capitalisation.*
+- 经纪人不能把同事的客户挂到自己的交易、报价、日程、任务或礼品上；重复客户提示不再给出同事客户的链接。
+  *An agent can no longer attach a colleague's client to their own deals, offers, appointments, tasks or gifts, and the duplicate-client warning no longer links to a colleague's client.*
+- 邮箱未验证的账号不能靠刷新来无限延长首次登录；验证邮箱的接口加了次数限制。
+  *An account with an unverified email can no longer keep extending its first sign-in, and the email-verification step is now rate-limited.*
+- 律师、贷款方、产权公司这类外部角色看不到公司的业绩排行榜。
+  *Outside roles (attorney, lender, title company) no longer see the firm's production leaderboard.*
+
+#### 修复 / Fixed
+- 报价：提交报价的一方不能替卖方“接受”自己的报价，只能撤回，或回应对方的还价；接受、拒绝和还价由房源经纪人或经理操作。
+  *Offers: the side that submitted an offer can no longer "accept" it on the seller's behalf; they can withdraw it or answer a counter-offer. Accepting, rejecting and countering is done by the listing agent or a manager.*
+- 已成交的交易：经纪人不能再改结果、成交价和佣金比例，只有经理可以。经理把已成交的交易改回其他状态时，未发放的佣金会撤销，房源和客户状态一起恢复；佣金已发放的交易不能改回。
+  *Closed deals: agents can no longer change the outcome, price or commission rate; only a manager can. When a manager moves a closed deal back, its unpaid commission is withdrawn and the listing and client go back with it; a deal whose commission was paid cannot be moved back.*
+- 改了时间的日程会重新发提醒。
+  *An appointment that is rescheduled gets a new reminder.*
+- 批量导入的成员用“忘记密码”设好密码后可以直接登录，不用再单独验证邮箱。
+  *Members added by bulk import can sign in right after setting a password through "Forgot password", without a separate email verification.*
+- 年付价格旁的说明从“省 20%”改为“省 2 个月”，与实际价格一致。
+  *The note next to annual prices now says "2 months free" instead of "Save 20%", matching the actual prices.*
+
+#### 变更 / Changed
+- 注册页写明“创建账号即表示同意服务条款和隐私政策”，并附链接；公开房源的咨询表单下方说明信息会交给发布房源的经纪公司。
+  *The sign-up page now states that creating an account means agreeing to the Terms of Service and Privacy Policy, with links; the enquiry form on public listings says the details go to the listing brokerage.*
+- 隐私政策补充了 Google 日历同步、公开咨询表单、浏览器存储，以及邮件和付款服务商的说明。
+  *The privacy policy now covers Google Calendar sync, public enquiry forms, browser storage, and the email and payment providers.*
+
 ## [1.5.5.0] — 2026-11-13 · Google 日历订阅链接、交易漏斗与日程改进、邮件链接与部署修复、多语言补漏 / Google Calendar subscription link, pipeline and appointment fixes, email-link and deploy fixes, translation gaps
 
 #### 新增 / Added

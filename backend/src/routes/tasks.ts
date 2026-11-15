@@ -45,7 +45,7 @@ router.post('/', async (req: AuthRequest, res) => {
         if (typeof title !== 'string' || !title.trim()) return res.status(400).json({ error: 'Title is required' });
         const refErr = await checkRefs(req.user.orgId, {
             clientId: linkedClientId || null, propertyId: linkedPropertyId || null, transactionId: linkedTransactionId || null,
-        });
+        }, req.user);
         if (refErr) return res.status(400).json({ error: refErr });
 
         const task = await prisma.task.create({

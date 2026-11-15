@@ -904,7 +904,7 @@ const base = {
       subtitle: "Join the top 1% of producing agents with Real Estate CRM premium tools.",
       monthly: "Monthly",
       annual: "Annually",
-      save: "Save 20%",
+      save: "2 months free",
       core: {
         name: "Core",
         price: "$0",
@@ -1943,7 +1943,7 @@ const base = {
       subtitle: "加入前 1% 的顶级经纪人行列，尊享 Real Estate CRM 专属工具。",
       monthly: "按月付款",
       annual: "按年付款",
-      save: "省 20%",
+      save: "省 2 个月",
       core: {
         name: "基础版",
         price: "$0",
@@ -2982,7 +2982,7 @@ const base = {
       subtitle: "加入前 1% 的頂級經紀人行列，尊享 Real Estate CRM 專屬工具。",
       monthly: "按月付款",
       annual: "按年付款",
-      save: "省 20%",
+      save: "省 2 個月",
       core: {
         name: "基礎版",
         price: "$0",
@@ -3784,7 +3784,7 @@ const base = {
       subtitle: "Únete al 1% de los mejores agentes con las herramientas premium de Real Estate CRM.",
       monthly: "Mensual",
       annual: "Anual",
-      save: "Ahorra 20%",
+      save: "2 meses gratis",
       core: {
         name: "Básico",
         price: "$0",

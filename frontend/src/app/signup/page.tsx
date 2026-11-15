@@ -9,6 +9,7 @@ import { useAuth } from "@/lib/auth/AuthContext";
 import { useI18n } from "@/lib/i18n/I18nContext";
 import { useExtra } from "@/lib/i18n/extra";
 import Link from "next/link";
+import { LEGAL } from "@/lib/i18n/legal";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
@@ -34,6 +35,7 @@ function SignupForm() {
 
   const { login }                    = useAuth();
   const { t, language, setLanguage } = useI18n();
+  const LG = LEGAL[language] ?? LEGAL.en;
   const X = useExtra();
   const S = t.signup as any;
 
@@ -300,6 +302,13 @@ function SignupForm() {
                 </>
               )}
             </form>
+
+            <p className="mt-4 font-sans text-xs text-foreground/50">
+              {LG.agree}{" "}
+              <Link href="/terms" className="text-primary hover:underline">{LG.termsLink}</Link>{" "}
+              {LG.and}{" "}
+              <Link href="/privacy" className="text-primary hover:underline">{LG.privacyLink}</Link>
+            </p>
 
             <div className="mt-5 pt-5 border-t border-border font-sans text-sm text-foreground/50">
               <p>

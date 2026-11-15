@@ -41,7 +41,7 @@ router.post('/', async (req: AuthRequest, res) => {
     const amount = optNumber(req.body.amount);
     if (!propertyId || !clientId) return res.status(400).json({ error: 'Property and client are required' });
     if (amount === undefined || amount <= 0) return res.status(400).json({ error: 'A valid offer amount is required' });
-    const refErr = await checkRefs(user.orgId, { propertyId, clientId });
+    const refErr = await checkRefs(user.orgId, { propertyId, clientId }, user);
     if (refErr) return res.status(400).json({ error: refErr });
 
     const offer = await prisma.offer.create({
@@ -81,6 +81,12 @@ router.patch('/:id', async (req: AuthRequest, res) => {
 
     const status = pickEnum(req.body.status, STATUSES);
     if (req.body.status !== undefined && !status) return res.status(400).json({ error: 'Invalid status' });
+    // The side that made the offer cannot accept it for the seller: they may withdraw it, or answer a counter-offer
+    const listingSide = isManager(user) || offer.property.agentId === user.userId;
+    if (status && status !== offer.status && !listingSide) {
+        const allowedForBuyerSide = status === 'WITHDRAWN' || (offer.status === 'COUNTER' && (status === 'ACCEPTED' || status === 'REJECTED'));
+        if (!allowedForBuyerSide) return res.status(403).json({ error: 'Only the listing agent or a manager can respond to this offer' });
+    }
     const counterAmount = optNumber(req.body.counterAmount);
     if (status === 'COUNTER' && counterAmount === undefined) {
         return res.status(400).json({ error: 'Counter amount is required' });

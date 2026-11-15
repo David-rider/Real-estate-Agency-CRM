@@ -1130,6 +1130,87 @@ async function main() {
         assert.equal((await call('GET', '/api/calendar-sync', me)).body.connected, false);
     });
 
+    await step('audit fixes: unproven accounts, email case, client isolation, offer sides, closed deals, uploaded-file references', async () => {
+        const g = (body: Record<string, unknown>) => call('POST', '/api/oauth/google', undefined, { idToken: 'dev', ...body });
+        // 1. An account whose email was never verified is taken over by the verified owner: the old password and sessions stop working
+        const squatter = await register('squat');
+        const sEmail = `squat-${run}@smoke.test`;
+        await db().user.update({ where: { email: sEmail }, data: { emailVerified: false } });
+        const claimed = await g({ email: sEmail, googleId: `g-squat-${run}`, emailVerified: true });
+        if (claimed.status !== 503) { // 503: a real GOOGLE_CLIENT_ID is configured, so the dev-mode identity is (correctly) refused
+            assert.equal(claimed.status, 200, JSON.stringify(claimed.body));
+            assert.equal((await call('GET', '/api/settings/profile', squatter)).status, 401, 'the session opened before the takeover is refused');
+            assert.equal((await call('GET', '/api/settings/profile', claimed.body.token)).status, 200, 'the verified owner is signed in');
+            const row = await db().user.findUnique({ where: { email: sEmail }, select: { password: true, emailVerified: true } });
+            assert.deepEqual([row!.password, row!.emailVerified], [null, true], 'the old password is gone');
+        }
+
+        // 2. Email addresses are matched without regard to case or surrounding spaces
+        await register('casey');
+        const upper = `CASEY-${run}@SMOKE.TEST`;
+        assert.equal((await call('POST', '/api/auth/login', undefined, { email: `  ${upper} `, password: 'SmokeTest123!' })).status, 200);
+        assert.equal((await db().user.findUnique({ where: { email: upper.toLowerCase() } }))?.email, upper.toLowerCase(), 'addresses are stored in lower case');
+
+        // 3. An agent cannot attach a colleague's client to their own records, and gets no link to it
+        const owner = await register('iso');
+        const a1 = await joinOrg(owner, 'iso-a1', 'AGENT');
+        const a2 = await joinOrg(owner, 'iso-a2', 'AGENT');
+        const theirs = await call('POST', '/api/clients', a1.token, { firstName: 'Private', lastName: 'Client', email: `private-${run}@smoke.test` });
+        assert.equal(theirs.status, 201, JSON.stringify(theirs.body));
+        const dup = await call('POST', '/api/clients', a2.token, { firstName: 'Private', lastName: 'Client', email: `private-${run}@smoke.test` });
+        assert.equal(dup.status, 409);
+        assert.equal(dup.body.duplicateId, undefined, "no link to a colleague's client");
+        const listing = await call('POST', '/api/properties', a2.token, { address: `9 Audit St ${run}`, city: 'New York', state: 'NY', zip: '10001', price: 900000, beds: 2, baths: 1 });
+        assert.equal(listing.status, 201, JSON.stringify(listing.body));
+        const peeks: [string, Record<string, unknown>][] = [
+            ['/api/transactions', { propertyId: listing.body.id, clientId: theirs.body.id, price: 900000 }],
+            ['/api/offers', { propertyId: listing.body.id, clientId: theirs.body.id, amount: 880000 }],
+            ['/api/appointments', { title: 'Peek', date: new Date(Date.now() + 86400000).toISOString(), clientId: theirs.body.id }],
+            ['/api/tasks', { title: 'Peek', linkedClientId: theirs.body.id }],
+            ['/api/gifts', { item: 'Peek', clientId: theirs.body.id }],
+        ];
+        for (const [path, body] of peeks) {
+            const r = await call('POST', path, a2.token, body);
+            assert.equal(r.status, 400, `${path}: ${JSON.stringify(r.body)}`);
+        }
+
+        // 4. Offers: the side that made the offer cannot accept it for the seller, but may accept a counter-offer
+        const offer = await call('POST', '/api/offers', a1.token, { propertyId: listing.body.id, clientId: theirs.body.id, amount: 880000 });
+        assert.equal(offer.status, 201, JSON.stringify(offer.body));
+        assert.equal((await call('PATCH', `/api/offers/${offer.body.id}`, a1.token, { status: 'ACCEPTED' })).status, 403);
+        const countered = await call('PATCH', `/api/offers/${offer.body.id}`, a2.token, { status: 'COUNTER', counterAmount: 890000 });
+        assert.equal(countered.status, 200, JSON.stringify(countered.body));
+        const accepted = await call('PATCH', `/api/offers/${offer.body.id}`, a1.token, { status: 'ACCEPTED' });
+        assert.equal(accepted.status, 200, JSON.stringify(accepted.body));
+        const deal = accepted.body.transaction;
+        assert.ok(deal?.id, 'accepting the counter-offer opened the deal');
+
+        // 5. Closed deals: the agent cannot change the outcome or the money; a manager reopening it withdraws the unpaid commission
+        assert.equal((await call('PATCH', `/api/transactions/${deal.id}`, a1.token, { status: 'CLOSED' })).status, 200);
+        const commissions = () => db().commission.findMany({ where: { transactionId: deal.id } });
+        assert.equal((await commissions()).length, 1);
+        assert.equal((await call('PATCH', `/api/transactions/${deal.id}`, a1.token, { commissionRate: 90 })).status, 403);
+        assert.equal((await call('PATCH', `/api/transactions/${deal.id}`, a1.token, { status: 'IN_CONTRACT' })).status, 403);
+        assert.equal((await call('PATCH', `/api/transactions/${deal.id}`, a1.token, { notes: 'still editable' })).status, 200);
+        const reopened = await call('PATCH', `/api/transactions/${deal.id}`, owner, { status: 'FALLEN_THROUGH' });
+        assert.equal(reopened.status, 200, JSON.stringify(reopened.body));
+        assert.equal((await commissions()).length, 0, 'the unpaid commission is withdrawn');
+        assert.equal((await db().property.findUnique({ where: { id: listing.body.id } }))!.status, 'ACTIVE', 'the listing is for sale again');
+        assert.equal((await call('PATCH', `/api/transactions/${deal.id}`, owner, { status: 'CLOSED' })).status, 200);
+        await db().commission.updateMany({ where: { transactionId: deal.id }, data: { status: 'PAID', paidAt: new Date() } });
+        assert.equal((await call('PATCH', `/api/transactions/${deal.id}`, owner, { status: 'IN_CONTRACT' })).status, 400, 'a deal with a paid commission stays closed');
+
+        // 6. A document can only point at a file this brokerage uploaded
+        const stray = await call('POST', '/api/documents', a1.token, { name: 'Stray', url: 'https://example.com/x.pdf', storageKey: '00000000-0000-4000-8000-000000000000' });
+        assert.equal(stray.status, 400, JSON.stringify(stray.body));
+
+        // 7. A rescheduled appointment gets a new reminder
+        const ap = await call('POST', '/api/appointments', a1.token, { title: 'Reminder check', date: new Date(Date.now() + 3 * 86400000).toISOString() });
+        await db().appointment.update({ where: { id: ap.body.id }, data: { reminderSent: true } });
+        await call('PATCH', `/api/appointments/${ap.body.id}`, a1.token, { date: new Date(Date.now() + 5 * 86400000).toISOString(), force: true });
+        assert.equal((await db().appointment.findUnique({ where: { id: ap.body.id } }))!.reminderSent, false);
+    });
+
     await step('security policy is saved and enforced', async () => {
         if (!process.env.DATABASE_URL || !process.env.JWT_SECRET) {
             console.log('    (skipped: set DATABASE_URL and JWT_SECRET to run the security policy checks)');

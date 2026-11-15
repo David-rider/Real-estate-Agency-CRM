@@ -84,6 +84,9 @@ router.post('/', async (req: AuthRequest, res) => {
 
     if (!name) return res.status(400).json({ error: 'Document name is required' });
     if (!/^https?:\/\//i.test(url)) return res.status(400).json({ error: 'A valid http(s) link is required' });
+    if (storageKey && !(await prisma.uploadedFile.count({ where: { id: storageKey, orgId: user.orgId, visibility: 'PRIVATE' } }))) {
+        return res.status(400).json({ error: 'Uploaded file not found' });
+    }
     const type = DOC_TYPES.includes(req.body.type) ? req.body.type : 'OTHER';
     const transactionId = req.body.transactionId || null;
     const refErr = await checkRefs(user.orgId, { transactionId });

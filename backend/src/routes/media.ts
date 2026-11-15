@@ -32,6 +32,10 @@ router.post('/', async (req: AuthRequest, res) => {
     const property = await prisma.property.findFirst({ where: { id: propertyId, orgId: user.orgId } });
     if (!property) return res.status(400).json({ error: 'Property not found' });
     if (property.agentId !== user.userId && !isManager(user)) return res.status(403).json({ error: 'Forbidden' });
+    if (typeof storageKey === 'string' && storageKey.trim()
+        && !(await prisma.uploadedFile.count({ where: { id: storageKey.trim(), orgId: user.orgId, visibility: 'PUBLIC' } }))) {
+        return res.status(400).json({ error: 'Uploaded file not found' });
+    }
     const count = await prisma.mediaAsset.count({ where: { propertyId } });
     // Listing policy: a cap on photos per listing (videos, floor plans and tours are not photos)
     const maxPhotos = user.policies.properties.maxPhotosPerListing;

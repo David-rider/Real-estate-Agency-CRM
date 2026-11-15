@@ -165,12 +165,14 @@ router.post('/', async (req: AuthRequest, res) => {
         if (data.phone) or.push({ phone: String(data.phone) });
         const dup = await prisma.client.findFirst({
             where: { orgId: user.orgId, OR: or },
-            select: { id: true, firstName: true, lastName: true, agent: { select: { name: true } } },
+            select: { id: true, firstName: true, lastName: true, agentId: true, coAgentId: true, agent: { select: { name: true } } },
         });
         if (dup) {
+            // The record's id (a link to it) is only given to someone who may open that client
+            const mayOpen = user.role !== 'AGENT' || crmPolicy.clientVisibility === 'all' || dup.agentId === user.userId || dup.coAgentId === user.userId;
             return res.status(409).json({
                 error: `A client with this email or phone already exists: ${dup.firstName} ${dup.lastName} (agent: ${dup.agent.name})`,
-                duplicateId: dup.id,
+                ...(mayOpen ? { duplicateId: dup.id } : {}),
             });
         }
     }
@@ -223,6 +225,7 @@ router.post('/import', async (req: AuthRequest, res) => {
     for (let i = 0; i < rows.length; i++) {
         const raw = rows[i] || {};
         const data = clientFields(raw);
+        delete data.coAgentId; // co-agents are chosen in the app, not through a spreadsheet
         if (!data.firstName && typeof raw.fullName === 'string' && raw.fullName.trim()) {
             const parts = raw.fullName.trim().split(/\s+/);
             data.firstName = parts[0];
