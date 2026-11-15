@@ -899,33 +899,33 @@ const base = {
       sessionExpired: "Your session has expired. Please log out and log back in.",
     },
     upgrade: {
-      title: "Unlock Elite Capabilities",
+      title: "Choose the plan that fits your team",
       adminOnly: "Plans cover your whole firm — ask your Firm Admin to upgrade.",
-      subtitle: "Join the top 1% of producing agents with Real Estate CRM premium tools.",
+      subtitle: "Every plan includes the full CRM. Paid plans add team seats and revenue projections.",
       monthly: "Monthly",
       annual: "Annually",
       save: "2 months free",
       core: {
         name: "Core",
         price: "$0",
-        desc: "Essential tools for starting agents.",
-        features: ["Base CRM & Timeline", "Basic AI Listing Ads", "YTD Firm Performance"],
+        desc: "Everything a small team needs to get started.",
+        features: ["Up to 3 team members", "Clients, listings, deals & commissions", "Appointments, documents & reports", "Public listing pages & open-house sign-in"],
         btn: "Current Plan"
       },
       pro: {
         name: "Pro",
         priceM: "$39",
         priceA: "$390",
-        desc: "Advanced toolkit for growing teams.",
-        features: ["Unlimited Clients", "Social & Email AI Copilot", "Commission Waterfall", "Google & Zillow Sync"],
+        desc: "For growing teams.",
+        features: ["Everything in Core", "Up to 15 team members"],
         btn: "Upgrade to Pro"
       },
       elite: {
         name: "Elite",
         priceM: "$79",
         priceA: "$790",
-        desc: "White-glove service for top producers.",
-        features: ["Tone-Tailored AI", "Revenue Projections", "Automated Client Care", "DocuSign Workflows"],
+        desc: "For larger brokerages.",
+        features: ["Everything in Pro", "Unlimited team members", "Revenue projections"],
         btn: "Upgrade to Elite"
       },
       checkout: {
@@ -1938,33 +1938,33 @@ const base = {
       sessionExpired: "您的登录已过期，请退出后重新登录。",
     },
     upgrade: {
-      title: "解锁精英专属能力",
+      title: "选择适合你团队的套餐",
       adminOnly: "订阅方案适用于整个公司——请联系贵公司管理员进行升级。",
-      subtitle: "加入前 1% 的顶级经纪人行列，尊享 Real Estate CRM 专属工具。",
+      subtitle: "所有套餐都包含完整的 CRM 功能；付费套餐增加团队席位和收入预测。",
       monthly: "按月付款",
       annual: "按年付款",
       save: "省 2 个月",
       core: {
         name: "基础版",
         price: "$0",
-        desc: "新晋经纪人的必备工具合集。",
-        features: ["基础客户管理与跟进", "房源文案 AI 助手", "年度业绩总览"],
+        desc: "小团队起步所需的全部功能。",
+        features: ["最多 3 位团队成员", "客户、房源、交易与佣金管理", "日程、文档与报表", "公开房源页面与开放日签到"],
         btn: "当前方案"
       },
       pro: {
         name: "专业版",
         priceM: "$39",
         priceA: "$390",
-        desc: "为成长型团队打造的高级工具包。",
-        features: ["无上限客户容量", "社交媒体与邮件 AI 生成", "每笔交易佣金瀑布流", "Google与Zillow一键同步"],
+        desc: "适合成长中的团队。",
+        features: ["包含 Core 的全部功能", "最多 15 位团队成员"],
         btn: "升级至专业版"
       },
       elite: {
         name: "精英版",
         priceM: "$79",
         priceA: "$790",
-        desc: "为顶尖架构师量身定制的白手套服务。",
-        features: ["AI 专属品牌语气选择", "未来 6 个月收入预测", "客户时间轴智能关怀", "DocuSign 电子流签署"],
+        desc: "适合规模较大的经纪公司。",
+        features: ["包含 Pro 的全部功能", "团队成员数量不限", "收入预测"],
         btn: "升级至精英版"
       },
       checkout: {
@@ -2977,33 +2977,33 @@ const base = {
       sessionExpired: "您的登錄已過期，請退出後重新登錄。",
     },
     upgrade: {
-      title: "解鎖精英專屬能力",
+      title: "選擇適合您團隊的方案",
       adminOnly: "訂閱方案適用於整個公司——請聯繫貴公司管理員進行升級。",
-      subtitle: "加入前 1% 的頂級經紀人行列，尊享 Real Estate CRM 專屬工具。",
+      subtitle: "所有方案都包含完整的 CRM 功能；付費方案增加團隊席位和收入預測。",
       monthly: "按月付款",
       annual: "按年付款",
       save: "省 2 個月",
       core: {
         name: "基礎版",
         price: "$0",
-        desc: "新晉經紀人的必備工具合集。",
-        features: ["基礎客戶管理與跟進", "房源文案 AI 助手", "年度業績總覽"],
+        desc: "小團隊起步所需的全部功能。",
+        features: ["最多 3 位團隊成員", "客戶、房源、交易與佣金管理", "日程、文件與報表", "公開房源頁面與開放參觀簽到"],
         btn: "當前方案"
       },
       pro: {
         name: "專業版",
         priceM: "$39",
         priceA: "$390",
-        desc: "為成長型團隊打造的高級工具包。",
-        features: ["無上限客戶容量", "社交媒體與郵件 AI 生成", "每筆交易佣金瀑布流", "Google與Zillow一鍵同步"],
+        desc: "適合成長中的團隊。",
+        features: ["包含 Core 的全部功能", "最多 15 位團隊成員"],
         btn: "升級至專業版"
       },
       elite: {
         name: "精英版",
         priceM: "$79",
         priceA: "$790",
-        desc: "為頂尖架構師量身定制的白手套服務。",
-        features: ["AI 專屬品牌語氣選擇", "未來 6 個月收入預測", "客戶時間軸智能關懷", "DocuSign 電子流簽署"],
+        desc: "適合規模較大的經紀公司。",
+        features: ["包含 Pro 的全部功能", "團隊成員數量不限", "收入預測"],
         btn: "升級至精英版"
       },
       checkout: {
@@ -3779,33 +3779,33 @@ const base = {
       }
     },
     upgrade: {
-      title: "Desbloquear Capacidades de Élite",
+      title: "Elige el plan adecuado para tu equipo",
       adminOnly: "Los planes cubren a toda su firma — pida a su Administrador que actualice el plan.",
-      subtitle: "Únete al 1% de los mejores agentes con las herramientas premium de Real Estate CRM.",
+      subtitle: "Todos los planes incluyen el CRM completo. Los planes de pago añaden puestos de equipo y proyecciones de ingresos.",
       monthly: "Mensual",
       annual: "Anual",
       save: "2 meses gratis",
       core: {
         name: "Básico",
         price: "$0",
-        desc: "Las herramientas esenciales para agentes que inician.",
-        features: ["CRM y Cronología Básico", "Anuncios AI Básicos", "Rendimiento Anual"],
+        desc: "Todo lo que un equipo pequeño necesita para empezar.",
+        features: ["Hasta 3 miembros del equipo", "Clientes, propiedades, transacciones y comisiones", "Citas, documentos e informes", "Páginas públicas de propiedades y registro de open house"],
         btn: "Plan Actual"
       },
       pro: {
         name: "Pro",
         priceM: "$39",
         priceA: "$390",
-        desc: "Herramientas avanzadas para equipos en crecimiento.",
-        features: ["Clientes Ilimitados", "Copiloto AI de Redes y Email", "Detalle de Comisiones", "Sincronización Google y Zillow"],
+        desc: "Para equipos en crecimiento.",
+        features: ["Todo lo de Core", "Hasta 15 miembros del equipo"],
         btn: "Actualizar a Pro"
       },
       elite: {
         name: "Élite",
         priceM: "$79",
         priceA: "$790",
-        desc: "Servicio premium para los mejores productores.",
-        features: ["AI Adaptable a tu Tono", "Proyecciones de Ingresos", "Cuidado de Cliente Automatizado", "Flujos de DocuSign"],
+        desc: "Para agencias más grandes.",
+        features: ["Todo lo de Pro", "Miembros del equipo ilimitados", "Proyecciones de ingresos"],
         btn: "Actualizar a Élite"
       },
       checkout: {

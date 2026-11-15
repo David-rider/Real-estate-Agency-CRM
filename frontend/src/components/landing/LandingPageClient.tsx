@@ -33,14 +33,6 @@ interface LandingCopy {
   features: { icon: string; title: string; desc: string }[];
   pricingTitle: string;
   pricingSubtitle: string;
-  plans: {
-    name: string;
-    price: string;
-    sub: string;
-    highlight: boolean;
-    cta: string;
-    features: string[];
-  }[];
   faqTitle: string;
   faqs: { q: string; a: string }[];
   cta: {
@@ -67,7 +59,7 @@ const COPY: Record<string, LandingCopy> = {
       titleLine1: "The CRM Built for",
       titleHighlight: "Real Estate Agents",
       subtitle:
-        "Manage clients, listings, deals, and commissions — all in one place. Trusted by luxury brokerages and high-performing teams. Free to start.",
+        "Manage clients, listings, deals, and commissions — all in one place. Free to start.",
       ctaPrimary: "Start Free → No credit card",
       ctaDashboard: "Enter CRM Dashboard →",
       ctaBrowse: "Browse Listings",
@@ -98,9 +90,9 @@ const COPY: Record<string, LandingCopy> = {
         desc: "Automatic gross/net commission calculation, firm split waterfall, payout approvals, and YTD leaderboard.",
       },
       {
-        icon: "✨",
-        title: "AI Marketing Copilot",
-        desc: "Generate listing descriptions, social posts, and email campaigns in seconds across multiple tones and languages.",
+        icon: "📈",
+        title: "Reports & Performance",
+        desc: "See lead sources and conversion, deals closed, sales volume and time to close, and export everything to Excel.",
       },
       {
         icon: "📅",
@@ -110,44 +102,6 @@ const COPY: Record<string, LandingCopy> = {
     ],
     pricingTitle: "Simple, Transparent Pricing",
     pricingSubtitle: "Start free. Upgrade when your brokerage grows.",
-    plans: [
-      {
-        name: "Core",
-        price: "Free",
-        sub: "forever",
-        highlight: false,
-        cta: "Start Free",
-        features: ["5 Active Listings", "CRM — up to 50 clients", "Basic Reports", "AI Listing Descriptions"],
-      },
-      {
-        name: "Pro",
-        price: "$49",
-        sub: "per month",
-        highlight: true,
-        cta: "Get Started",
-        features: [
-          "Unlimited Listings",
-          "Unlimited Clients & CSV Import",
-          "Commission Waterfall",
-          "Automated Lead Routing",
-          "Full Analytics",
-        ],
-      },
-      {
-        name: "Elite",
-        price: "$99",
-        sub: "per month",
-        highlight: false,
-        cta: "Get Started",
-        features: [
-          "Everything in Pro",
-          "Revenue Projections",
-          "Custom Branding & URL Slug",
-          "Priority Support",
-          "Team Roles & Permissions",
-        ],
-      },
-    ],
     faqTitle: "Frequently Asked Questions",
     faqs: [
       {
@@ -156,7 +110,7 @@ const COPY: Record<string, LandingCopy> = {
       },
       {
         q: "Is there a free plan available?",
-        a: "Yes. The Core plan is completely free and includes up to 5 active listings, 50 clients, basic reports, and AI listing descriptions. No credit card required.",
+        a: "Yes. The Core plan is free and includes the full CRM for up to 3 team members. No credit card required.",
       },
       {
         q: "How does commission tracking work?",
@@ -223,9 +177,9 @@ const COPY: Record<string, LandingCopy> = {
         desc: "自动核算总佣金、公司抽成与经纪人净收入，支持线上发起提现申请、主管审批及年度业绩排行。",
       },
       {
-        icon: "✨",
-        title: "AI 营销助手",
-        desc: "数秒内生成多语种房源文案、社交媒体推文与客户开发邮件，支持多种行文风格切换。",
+        icon: "📈",
+        title: "报表与业绩",
+        desc: "查看线索来源与转化率、成交笔数、成交总额和成交周期，并可导出到 Excel。",
       },
       {
         icon: "📅",
@@ -235,44 +189,6 @@ const COPY: Record<string, LandingCopy> = {
     ],
     pricingTitle: "简单透明的订阅方案",
     pricingSubtitle: "免费起步，随团队规模灵活升级。",
-    plans: [
-      {
-        name: "Core 基础版",
-        price: "免费",
-        sub: "永久有效",
-        highlight: false,
-        cta: "免费注册",
-        features: ["最多 5 套在售房源", "CRM 最多 50 位客户", "基础业绩报表", "AI 房源描述生成"],
-      },
-      {
-        name: "Pro 专业版",
-        price: "$49",
-        sub: "每月",
-        highlight: true,
-        cta: "立即开始",
-        features: [
-          "无限房源数量",
-          "无限客户与 CSV 批量导入",
-          "佣金分成瀑布流核算",
-          "线索自动分配规则",
-          "完整数据分析报表",
-        ],
-      },
-      {
-        name: "Elite 旗舰版",
-        price: "$99",
-        sub: "每月",
-        highlight: false,
-        cta: "立即开始",
-        features: [
-          "包含 Pro 版全部功能",
-          "未来营收预测模型",
-          "自定义品牌 Logo 与专属短链",
-          "优先技术支持",
-          "团队角色与多级权限管理",
-        ],
-      },
-    ],
     faqTitle: "常见问题解答 (FAQ)",
     faqs: [
       {
@@ -281,7 +197,7 @@ const COPY: Record<string, LandingCopy> = {
       },
       {
         q: "有免费版本可以使用吗？",
-        a: "有的。Core 基础版永久免费，包含最多 5 套活跃房源、50 位客户档案及基础报表功能，无需绑定信用卡即可注册使用。",
+        a: "有的。Core 套餐免费，包含完整的 CRM 功能，最多 3 位团队成员，注册时无需绑定信用卡。",
       },
       {
         q: "如何切换中文或其他语言界面？",
@@ -348,9 +264,9 @@ const COPY: Record<string, LandingCopy> = {
         desc: "自動核算總佣金、公司抽成與經紀人淨收入，支援線上發起提領申請、主管審批及年度業績排行。",
       },
       {
-        icon: "✨",
-        title: "AI 行銷助手",
-        desc: "數秒內產生多語系房源文案、社群媒體貼文與客戶開發郵件，支援多種行文風格切換。",
+        icon: "📈",
+        title: "報表與業績",
+        desc: "查看線索來源與轉換率、成交筆數、成交總額和成交週期，並可匯出到 Excel。",
       },
       {
         icon: "📅",
@@ -360,44 +276,6 @@ const COPY: Record<string, LandingCopy> = {
     ],
     pricingTitle: "簡單透明的訂閱方案",
     pricingSubtitle: "免費起步，隨團隊規模靈活升級。",
-    plans: [
-      {
-        name: "Core 基礎版",
-        price: "免費",
-        sub: "永久有效",
-        highlight: false,
-        cta: "免費註冊",
-        features: ["最多 5 套在售房源", "CRM 最多 50 位客戶", "基礎業績報表", "AI 房源描述產生"],
-      },
-      {
-        name: "Pro 專業版",
-        price: "$49",
-        sub: "每月",
-        highlight: true,
-        cta: "立即開始",
-        features: [
-          "無限房源數量",
-          "無限客戶與 CSV 批次匯入",
-          "佣金分成瀑布流核算",
-          "線索自動分配規則",
-          "完整數據分析報表",
-        ],
-      },
-      {
-        name: "Elite 旗艦版",
-        price: "$99",
-        sub: "每月",
-        highlight: false,
-        cta: "立即開始",
-        features: [
-          "包含 Pro 版全部功能",
-          "未來營收預測模型",
-          "自訂品牌 Logo 與專屬短網址",
-          "優先技術支援",
-          "團隊角色與多級權限管理",
-        ],
-      },
-    ],
     faqTitle: "常見問題解答 (FAQ)",
     faqs: [
       {
@@ -406,7 +284,7 @@ const COPY: Record<string, LandingCopy> = {
       },
       {
         q: "有免費版本可以使用嗎？",
-        a: "有的。Core 基礎版永久免費，包含最多 5 套活躍房源、50 位客戶檔案及基礎報表功能，無需綁定信用卡即可註冊使用。",
+        a: "有的。Core 方案免費，包含完整的 CRM 功能，最多 3 位團隊成員，註冊時無需綁定信用卡。",
       },
       {
         q: "如何切換中文或其他語言介面？",
@@ -474,9 +352,9 @@ const COPY: Record<string, LandingCopy> = {
         desc: "Cálculo automático de comisión bruta/neta, división con la agencia, aprobación de pagos y tabla de líderes.",
       },
       {
-        icon: "✨",
-        title: "Copiloto de Marketing IA",
-        desc: "Genere descripciones de propiedades, publicaciones sociales y correos en segundos en múltiples idiomas.",
+        icon: "📈",
+        title: "Informes y Rendimiento",
+        desc: "Vea el origen y la conversión de prospectos, operaciones cerradas, volumen de ventas y tiempo de cierre, y expórtelo todo a Excel.",
       },
       {
         icon: "📅",
@@ -486,44 +364,6 @@ const COPY: Record<string, LandingCopy> = {
     ],
     pricingTitle: "Precios Simples y Transparentes",
     pricingSubtitle: "Empiece gratis. Actualice a medida que crezca su equipo.",
-    plans: [
-      {
-        name: "Core",
-        price: "Gratis",
-        sub: "para siempre",
-        highlight: false,
-        cta: "Comenzar Gratis",
-        features: ["5 Propiedades Activas", "CRM — hasta 50 clientes", "Informes Básicos", "Descripciones con IA"],
-      },
-      {
-        name: "Pro",
-        price: "$49",
-        sub: "por mes",
-        highlight: true,
-        cta: "Comenzar",
-        features: [
-          "Propiedades Ilimitadas",
-          "Clientes Ilimitados e Importación CSV",
-          "Cálculo de Comisiones",
-          "Asignación Automática de Leads",
-          "Analítica Completa",
-        ],
-      },
-      {
-        name: "Elite",
-        price: "$99",
-        sub: "por mes",
-        highlight: false,
-        cta: "Comenzar",
-        features: [
-          "Todo lo de Pro",
-          "Proyecciones de Ingresos",
-          "Marca y Enlace Público Personalizado",
-          "Soporte Prioritario",
-          "Roles y Permisos de Equipo",
-        ],
-      },
-    ],
     faqTitle: "Preguntas Frecuentes",
     faqs: [
       {
@@ -532,7 +372,7 @@ const COPY: Record<string, LandingCopy> = {
       },
       {
         q: "¿Hay un plan gratuito?",
-        a: "Sí. El plan Core es gratuito para siempre e incluye hasta 5 propiedades activas y 50 clientes sin necesidad de tarjeta de crédito.",
+        a: "Sí. El plan Core es gratuito e incluye el CRM completo para hasta 3 miembros del equipo. No se necesita tarjeta de crédito.",
       },
       {
         q: "¿Cómo cambio el idioma de la plataforma?",

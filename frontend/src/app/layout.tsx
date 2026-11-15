@@ -31,7 +31,7 @@ export const metadata: Metadata = {
     template: "%s | Real Estate CRM",
   },
   description:
-    "Professional CRM for real estate agents and brokerages. Manage clients, property listings, deal pipelines, commissions and AI marketing — all in one platform. Free plan available.",
+    "Professional CRM for real estate agents and brokerages. Manage clients, property listings, deal pipelines and commissions — all in one platform. Free plan available.",
   keywords: [
     "real estate CRM",
     "brokerage management software",
@@ -54,7 +54,7 @@ export const metadata: Metadata = {
     siteName: "Real Estate CRM",
     title: "Real Estate CRM — Close More Deals",
     description:
-      "All-in-one CRM for real estate agents: clients, listings, deals, commissions & AI marketing.",
+      "All-in-one CRM for real estate agents: clients, listings, deals & commissions.",
     images: [
       {
         url: "/og-image.png",

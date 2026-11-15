@@ -20,7 +20,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Real Estate Brokerage CRM — Close More Deals',
     description:
-      'All-in-one platform for real estate agents: clients, listings, deals, commissions & AI marketing.',
+      'All-in-one platform for real estate agents: clients, listings, deals & commissions.',
     url: SITE_URL,
     siteName: 'Real Estate CRM',
     type: 'website',
@@ -48,7 +48,7 @@ const jsonLd = {
   applicationCategory: 'BusinessApplication',
   operatingSystem: 'Web',
   description:
-    'Professional CRM platform for real estate agents and brokerages. Manage clients, listings, transactions, commissions, and AI-powered marketing.',
+    'Professional CRM platform for real estate agents and brokerages. Manage clients, listings, transactions and commissions.',
   url: SITE_URL,
   offers: {
     '@type': 'AggregateOffer',
@@ -66,7 +66,6 @@ const jsonLd = {
     'Property Listing Management',
     'Deal Pipeline & Transaction Tracking',
     'Commission Calculation & Splits',
-    'AI-Powered Marketing Content',
     'Appointment Scheduling & Calendar',
     'Document Management',
     'Team Collaboration & Invite',
