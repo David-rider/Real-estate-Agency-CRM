@@ -56,6 +56,10 @@
   *The note next to annual prices now says "2 months free" instead of "Save 20%", matching the actual prices.*
 
 #### 变更 / Changed
+- 套餐页和首页的功能清单改成系统里真实存在的内容：Core 免费、最多 3 位团队成员、包含完整的 CRM 功能；Pro 最多 15 位成员；Elite 成员数量不限，并包含收入预测。去掉了尚未提供的功能（Google 与 Zillow 同步、DocuSign、AI 文案、自动客户关怀、优先支持）和“5 套房源 / 50 位客户”的说法。
+  *The feature lists on the plan page and the home page now say only what the system really does: Core is free with up to 3 team members and the full CRM; Pro allows up to 15 members; Elite has unlimited members and adds revenue projections. Features not offered yet (Google & Zillow sync, DocuSign, AI copy, automated client care, priority support) and the "5 listings / 50 clients" wording are gone.*
+- 首页去掉了“AI 营销助手”介绍（AI 助手仍在开发中）和无法证实的宣传语，换成“报表与业绩”。
+  *The home page no longer advertises the AI marketing copilot (the AI assistant is still in development) or claims that cannot be backed up; it shows Reports & Performance instead.*
 - 注册页写明“创建账号即表示同意服务条款和隐私政策”，并附链接；公开房源的咨询表单下方说明信息会交给发布房源的经纪公司。
   *The sign-up page now states that creating an account means agreeing to the Terms of Service and Privacy Policy, with links; the enquiry form on public listings says the details go to the listing brokerage.*
 - 隐私政策补充了 Google 日历同步、公开咨询表单、浏览器存储，以及邮件和付款服务商的说明。
