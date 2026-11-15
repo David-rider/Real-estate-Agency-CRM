@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import Sidebar from "@/components/layout/Sidebar";
 import Header from "@/components/layout/Header";
+import BillingBanner from "@/components/billing/BillingBanner";
 import { useAuth } from '@/lib/auth/AuthContext';
 import { useExtra } from '@/lib/i18n/extra';
 
@@ -80,6 +81,7 @@ export default function AuthLayoutWrapper({ children }: { children: React.ReactN
             {/* ── Main content area ── */}
             <div className="flex-1 flex flex-col min-w-0 bg-background relative z-0 overflow-hidden">
                 <Header onMenuToggle={() => setSidebarOpen(v => !v)} />
+                <BillingBanner />
                 <main className="flex-1 overflow-y-auto p-4 lg:p-8 custom-scrollbar">
                     {children}
                 </main>

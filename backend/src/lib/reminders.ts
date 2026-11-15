@@ -1,6 +1,10 @@
 import { prisma } from '../server';
 import { createNotification } from '../routes/notifications';
 import { normalizePreferences } from './policies';
+import { billingStart, graceEndsAt, reminderStage, FREE_ROLES } from './billing';
+import { sendEmail, billingReminderEmail } from './email';
+import { EMAIL, normalizeLang } from './messages';
+import { appUrl } from './appUrl';
 
 const HOUR = 60 * 60 * 1000;
 
@@ -61,8 +65,50 @@ export async function sendAppointmentReminders() {
     return reminded + overdueTasks.length;
 }
 
+/**
+ * Emails members who are still on the free plan in a team of two or more, before their 30-day grace period ends
+ * (14, 7, 3 and 1 days left) and once when a plan has become required. Does nothing until billing has started.
+ * `billingReminderStage` makes it idempotent. Members whose brokerage pays for them already have a plan and are skipped.
+ */
+export async function sendBillingReminders(now = new Date()) {
+    const start = billingStart(now);
+    if (!start) return 0;
+    const members = await prisma.user.findMany({
+        where: { isActive: true, tier: 'CORE', role: { notIn: FREE_ROLES as any }, createdAt: { lt: start } },
+        select: { id: true, name: true, email: true, role: true, tier: true, createdAt: true, orgId: true, preferredLanguage: true, billingReminderStage: true },
+        take: 500,
+    });
+    const teamSize = new Map<string, number>();
+    let sent = 0;
+    for (const m of members) {
+        const end = graceEndsAt(m, start);
+        if (!end) continue;
+        const stage = reminderStage(end, m.billingReminderStage, now);
+        if (stage === null) continue;
+        if (!teamSize.has(m.orgId)) {
+            teamSize.set(m.orgId, await prisma.user.count({ where: { orgId: m.orgId, isActive: true, role: { notIn: FREE_ROLES as any } } }));
+        }
+        if ((teamSize.get(m.orgId) || 0) < 2) continue; // working alone stays free
+        const lang = normalizeLang(m.preferredLanguage);
+        const daysLeft = Math.max(0, Math.ceil((end.getTime() - now.getTime()) / (24 * HOUR)));
+        const date = end.toLocaleDateString(lang, { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' });
+        // Record first: a mail-provider failure must not turn into the same reminder every 10 minutes
+        await prisma.user.update({ where: { id: m.id }, data: { billingReminderStage: stage } });
+        await sendEmail({
+            to: m.email,
+            subject: daysLeft > 0 ? EMAIL[lang].billing.subject(daysLeft) : EMAIL[lang].billing.subjectNow,
+            html: billingReminderEmail({ name: m.name, date, daysLeft, upgradeUrl: `${appUrl()}/upgrade` }, lang),
+        }).catch(err => console.error(`Billing reminder to user ${m.id} failed:`, err?.message || err));
+        sent++;
+    }
+    return sent;
+}
+
 export function startReminderLoop(intervalMs = 10 * 60 * 1000) {
-    const tick = () => sendAppointmentReminders().catch(err => console.error('Reminder job failed:', err));
+    const tick = () => {
+        sendAppointmentReminders().catch(err => console.error('Reminder job failed:', err));
+        sendBillingReminders().catch(err => console.error('Billing reminder job failed:', err));
+    };
     setTimeout(tick, 30 * 1000);
     return setInterval(tick, intervalMs);
 }

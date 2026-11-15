@@ -55,3 +55,15 @@ export const PLAN_REQUIRED = {
     error: 'A paid plan is required to work in a team. Choose Pro or Elite to continue.',
     code: 'PLAN_REQUIRED',
 };
+
+// Email reminders before the grace period ends: at 14, 7, 3 and 1 days left, then once when a plan has become required (stage 0).
+// Returns the stage to send now, or null. `lastStage` is the stage already sent (null = none yet), so each is sent once
+// and a member who first qualifies late only gets the reminder that fits the time left.
+export const REMINDER_STAGES = [14, 7, 3, 1, 0];
+export function reminderStage(graceEnd: Date, lastStage: number | null, now = new Date()): number | null {
+    const daysLeft = Math.ceil((graceEnd.getTime() - now.getTime()) / (24 * 60 * 60 * 1000));
+    if (daysLeft < -2) return null; // long past: no late surprise emails
+    const due = daysLeft <= 0 ? 0 : [...REMINDER_STAGES].reverse().find(stage => stage > 0 && daysLeft <= stage);
+    if (due === undefined) return null; // more than 14 days left
+    return lastStage === null || due < lastStage ? due : null;
+}

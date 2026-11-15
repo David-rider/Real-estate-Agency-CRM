@@ -283,6 +283,7 @@ const en = {
     levelFor: "Level", companyStart: "Pay for all {n} members", companyActive: "Your brokerage pays for {pro} Pro and {elite} Elite seats.", companyManage: "Manage company billing", levelSaved: "Level updated",
     companyNote: "Outside collaborators (attorney, lender, title) are free and are not counted. A member who already pays for their own plan has that subscription cancelled once the brokerage pays for them.",
     paidByCompany: "Your plan is paid by your brokerage.",
+    bannerText: "{days} days left: from {date}, each member of your team needs a paid plan.", bannerCta: "Choose a plan",
     graceNotice: "Your team has two or more members. From {date}, each member needs a paid plan — choose Pro or Elite before then to keep working.",
   },
   listings: {
@@ -682,6 +683,7 @@ const zhCN: Dict = {
     levelFor: "档位", companyStart: "为全部 {n} 位成员付费", companyActive: "公司正在为 {pro} 个 Pro 席位和 {elite} 个 Elite 席位付费。", companyManage: "管理公司账单", levelSaved: "档位已更新",
     companyNote: "外部协作方（律师、贷款方、产权公司）免费，不计入席位。已经自己付费的成员，在公司为其付费后，个人订阅会自动取消。",
     paidByCompany: "你的套餐由公司支付。",
+    bannerText: "还剩 {days} 天：从 {date} 起，团队里的每位成员都需要付费套餐。", bannerCta: "选择套餐",
     graceNotice: "你的团队有两位或更多成员。从 {date} 起，每位成员都需要付费套餐——请在此之前选择 Pro 或 Elite，以便继续使用。",
   },
   listings: {
@@ -1079,6 +1081,7 @@ const zhTW: Dict = {
     levelFor: "等級", companyStart: "為全部 {n} 位成員付費", companyActive: "公司正在為 {pro} 個 Pro 席位和 {elite} 個 Elite 席位付費。", companyManage: "管理公司帳單", levelSaved: "等級已更新",
     companyNote: "外部協作方（律師、貸款方、產權公司）免費，不計入席位。已經自己付費的成員，在公司為其付費後，個人訂閱會自動取消。",
     paidByCompany: "您的方案由公司支付。",
+    bannerText: "還剩 {days} 天：從 {date} 起，團隊裡的每位成員都需要付費方案。", bannerCta: "選擇方案",
     graceNotice: "您的團隊有兩位或更多成員。從 {date} 起，每位成員都需要付費方案——請在此之前選擇 Pro 或 Elite，以便繼續使用。",
   },
   listings: {
@@ -1476,6 +1479,7 @@ const es: Dict = {
     levelFor: "Nivel", companyStart: "Pagar por los {n} miembros", companyActive: "Tu agencia paga {pro} puestos Pro y {elite} puestos Elite.", companyManage: "Gestionar la facturación de la agencia", levelSaved: "Nivel actualizado",
     companyNote: "Los colaboradores externos (abogado, prestamista, título) son gratuitos y no cuentan. Si un miembro ya paga su propio plan, esa suscripción se cancela cuando la agencia paga por él.",
     paidByCompany: "Tu agencia paga tu plan.",
+    bannerText: "Quedan {days} días: a partir del {date}, cada miembro de tu equipo necesita un plan de pago.", bannerCta: "Elegir un plan",
     graceNotice: "Tu equipo tiene dos o más miembros. A partir del {date}, cada miembro necesita un plan de pago: elige Pro o Elite antes de esa fecha para seguir trabajando.",
   },
   listings: {

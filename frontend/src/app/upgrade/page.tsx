@@ -158,7 +158,7 @@ function UpgradePageInner() {
         )}
         {!billing?.planRequired && billing?.graceEndsAt && (
           <div className="max-w-xl mx-auto mt-4 px-4 py-2.5 rounded-lg bg-primary/10 text-primary text-sm">
-            {fmt(UX.graceNotice, { date: new Date(billing.graceEndsAt).toLocaleDateString() })}
+            {fmt(UX.graceNotice, { date: new Date(billing.graceEndsAt).toLocaleDateString(undefined, { timeZone: "UTC" }) })}
           </div>
         )}
 
