@@ -6,6 +6,7 @@ import { useExtra } from "@/lib/i18n/extra";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { useToast } from "@/components/ui/Toast";
 import { useRouter, useSearchParams } from "next/navigation";
+import { api } from "@/lib/api";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
@@ -42,10 +43,16 @@ function UpgradePageInner() {
       // carries the old tier. Refresh the token so gated features unlock now.
       const oldToken = localStorage.getItem("token");
       if (!oldToken) return;
-      fetch(`${API}/api/auth/refresh`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${oldToken}` },
-      })
+      // Ask the server to apply the finished checkout now, in case Stripe's own notice is still on its way
+      const sessionId = searchParams.get("session_id");
+      const confirmed = sessionId
+        ? api("/api/payments/confirm", { method: "POST", body: { sessionId } }).catch(() => null)
+        : Promise.resolve(null);
+      confirmed
+        .then(() => fetch(`${API}/api/auth/refresh`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${oldToken}` },
+        }))
         .then((res) => res.json())
         .then((data) => {
           if (data.token && data.user) {
@@ -63,6 +70,19 @@ function UpgradePageInner() {
 
   // Subscription is org-wide and only org admins may purchase (enforced server-side too)
   const canPurchase = ["SUPERADMIN", "FIRMADMIN"].includes(user?.role || "");
+
+  // Stripe's own page for changing plan, card, invoices and cancelling
+  const [openingPortal, setOpeningPortal] = useState(false);
+  const openBillingPortal = async () => {
+    setOpeningPortal(true);
+    try {
+      const { url } = await api<{ url: string }>("/api/payments/portal");
+      window.location.href = url;
+    } catch (err: any) {
+      toast.error(err?.message || t.upgrade.checkout.sessionExpired);
+      setOpeningPortal(false);
+    }
+  };
 
   const handleSelectPlan = (plan: "CORE" | "PRO" | "ELITE") => {
     if (plan === user?.tier) return;
@@ -146,6 +166,19 @@ function UpgradePageInner() {
             </span>
           </button>
         </div>
+
+        {canPurchase && user?.tier && user.tier !== "CORE" && (
+          <div className="mt-6">
+            <button
+              onClick={openBillingPortal}
+              disabled={openingPortal}
+              className="px-5 py-2 rounded-full border border-border text-sm font-sans hover:border-primary hover:text-primary transition-colors disabled:opacity-50"
+            >
+              {UX.manageBilling}
+            </button>
+            <p className="mt-2 text-xs text-foreground/50 max-w-md mx-auto">{UX.manageBillingHint}</p>
+          </div>
+        )}
       </div>
 
       {/* Pricing Cards */}

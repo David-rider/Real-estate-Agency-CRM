@@ -38,6 +38,12 @@
   *Outside roles (attorney, lender, title company) no longer see the firm's production leaderboard.*
 
 #### 修复 / Fixed
+- 付费订阅（开通收款后生效）：套餐现在跟着本公司在 Stripe 的订阅走——换套餐、取消或多次扣款失败后，系统里的套餐会自动跟着变；取消订阅不会再因为付款邮箱不同而漏掉，也不会影响到别的公司。
+  *Paid subscriptions (effective once billing is switched on): the plan now follows your own brokerage's Stripe subscription — changing plan, cancelling, or charges that keep failing update the plan automatically; a cancellation is no longer missed because the payer used a different email, and can never affect another brokerage.*
+- 付款完成返回后，套餐立即生效，不用等待或重新登录；已有订阅的公司不会被重复收费。
+  *After paying, the plan applies as soon as you return, with no waiting or signing in again; a brokerage that already has a subscription cannot be charged twice.*
+- 升级页新增“管理账单”（仅公司管理员）：更换套餐、更新银行卡、下载发票或取消订阅。普通成员不能再打开账单页面。
+  *The upgrade page has a new "Manage billing" button (firm admins only) to change plan, update the card, download invoices or cancel. Other members can no longer open the billing page.*
 - 报价：提交报价的一方不能替卖方“接受”自己的报价，只能撤回，或回应对方的还价；接受、拒绝和还价由房源经纪人或经理操作。
   *Offers: the side that submitted an offer can no longer "accept" it on the seller's behalf; they can withdraw it or answer a counter-offer. Accepting, rejecting and countering is done by the listing agent or a manager.*
 - 已成交的交易：经纪人不能再改结果、成交价和佣金比例，只有经理可以。经理把已成交的交易改回其他状态时，未发放的佣金会撤销，房源和客户状态一起恢复；佣金已发放的交易不能改回。

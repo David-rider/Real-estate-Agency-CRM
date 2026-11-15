@@ -41,6 +41,10 @@ model Organization {
   ipAllowlist                String[] @default([])
   // Custom contract-to-close checklist: [{ title, anchor: CONTRACT|CLOSING, offsetDays, priority }]; null = standard
   checklistTemplate          Json?
+  // Stripe billing: the customer and subscription that pay for this brokerage (set by checkout and webhooks)
+  stripeCustomerId     String? @unique
+  stripeSubscriptionId String?
+  subscriptionStatus   String?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 

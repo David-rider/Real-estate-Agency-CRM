@@ -1211,6 +1211,59 @@ async function main() {
         assert.equal((await db().appointment.findUnique({ where: { id: ap.body.id } }))!.reminderSent, false);
     });
 
+    await step('billing: plans follow the Stripe subscription of the right brokerage', async () => {
+        const hook = (type: string, object: Record<string, unknown>) => call('POST', '/api/payments/webhook', undefined, { type, data: { object } });
+        const owner = await register('bill');
+        await register('bill-other');
+        const agent = await joinOrg(owner, 'bill-agent', 'AGENT');
+        const orgOf = async (label: string) => (await db().user.findUnique({ where: { email: `${label}-${run}@smoke.test` }, include: { organization: true } }))!.organization;
+        const org = await orgOf('bill');
+        const otherOrg = await orgOf('bill-other');
+
+        // Only an admin reaches checkout or the billing page
+        assert.equal((await call('POST', '/api/payments/checkout', agent.token, { planId: 'PRO_MONTHLY' })).status, 403);
+        assert.equal((await call('GET', '/api/payments/portal', agent.token)).status, 403);
+
+        const probe = await hook('ping', {});
+        if (probe.status === 503) return; // Stripe is not configured on this server: nothing more to check
+        assert.equal(probe.status, 200, JSON.stringify(probe.body));
+        assert.equal((await call('GET', '/api/payments/portal', owner)).status, 400, 'nothing to manage before a purchase');
+
+        const sub = (id: string, status: string, price: string) => ({ id, status, customer: `cus_${run}`, metadata: { orgId: org.id }, items: { data: [{ price: { id: price } }] } });
+        const plan = async (id: string) => (await db().organization.findUnique({ where: { id } }))!;
+
+        // Checkout finished: the plan comes from the price being charged, whatever the request text said
+        const done = await hook('checkout.session.completed', { mode: 'subscription', status: 'complete', metadata: { orgId: org.id, planId: 'ELITE_ANNUAL' }, subscription: sub(`sub_a_${run}`, 'active', 'price_smoke_pro_m') });
+        assert.equal(done.status, 200, JSON.stringify(done.body));
+        let o = await plan(org.id);
+        assert.deepEqual([o.subscription, o.stripeCustomerId, o.stripeSubscriptionId], ['PRO', `cus_${run}`, `sub_a_${run}`]);
+        assert.equal((await db().user.findUnique({ where: { id: agent.id } }))!.tier, 'PRO', 'every member gets the plan');
+        assert.equal((await call('POST', '/api/payments/checkout', owner, { planId: 'PRO_MONTHLY' })).status, 409, 'no second subscription');
+
+        // Plan changed in Stripe
+        await hook('customer.subscription.updated', sub(`sub_a_${run}`, 'active', 'price_smoke_elite_a'));
+        assert.equal((await plan(org.id)).subscription, 'ENTERPRISE');
+        // A failed charge keeps the plan while Stripe retries; an unknown price changes nothing
+        await hook('customer.subscription.updated', sub(`sub_a_${run}`, 'past_due', 'price_smoke_elite_a'));
+        await hook('customer.subscription.updated', sub(`sub_a_${run}`, 'active', 'price_unknown'));
+        o = await plan(org.id);
+        assert.equal(o.subscription, 'ENTERPRISE');
+
+        // Someone else's subscription cannot move this brokerage, and an event naming another brokerage cannot take over its customer
+        await hook('customer.subscription.deleted', { ...sub(`sub_x_${run}`, 'canceled', 'price_smoke_pro_m'), customer: `cus_stranger_${run}`, metadata: {} });
+        await hook('customer.subscription.deleted', sub(`sub_old_${run}`, 'canceled', 'price_smoke_pro_m'));
+        assert.equal((await plan(org.id)).subscription, 'ENTERPRISE', 'only the current subscription ending downgrades');
+        await hook('customer.subscription.updated', { ...sub(`sub_a_${run}`, 'active', 'price_smoke_elite_a'), metadata: { orgId: otherOrg.id } });
+        assert.equal((await plan(otherOrg.id)).subscription, 'BASIC', 'the other brokerage is untouched');
+
+        // Cancelled: back to the free plan for everyone
+        await hook('customer.subscription.deleted', sub(`sub_a_${run}`, 'canceled', 'price_smoke_elite_a'));
+        o = await plan(org.id);
+        assert.deepEqual([o.subscription, o.stripeSubscriptionId], ['BASIC', null]);
+        assert.equal((await db().user.findUnique({ where: { id: agent.id } }))!.tier, 'CORE');
+        assert.equal((await plan(otherOrg.id)).subscription, 'BASIC');
+    });
+
     await step('security policy is saved and enforced', async () => {
         if (!process.env.DATABASE_URL || !process.env.JWT_SECRET) {
             console.log('    (skipped: set DATABASE_URL and JWT_SECRET to run the security policy checks)');
