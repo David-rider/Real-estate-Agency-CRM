@@ -7,6 +7,8 @@ import crypto from 'crypto';
 import { sendEmail, inviteEmail } from '../lib/email';
 import { EMAIL, Lang, isLang, normalizeLang } from '../lib/messages';
 import { getSeatUsage } from '../lib/seats';
+import { cancelMemberSubscription, inviterMustPay, PAY_BEFORE_INVITING } from './payments';
+import { isBillableRole } from '../lib/billing';
 import { audit, diffFields } from '../lib/audit';
 import { parseEntry, ipAllowed, normalizeIp, enforcementDisabled as ipEnforcementDisabled, MAX_ENTRIES as MAX_IP_ENTRIES } from '../lib/ipAllowlist';
 import { resolveLeadAssignee } from '../lib/routing';
@@ -395,6 +397,8 @@ router.delete('/users/:id', authorizeRole(['SUPERADMIN', 'FIRMADMIN']), async (r
             data:  { isActive: false },
         });
         await audit(req, 'DEACTIVATE_USER', 'User', target.id, { isActive: true }, { isActive: false });
+        // A member who can no longer sign in must stop being charged for their plan
+        await cancelMemberSubscription(target.id);
 
         res.json({ message: 'User deactivated' });
     } catch (error) {
@@ -456,6 +460,11 @@ router.post('/invite', authorizeRole(['SUPERADMIN', 'FIRMADMIN', 'MANAGER']), as
                 return res.status(409).json({ error: 'This email is already a member of your organization' });
             }
             return res.status(409).json({ error: 'This email is already registered' });
+        }
+
+        // Per-member billing: once plans are required, a member on the free plan upgrades before building a team
+        if (isBillableRole(String(role || 'AGENT')) && await inviterMustPay(req.user.userId)) {
+            return res.status(403).json({ error: PAY_BEFORE_INVITING, code: 'PLAN_REQUIRED' });
         }
 
         // Seat limit — pending invites reserve seats so admins can't over-invite

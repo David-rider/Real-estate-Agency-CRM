@@ -41,7 +41,7 @@ model Organization {
   ipAllowlist                String[] @default([])
   // Custom contract-to-close checklist: [{ title, anchor: CONTRACT|CLOSING, offsetDays, priority }]; null = standard
   checklistTemplate          Json?
-  // Stripe billing: the customer and subscription that pay for this brokerage (set by checkout and webhooks)
+  // Not used: billing is per member (see User.stripeCustomerId). Columns kept so no data-dropping migration is needed.
   stripeCustomerId     String? @unique
   stripeSubscriptionId String?
   subscriptionStatus   String?
@@ -83,6 +83,10 @@ model User {
   email             String       @unique
   password          String?
   googleId          String?      @unique
+  // Stripe billing is per member: the customer and subscription that pay for this member's own plan (tier)
+  stripeCustomerId     String? @unique
+  stripeSubscriptionId String?
+  subscriptionStatus   String?
   appleId           String?      @unique
   calendarFeedTokenHash String? @unique
   gcalRefreshTokenEnc String?

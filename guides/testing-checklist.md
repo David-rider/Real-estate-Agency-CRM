@@ -154,7 +154,9 @@ happen; note anything that doesn't.
 - [ ] **Reports → Performance** shows lead sources with conversion, deals closed, volume and average time to close; a manager also sees the agent comparison. **Export to Excel (CSV)** opens in Excel with Chinese text intact.
       *报表 → 业绩 显示线索来源及转化率、成交笔数、总额和平均成交周期；经理还能看到经纪人对比。“导出到 Excel（CSV）”用 Excel 打开时中文不乱码。*
 
-- [ ] **Billing (only after Stripe is switched on, in Stripe test mode first):** as firm admin, buy Pro on **Upgrade** — on return the plan is Pro for every member right away. **Manage billing** opens Stripe's page; switch to Elite there and the plan follows; cancel and everyone is back on Core. An agent sees no Manage billing button and cannot buy.
-      *账单（仅在开通 Stripe 之后，先用 Stripe 测试模式）：用公司管理员在“升级”页购买 Pro——返回后所有成员立即是 Pro。“管理账单”打开 Stripe 页面；在那里换成 Elite，套餐随之变化；取消后所有人回到 Core。经纪人看不到“管理账单”按钮，也不能购买。*
+- [ ] **Billing (only after Stripe is switched on, in Stripe test mode first):** each member buys their own plan on **Upgrade** — on return that member is Pro right away and colleagues are unchanged. **Manage billing** opens Stripe's page; switch to Elite there and revenue projections unlock for that member only; cancel and the member is back on Core. An attorney / lender / title account sees "Your role does not need a paid plan".
+      *账单（仅在开通 Stripe 之后，先用 Stripe 测试模式）：每位成员在“升级”页为自己购买套餐——返回后本人立即是 Pro，同事不变。“管理账单”打开 Stripe 页面；在那里换成 Elite，只有本人解锁收入预测；取消后本人回到 Core。律师 / 贷款方 / 产权公司账号看到“你的角色不需要付费套餐”。*
+- [ ] **Team rules (after `BILLING_START_DATE` is set):** a solo free account works normally but cannot invite an agent until it has a paid plan (it can still invite an attorney). A newly joined agent without a plan is sent to **Upgrade** and can use nothing else until paying. A team that existed before the start date keeps working, and **Upgrade** shows the date by which each member must choose a plan (30 days).
+      *团队规则（设置 `BILLING_START_DATE` 之后）：单人免费账号正常使用，但要先有付费套餐才能邀请经纪人（仍可邀请律师）。新加入、还没有套餐的经纪人会被带到“升级”页，付费前不能使用其他功能。收费开始前就存在的团队可以继续使用，“升级”页会显示每位成员必须选好套餐的日期（30 天）。*
 
 Report problems with: the page, what you clicked, what you expected, what happened, and a screenshot.

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, Suspense } from "react";
 import { useI18n } from "@/lib/i18n/I18nContext";
-import { useExtra } from "@/lib/i18n/extra";
+import { useExtra, fmt } from "@/lib/i18n/extra";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { useToast } from "@/components/ui/Toast";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -68,8 +68,14 @@ function UpgradePageInner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
-  // Subscription is org-wide and only org admins may purchase (enforced server-side too)
-  const canPurchase = ["SUPERADMIN", "FIRMADMIN"].includes(user?.role || "");
+  // Billing is per member: everyone buys their own plan, except roles that never need one (enforced server-side too)
+  const canPurchase = !["SUPERADMIN", "ATTORNEY", "LENDER", "TITLECO"].includes(user?.role || "");
+
+  // Whether this member must choose a plan now, or by which date
+  const [billing, setBilling] = useState<{ planRequired: boolean; graceEndsAt: string | null } | null>(null);
+  useEffect(() => {
+    api<{ planRequired: boolean; graceEndsAt: string | null }>("/api/payments/status").then(setBilling).catch(() => setBilling(null));
+  }, [user?.tier]);
 
   // Stripe's own page for changing plan, card, invoices and cancelling
   const [openingPortal, setOpeningPortal] = useState(false);
@@ -88,7 +94,7 @@ function UpgradePageInner() {
     if (plan === user?.tier) return;
     if (plan === "CORE") return; // cannot downgrade to core from here
     if (!canPurchase) {
-      toast.info((t.upgrade as any).adminOnly || "Plans cover your whole firm — ask your Firm Admin to upgrade.");
+      toast.info(t.upgrade.adminOnly);
       return;
     }
     setSelectedPlan(plan);
@@ -137,12 +143,20 @@ function UpgradePageInner() {
         </h1>
         {!canPurchase && (
           <div className="max-w-xl mx-auto mb-4 px-4 py-2.5 rounded-lg bg-primary/10 text-primary text-sm">
-            {(t.upgrade as any).adminOnly || "Plans cover your whole firm — ask your Firm Admin to upgrade."}
+            {t.upgrade.adminOnly}
           </div>
         )}
         <p className="text-sm text-foreground/50 max-w-2xl mx-auto leading-relaxed">
           {t.upgrade.subtitle}
         </p>
+        {billing?.planRequired && (
+          <div className="max-w-xl mx-auto mt-4 px-4 py-2.5 rounded-lg bg-primary/10 text-primary text-sm">{UX.planRequiredNotice}</div>
+        )}
+        {!billing?.planRequired && billing?.graceEndsAt && (
+          <div className="max-w-xl mx-auto mt-4 px-4 py-2.5 rounded-lg bg-primary/10 text-primary text-sm">
+            {fmt(UX.graceNotice, { date: new Date(billing.graceEndsAt).toLocaleDateString() })}
+          </div>
+        )}
 
         {/* Toggle billing */}
         <div className="mt-12 inline-flex items-center gap-4 bg-surface p-1 rounded-full border border-border">
@@ -167,7 +181,7 @@ function UpgradePageInner() {
           </button>
         </div>
 
-        {canPurchase && user?.tier && user.tier !== "CORE" && (
+        {user?.tier && user.tier !== "CORE" && (
           <div className="mt-6">
             <button
               onClick={openBillingPortal}

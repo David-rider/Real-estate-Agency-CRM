@@ -368,7 +368,7 @@ router.post('/accept-invite', authLimiter, async (req, res) => {
                 email: invitation.email,
                 password: hashedPassword,
                 role: invitation.role as any,
-                tier: ORG_SUB_TO_TIER[seats.subscription] || 'CORE', // members inherit the org-wide plan
+                tier: 'CORE', // billing is per member: each member chooses and pays for their own plan
                 orgId: invitation.orgId,
                 emailVerified: true, // arriving via emailed link proves mailbox ownership
                 preferredLanguage: normalizeLang(req.body.language),

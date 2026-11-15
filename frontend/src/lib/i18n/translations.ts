@@ -900,32 +900,32 @@ const base = {
     },
     upgrade: {
       title: "Choose the plan that fits your team",
-      adminOnly: "Plans cover your whole firm — ask your Firm Admin to upgrade.",
-      subtitle: "Every plan includes the full CRM. Paid plans add team seats and revenue projections.",
+      adminOnly: "Your role does not need a paid plan.",
+      subtitle: "Prices are per person. Working on your own is free; in a team of two or more, each member chooses Pro or Elite and pays for their own plan.",
       monthly: "Monthly",
       annual: "Annually",
       save: "2 months free",
       core: {
         name: "Core",
         price: "$0",
-        desc: "Everything a small team needs to get started.",
-        features: ["Up to 3 team members", "Clients, listings, deals & commissions", "Appointments, documents & reports", "Public listing pages & open-house sign-in"],
+        desc: "Free for one person working on their own.",
+        features: ["For one person", "Clients, listings, deals & commissions", "Appointments, documents & reports", "Public listing pages & open-house sign-in"],
         btn: "Current Plan"
       },
       pro: {
         name: "Pro",
         priceM: "$39",
         priceA: "$390",
-        desc: "For growing teams.",
-        features: ["Everything in Core", "Up to 15 team members"],
+        desc: "For each member of a team.",
+        features: ["Everything in Core", "Work in a team of any size", "Outside collaborators (attorney, lender, title) join free"],
         btn: "Upgrade to Pro"
       },
       elite: {
         name: "Elite",
         priceM: "$79",
         priceA: "$790",
-        desc: "For larger brokerages.",
-        features: ["Everything in Pro", "Unlimited team members", "Revenue projections"],
+        desc: "For members who need forecasting.",
+        features: ["Everything in Pro", "Revenue projections"],
         btn: "Upgrade to Elite"
       },
       checkout: {
@@ -1939,32 +1939,32 @@ const base = {
     },
     upgrade: {
       title: "选择适合你团队的套餐",
-      adminOnly: "订阅方案适用于整个公司——请联系贵公司管理员进行升级。",
-      subtitle: "所有套餐都包含完整的 CRM 功能；付费套餐增加团队席位和收入预测。",
+      adminOnly: "你的角色不需要付费套餐。",
+      subtitle: "价格按人计算。一个人使用免费；两人及以上的团队，每位成员各自选择 Pro 或 Elite 并为自己的套餐付费。",
       monthly: "按月付款",
       annual: "按年付款",
       save: "省 2 个月",
       core: {
         name: "基础版",
         price: "$0",
-        desc: "小团队起步所需的全部功能。",
-        features: ["最多 3 位团队成员", "客户、房源、交易与佣金管理", "日程、文档与报表", "公开房源页面与开放日签到"],
+        desc: "一个人使用，免费。",
+        features: ["仅限一人使用", "客户、房源、交易与佣金管理", "日程、文档与报表", "公开房源页面与开放日签到"],
         btn: "当前方案"
       },
       pro: {
         name: "专业版",
         priceM: "$39",
         priceA: "$390",
-        desc: "适合成长中的团队。",
-        features: ["包含 Core 的全部功能", "最多 15 位团队成员"],
+        desc: "团队中的每位成员。",
+        features: ["包含 Core 的全部功能", "可在任意规模的团队中使用", "外部协作方（律师、贷款方、产权公司）免费加入"],
         btn: "升级至专业版"
       },
       elite: {
         name: "精英版",
         priceM: "$79",
         priceA: "$790",
-        desc: "适合规模较大的经纪公司。",
-        features: ["包含 Pro 的全部功能", "团队成员数量不限", "收入预测"],
+        desc: "需要收入预测的成员。",
+        features: ["包含 Pro 的全部功能", "收入预测"],
         btn: "升级至精英版"
       },
       checkout: {
@@ -2978,32 +2978,32 @@ const base = {
     },
     upgrade: {
       title: "選擇適合您團隊的方案",
-      adminOnly: "訂閱方案適用於整個公司——請聯繫貴公司管理員進行升級。",
-      subtitle: "所有方案都包含完整的 CRM 功能；付費方案增加團隊席位和收入預測。",
+      adminOnly: "您的角色不需要付費方案。",
+      subtitle: "價格按人計算。一個人使用免費；兩人以上的團隊，每位成員各自選擇 Pro 或 Elite 並為自己的方案付費。",
       monthly: "按月付款",
       annual: "按年付款",
       save: "省 2 個月",
       core: {
         name: "基礎版",
         price: "$0",
-        desc: "小團隊起步所需的全部功能。",
-        features: ["最多 3 位團隊成員", "客戶、房源、交易與佣金管理", "日程、文件與報表", "公開房源頁面與開放參觀簽到"],
+        desc: "一個人使用，免費。",
+        features: ["僅限一人使用", "客戶、房源、交易與佣金管理", "日程、文件與報表", "公開房源頁面與開放參觀簽到"],
         btn: "當前方案"
       },
       pro: {
         name: "專業版",
         priceM: "$39",
         priceA: "$390",
-        desc: "適合成長中的團隊。",
-        features: ["包含 Core 的全部功能", "最多 15 位團隊成員"],
+        desc: "團隊中的每位成員。",
+        features: ["包含 Core 的全部功能", "可在任意規模的團隊中使用", "外部協作方（律師、貸款方、產權公司）免費加入"],
         btn: "升級至專業版"
       },
       elite: {
         name: "精英版",
         priceM: "$79",
         priceA: "$790",
-        desc: "適合規模較大的經紀公司。",
-        features: ["包含 Pro 的全部功能", "團隊成員數量不限", "收入預測"],
+        desc: "需要收入預測的成員。",
+        features: ["包含 Pro 的全部功能", "收入預測"],
         btn: "升級至精英版"
       },
       checkout: {
@@ -3780,32 +3780,32 @@ const base = {
     },
     upgrade: {
       title: "Elige el plan adecuado para tu equipo",
-      adminOnly: "Los planes cubren a toda su firma — pida a su Administrador que actualice el plan.",
-      subtitle: "Todos los planes incluyen el CRM completo. Los planes de pago añaden puestos de equipo y proyecciones de ingresos.",
+      adminOnly: "Su rol no necesita un plan de pago.",
+      subtitle: "Los precios son por persona. Trabajar solo es gratis; en un equipo de dos o más, cada miembro elige Pro o Elite y paga su propio plan.",
       monthly: "Mensual",
       annual: "Anual",
       save: "2 meses gratis",
       core: {
         name: "Básico",
         price: "$0",
-        desc: "Todo lo que un equipo pequeño necesita para empezar.",
-        features: ["Hasta 3 miembros del equipo", "Clientes, propiedades, transacciones y comisiones", "Citas, documentos e informes", "Páginas públicas de propiedades y registro de open house"],
+        desc: "Gratis para una persona que trabaja sola.",
+        features: ["Para una sola persona", "Clientes, propiedades, transacciones y comisiones", "Citas, documentos e informes", "Páginas públicas de propiedades y registro de open house"],
         btn: "Plan Actual"
       },
       pro: {
         name: "Pro",
         priceM: "$39",
         priceA: "$390",
-        desc: "Para equipos en crecimiento.",
-        features: ["Todo lo de Core", "Hasta 15 miembros del equipo"],
+        desc: "Para cada miembro de un equipo.",
+        features: ["Todo lo de Core", "Trabajo en equipos de cualquier tamaño", "Colaboradores externos (abogado, prestamista, título) gratis"],
         btn: "Actualizar a Pro"
       },
       elite: {
         name: "Élite",
         priceM: "$79",
         priceA: "$790",
-        desc: "Para agencias más grandes.",
-        features: ["Todo lo de Pro", "Miembros del equipo ilimitados", "Proyecciones de ingresos"],
+        desc: "Para miembros que necesitan proyecciones.",
+        features: ["Todo lo de Pro", "Proyecciones de ingresos"],
         btn: "Actualizar a Élite"
       },
       checkout: {

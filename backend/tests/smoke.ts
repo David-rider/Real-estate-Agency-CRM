@@ -1211,57 +1211,99 @@ async function main() {
         assert.equal((await db().appointment.findUnique({ where: { id: ap.body.id } }))!.reminderSent, false);
     });
 
-    await step('billing: plans follow the Stripe subscription of the right brokerage', async () => {
+    await step('billing is per member: each member pays for their own plan; team rules and the 30-day grace period', async () => {
+        // Rules (pure functions): who must pay, and when
+        const { billingStart, graceEndsAt, mustPay, planRequired, openWhilePlanRequired, isBillableRole } = await import('../src/lib/billing');
+        const day = 86400000;
+        const start = new Date('2027-01-01T00:00:00Z');
+        const at = (d: number) => new Date(start.getTime() + d * day);
+        const member = (role: string, tier: string, created: Date) => ({ role, tier, createdAt: created });
+        assert.equal(billingStart(at(1), {}), null, 'nothing is enforced without Stripe and a start date');
+        assert.equal(billingStart(at(1), { STRIPE_SECRET_KEY: 'x' }), null);
+        assert.equal(billingStart(at(-1), { STRIPE_SECRET_KEY: 'x', BILLING_START_DATE: '2027-01-01' }), null, 'not before the start date');
+        assert.ok(billingStart(at(1), { STRIPE_SECRET_KEY: 'x', BILLING_START_DATE: '2027-01-01' }));
+        const old = member('AGENT', 'CORE', at(-100));
+        const fresh = member('AGENT', 'CORE', at(5));
+        assert.equal(graceEndsAt(old, start)!.getTime(), at(30).getTime(), 'existing accounts get 30 days');
+        assert.equal(graceEndsAt(fresh, start), null, 'accounts created after the start get none');
+        assert.equal(mustPay(old, null, at(99)), false, 'billing off: nobody must pay');
+        assert.equal(mustPay(old, start, at(29)), false, 'inside the grace period');
+        assert.equal(mustPay(old, start, at(31)), true, 'after the grace period');
+        assert.equal(mustPay(fresh, start, at(6)), true);
+        assert.equal(mustPay(member('AGENT', 'PRO', at(5)), start, at(6)), false, 'a paid member is fine');
+        for (const role of ['ATTORNEY', 'LENDER', 'TITLECO', 'SUPERADMIN']) {
+            assert.equal(isBillableRole(role), false);
+            assert.equal(mustPay(member(role, 'CORE', at(5)), start, at(6)), false, `${role} never pays`);
+        }
+        for (const role of ['FIRMADMIN', 'MANAGER', 'AGENT', 'MARKETING', 'OFFICE_SUPPORT']) assert.equal(isBillableRole(role), true);
+        assert.equal(planRequired(fresh, 1, start, at(6)), false, 'working alone stays free');
+        assert.equal(planRequired(fresh, 2, start, at(6)), true, 'a team of two needs paid plans');
+        assert.equal(planRequired(old, 2, start, at(10)), false);
+        assert.deepEqual(['/api/payments/status', '/api/auth/logout', '/api/settings/profile?x=1', '/api/clients', '/api/settings/org'].map(openWhilePlanRequired), [true, true, true, false, false]);
+
         const hook = (type: string, object: Record<string, unknown>) => call('POST', '/api/payments/webhook', undefined, { type, data: { object } });
         const owner = await register('bill');
-        await register('bill-other');
         const agent = await joinOrg(owner, 'bill-agent', 'AGENT');
-        const orgOf = async (label: string) => (await db().user.findUnique({ where: { email: `${label}-${run}@smoke.test` }, include: { organization: true } }))!.organization;
-        const org = await orgOf('bill');
-        const otherOrg = await orgOf('bill-other');
+        const attorney = await joinOrg(owner, 'bill-atty', 'ATTORNEY');
+        const user = async (label: string) => (await db().user.findUnique({ where: { email: `${label}-${run}@smoke.test` } }))!;
+        const ownerId = (await user('bill')).id;
 
-        // Only an admin reaches checkout or the billing page
-        assert.equal((await call('POST', '/api/payments/checkout', agent.token, { planId: 'PRO_MONTHLY' })).status, 403);
-        assert.equal((await call('GET', '/api/payments/portal', agent.token)).status, 403);
+        // Billing is not enforced on this server: nobody is blocked, and status says so
+        const status = await call('GET', '/api/payments/status', agent.token);
+        assert.equal(status.status, 200, JSON.stringify(status.body));
+        assert.deepEqual([status.body.tier, status.body.billable, status.body.planRequired, status.body.graceEndsAt], ['CORE', true, false, null]);
+        assert.equal((await call('GET', '/api/payments/status', attorney.token)).body.billable, false);
+        // Outside collaborators never buy a plan
+        assert.equal((await call('POST', '/api/payments/checkout', attorney.token, { planId: 'PRO_MONTHLY' })).status, 403);
 
         const probe = await hook('ping', {});
         if (probe.status === 503) return; // Stripe is not configured on this server: nothing more to check
         assert.equal(probe.status, 200, JSON.stringify(probe.body));
-        assert.equal((await call('GET', '/api/payments/portal', owner)).status, 400, 'nothing to manage before a purchase');
+        assert.equal((await call('GET', '/api/payments/portal', agent.token)).status, 400, 'nothing to manage before a purchase');
 
-        const sub = (id: string, status: string, price: string) => ({ id, status, customer: `cus_${run}`, metadata: { orgId: org.id }, items: { data: [{ price: { id: price } }] } });
-        const plan = async (id: string) => (await db().organization.findUnique({ where: { id } }))!;
+        const sub = (id: string, status: string, price: string) => ({ id, status, customer: `cus_${run}`, metadata: { userId: agent.id }, items: { data: [{ price: { id: price } }] } });
 
-        // Checkout finished: the plan comes from the price being charged, whatever the request text said
-        const done = await hook('checkout.session.completed', { mode: 'subscription', status: 'complete', metadata: { orgId: org.id, planId: 'ELITE_ANNUAL' }, subscription: sub(`sub_a_${run}`, 'active', 'price_smoke_pro_m') });
+        // The agent's checkout finished: only the agent's plan changes, and it comes from the price being charged
+        const done = await hook('checkout.session.completed', { mode: 'subscription', status: 'complete', metadata: { userId: agent.id, planId: 'ELITE_ANNUAL' }, subscription: sub(`sub_a_${run}`, 'active', 'price_smoke_pro_m') });
         assert.equal(done.status, 200, JSON.stringify(done.body));
-        let o = await plan(org.id);
-        assert.deepEqual([o.subscription, o.stripeCustomerId, o.stripeSubscriptionId], ['PRO', `cus_${run}`, `sub_a_${run}`]);
-        assert.equal((await db().user.findUnique({ where: { id: agent.id } }))!.tier, 'PRO', 'every member gets the plan');
-        assert.equal((await call('POST', '/api/payments/checkout', owner, { planId: 'PRO_MONTHLY' })).status, 409, 'no second subscription');
+        let a = await user('bill-agent');
+        assert.deepEqual([a.tier, a.stripeCustomerId, a.stripeSubscriptionId], ['PRO', `cus_${run}`, `sub_a_${run}`]);
+        assert.equal((await user('bill')).tier, 'CORE', 'a colleague is not upgraded by someone else paying');
+        assert.equal((await call('POST', '/api/payments/checkout', agent.token, { planId: 'PRO_MONTHLY' })).status, 409, 'no second subscription');
+        assert.equal((await call('GET', '/api/finance/projections', agent.token)).status, 403, 'Pro does not include Elite features');
 
-        // Plan changed in Stripe
+        // Plan changed in Stripe: the member's own access follows at once
         await hook('customer.subscription.updated', sub(`sub_a_${run}`, 'active', 'price_smoke_elite_a'));
-        assert.equal((await plan(org.id)).subscription, 'ENTERPRISE');
+        assert.equal((await user('bill-agent')).tier, 'ELITE');
+        assert.equal((await call('GET', '/api/finance/projections', agent.token)).status, 200);
+        assert.equal((await call('GET', '/api/finance/projections', owner)).status, 403, 'the colleague on the free plan has no Elite features');
         // A failed charge keeps the plan while Stripe retries; an unknown price changes nothing
         await hook('customer.subscription.updated', sub(`sub_a_${run}`, 'past_due', 'price_smoke_elite_a'));
         await hook('customer.subscription.updated', sub(`sub_a_${run}`, 'active', 'price_unknown'));
-        o = await plan(org.id);
-        assert.equal(o.subscription, 'ENTERPRISE');
+        assert.equal((await user('bill-agent')).tier, 'ELITE');
 
-        // Someone else's subscription cannot move this brokerage, and an event naming another brokerage cannot take over its customer
+        // Someone else's subscription, an old one ending, or an event naming another member cannot change this member
         await hook('customer.subscription.deleted', { ...sub(`sub_x_${run}`, 'canceled', 'price_smoke_pro_m'), customer: `cus_stranger_${run}`, metadata: {} });
         await hook('customer.subscription.deleted', sub(`sub_old_${run}`, 'canceled', 'price_smoke_pro_m'));
-        assert.equal((await plan(org.id)).subscription, 'ENTERPRISE', 'only the current subscription ending downgrades');
-        await hook('customer.subscription.updated', { ...sub(`sub_a_${run}`, 'active', 'price_smoke_elite_a'), metadata: { orgId: otherOrg.id } });
-        assert.equal((await plan(otherOrg.id)).subscription, 'BASIC', 'the other brokerage is untouched');
+        assert.equal((await user('bill-agent')).tier, 'ELITE', 'only the current subscription ending downgrades');
+        await hook('customer.subscription.updated', { ...sub(`sub_a_${run}`, 'active', 'price_smoke_elite_a'), metadata: { userId: ownerId } });
+        assert.equal((await user('bill')).tier, 'CORE', 'the other member is untouched');
 
-        // Cancelled: back to the free plan for everyone
-        await hook('customer.subscription.deleted', sub(`sub_a_${run}`, 'canceled', 'price_smoke_elite_a'));
-        o = await plan(org.id);
-        assert.deepEqual([o.subscription, o.stripeSubscriptionId], ['BASIC', null]);
-        assert.equal((await db().user.findUnique({ where: { id: agent.id } }))!.tier, 'CORE');
-        assert.equal((await plan(otherOrg.id)).subscription, 'BASIC');
+        // Deactivating a member also asks Stripe to end their plan (not reachable with the placeholder key used here)
+        assert.equal((await call('DELETE', `/api/settings/users/${agent.id}`, owner)).status, 200);
+        a = await user('bill-agent');
+        assert.equal(a.isActive, false);
+
+        // Cancelled in Stripe: back to the free plan
+        const solo = await register('bill-solo');
+        const soloId = (await user('bill-solo')).id;
+        const sub2 = (status: string) => ({ id: `sub_s_${run}`, status, customer: `cus_s_${run}`, metadata: { userId: soloId }, items: { data: [{ price: { id: 'price_smoke_pro_m' } }] } });
+        await hook('customer.subscription.created', sub2('active'));
+        assert.equal((await user('bill-solo')).tier, 'PRO');
+        await hook('customer.subscription.deleted', sub2('canceled'));
+        const s = await user('bill-solo');
+        assert.deepEqual([s.tier, s.stripeSubscriptionId], ['CORE', null]);
+        assert.equal((await call('GET', '/api/payments/status', solo)).body.hasSubscription, false);
     });
 
     await step('security policy is saved and enforced', async () => {

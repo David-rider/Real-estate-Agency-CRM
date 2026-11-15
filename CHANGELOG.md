@@ -38,12 +38,12 @@
   *Outside roles (attorney, lender, title company) no longer see the firm's production leaderboard.*
 
 #### 修复 / Fixed
-- 付费订阅（开通收款后生效）：套餐现在跟着本公司在 Stripe 的订阅走——换套餐、取消或多次扣款失败后，系统里的套餐会自动跟着变；取消订阅不会再因为付款邮箱不同而漏掉，也不会影响到别的公司。
-  *Paid subscriptions (effective once billing is switched on): the plan now follows your own brokerage's Stripe subscription — changing plan, cancelling, or charges that keep failing update the plan automatically; a cancellation is no longer missed because the payer used a different email, and can never affect another brokerage.*
-- 付款完成返回后，套餐立即生效，不用等待或重新登录；已有订阅的公司不会被重复收费。
-  *After paying, the plan applies as soon as you return, with no waiting or signing in again; a brokerage that already has a subscription cannot be charged twice.*
-- 升级页新增“管理账单”（仅公司管理员）：更换套餐、更新银行卡、下载发票或取消订阅。普通成员不能再打开账单页面。
-  *The upgrade page has a new "Manage billing" button (firm admins only) to change plan, update the card, download invoices or cancel. Other members can no longer open the billing page.*
+- 付费订阅（开通收款后生效）：收费按人计算，每位成员为自己的套餐付费。套餐跟着本人在 Stripe 的订阅走——换套餐、取消或多次扣款失败后，系统里的套餐自动跟着变，不会影响同事或别的公司。
+  *Paid subscriptions (effective once billing is switched on): billing is per person, and each member pays for their own plan. The plan follows that member's own Stripe subscription — changing plan, cancelling, or charges that keep failing update it automatically, without affecting colleagues or other brokerages.*
+- 付款完成返回后，套餐立即生效，不用等待或重新登录；已有订阅的成员不会被重复收费。
+  *After paying, the plan applies as soon as you return, with no waiting or signing in again; a member who already has a subscription cannot be charged twice.*
+- 升级页新增“管理账单”：每位付费成员可以更换套餐、更新银行卡、下载发票或取消自己的订阅。
+  *The upgrade page has a new "Manage billing" button: each paying member can change plan, update the card, download invoices or cancel their own subscription.*
 - 报价：提交报价的一方不能替卖方“接受”自己的报价，只能撤回，或回应对方的还价；接受、拒绝和还价由房源经纪人或经理操作。
   *Offers: the side that submitted an offer can no longer "accept" it on the seller's behalf; they can withdraw it or answer a counter-offer. Accepting, rejecting and countering is done by the listing agent or a manager.*
 - 已成交的交易：经纪人不能再改结果、成交价和佣金比例，只有经理可以。经理把已成交的交易改回其他状态时，未发放的佣金会撤销，房源和客户状态一起恢复；佣金已发放的交易不能改回。
@@ -56,8 +56,12 @@
   *The note next to annual prices now says "2 months free" instead of "Save 20%", matching the actual prices.*
 
 #### 变更 / Changed
-- 套餐页和首页的功能清单改成系统里真实存在的内容：Core 免费、最多 3 位团队成员、包含完整的 CRM 功能；Pro 最多 15 位成员；Elite 成员数量不限，并包含收入预测。去掉了尚未提供的功能（Google 与 Zillow 同步、DocuSign、AI 文案、自动客户关怀、优先支持）和“5 套房源 / 50 位客户”的说法。
-  *The feature lists on the plan page and the home page now say only what the system really does: Core is free with up to 3 team members and the full CRM; Pro allows up to 15 members; Elite has unlimited members and adds revenue projections. Features not offered yet (Google & Zillow sync, DocuSign, AI copy, automated client care, priority support) and the "5 listings / 50 clients" wording are gone.*
+- 套餐改为按人收费（开通收款后生效）：一个人使用 Core 免费；两人及以上的团队，每位内部成员（经纪人、经理、管理员、市场和行政人员）各自选择 Pro（$39/月）或 Elite（$79/月）；律师、贷款方、产权公司等外部协作方免费。同一团队里每个人的套餐可以不同，Elite 包含收入预测。取消了原来的成员数量上限。
+  *Plans are now per person (effective once billing is switched on): Core is free for one person working alone; in a team of two or more, each internal member (agents, managers, admins, marketing and office staff) chooses Pro ($39/month) or Elite ($79/month); outside collaborators such as attorneys, lenders and title companies are free. Members of one team can be on different plans, and Elite includes revenue projections. The old member limits are gone.*
+- 开始收费后的规则：收费开始之前已有的账号有 30 天时间选择套餐；之后加入团队的成员需要先选择套餐才能使用；仍在免费套餐的成员要先为自己选择付费套餐，才能邀请内部成员。被停用的成员，其订阅会自动取消。
+  *Rules once billing starts: accounts that existed before billing started get 30 days to choose a plan; members who join a team later choose a plan before they can work; a member still on the free plan chooses a paid plan before inviting internal members. A deactivated member's subscription is cancelled automatically.*
+- 套餐页和首页的功能清单只写系统里真实存在的内容：去掉了尚未提供的功能（Google 与 Zillow 同步、DocuSign、AI 文案、自动客户关怀、优先支持）和“5 套房源 / 50 位客户”的说法。
+  *The feature lists on the plan page and the home page say only what the system really does: features not offered yet (Google & Zillow sync, DocuSign, AI copy, automated client care, priority support) and the "5 listings / 50 clients" wording are gone.*
 - 首页去掉了“AI 营销助手”介绍（AI 助手仍在开发中）和无法证实的宣传语，换成“报表与业绩”。
   *The home page no longer advertises the AI marketing copilot (the AI assistant is still in development) or claims that cannot be backed up; it shows Reports & Performance instead.*
 - 注册页写明“创建账号即表示同意服务条款和隐私政策”，并附链接；公开房源的咨询表单下方说明信息会交给发布房源的经纪公司。
@@ -616,6 +620,7 @@
 | 后端<br>*Backend* | `RUN_MIGRATIONS_ON_START` | 默认开启；设为 `false` 时启动不自动迁移<br>*On by default; `false` disables migrations at start* |
 | 后端<br>*Backend* | `TRUST_PROXY` | 可选，生产环境默认 `1`<br>*Optional; defaults to `1` in production* |
 | 后端<br>*Backend* | `DISABLE_IP_ALLOWLIST` | 可选，紧急开关：设为 `true` 时忽略所有公司的 IP 白名单（管理员被锁在外面时使用），平时不要设置<br>*Optional emergency switch: `true` ignores every brokerage's IP allowlist (for when admins are locked out); leave unset normally* |
+| 后端<br>*Backend* | `BILLING_START_DATE` | 可选：开始要求付费套餐的日期（`YYYY-MM-DD`）。不设置（或未配置 Stripe）时不做任何限制；设置后，此前已有的账号有 30 天宽限期<br>*Optional: the day paid plans become required (`YYYY-MM-DD`). Unset (or without Stripe) nothing is enforced; once set, accounts that existed before it get a 30-day grace period* |
 | 后端<br>*Backend* | `DISABLE_JOBS` | 可选，设为 `true` 关闭预约提醒任务<br>*Optional; `true` turns off the appointment-reminder job* |
 | 后端<br>*Backend* | `SEED_PASSWORD` / `ALLOW_SEED` | 仅种子脚本使用<br>*Used only by the seed script* |
 | 前端<br>*Frontend* | `NEXT_PUBLIC_GOOGLE_CLIENT_ID` | Google 登录的 OAuth 客户端 ID（公开值，不是密钥）；与后端 `GOOGLE_CLIENT_ID` 填同一个值。未设置时 Google 按钮显示“即将推出”<br>*Google sign-in OAuth client ID (a public value, not a secret); same value as the backend `GOOGLE_CLIENT_ID`. When unset, the Google button shows "Coming soon"* |

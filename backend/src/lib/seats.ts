@@ -3,8 +3,9 @@ import { prisma } from '../server';
 // Seat limits per organization subscription level (see USER_GUIDE §16.1)
 // null = unlimited
 export const SEAT_LIMITS: Record<string, number | null> = {
-    BASIC:      3,
-    PRO:        15,
+    // Billing is per member (lib/billing.ts), so a brokerage can have any number of members
+    BASIC:      null,
+    PRO:        null,
     ENTERPRISE: null,
 };
 
@@ -18,7 +19,7 @@ export interface SeatUsage {
 export async function getSeatUsage(orgId: string): Promise<SeatUsage> {
     const org = await prisma.organization.findUnique({ where: { id: orgId } });
     const subscription = org?.subscription || 'BASIC';
-    const limit = SEAT_LIMITS[subscription] ?? SEAT_LIMITS.BASIC;
+    const limit = SEAT_LIMITS[subscription] ?? null;
 
     const [users, pendingInvites] = await Promise.all([
         prisma.user.count({ where: { orgId, isActive: true } }),
