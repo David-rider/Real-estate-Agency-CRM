@@ -154,4 +154,7 @@ happen; note anything that doesn't.
 - [ ] **Reports → Performance** shows lead sources with conversion, deals closed, volume and average time to close; a manager also sees the agent comparison. **Export to Excel (CSV)** opens in Excel with Chinese text intact.
       *报表 → 业绩 显示线索来源及转化率、成交笔数、总额和平均成交周期；经理还能看到经纪人对比。“导出到 Excel（CSV）”用 Excel 打开时中文不乱码。*
 
+- [ ] **Billing (only after Stripe is switched on, in Stripe test mode first):** as firm admin, buy Pro on **Upgrade** — on return the plan is Pro for every member right away. **Manage billing** opens Stripe's page; switch to Elite there and the plan follows; cancel and everyone is back on Core. An agent sees no Manage billing button and cannot buy.
+      *账单（仅在开通 Stripe 之后，先用 Stripe 测试模式）：用公司管理员在“升级”页购买 Pro——返回后所有成员立即是 Pro。“管理账单”打开 Stripe 页面；在那里换成 Elite，套餐随之变化；取消后所有人回到 Core。经纪人看不到“管理账单”按钮，也不能购买。*
+
 Report problems with: the page, what you clicked, what you expected, what happened, and a screenshot.

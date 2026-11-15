@@ -277,6 +277,7 @@ const en = {
   upgradeExtra: {
     secureCheckout: "Secure Checkout", redirectNotice: "You will be redirected to Stripe to complete your payment securely.",
     noCardStored: "We never see or store your card details.",
+    manageBilling: "Manage billing", manageBillingHint: "Change your plan, update your card, download invoices or cancel — on Stripe's secure page.",
   },
   listings: {
     publicPage: "Public page", openHouseLink: "Copy open-house sign-in link", linkCopied: "Link copied — print it as a QR code at the door", aiDescribe: "AI description",
@@ -669,6 +670,7 @@ const zhCN: Dict = {
   upgradeExtra: {
     secureCheckout: "安全结账", redirectNotice: "您将跳转至 Stripe 安全完成支付。",
     noCardStored: "我们绝不会查看或存储您的银行卡信息。",
+    manageBilling: "管理账单", manageBillingHint: "更换套餐、更新银行卡、下载发票或取消订阅，都在 Stripe 的安全页面上完成。",
   },
   listings: {
     publicPage: "公开页面", openHouseLink: "复制开放日签到链接", linkCopied: "链接已复制——可打印成二维码放在门口", aiDescribe: "AI 写文案",
@@ -1059,6 +1061,7 @@ const zhTW: Dict = {
   upgradeExtra: {
     secureCheckout: "安全結帳", redirectNotice: "您將跳轉至 Stripe 安全完成付款。",
     noCardStored: "我們絕不會查看或儲存您的信用卡資訊。",
+    manageBilling: "管理帳單", manageBillingHint: "更換方案、更新信用卡、下載發票或取消訂閱，都在 Stripe 的安全頁面上完成。",
   },
   listings: {
     publicPage: "公開頁面", openHouseLink: "複製開放參觀簽到連結", linkCopied: "連結已複製——可列印成 QR code 放在門口", aiDescribe: "AI 撰寫文案",
@@ -1449,6 +1452,7 @@ const es: Dict = {
   upgradeExtra: {
     secureCheckout: "Pago seguro", redirectNotice: "Serás redirigido a Stripe para completar tu pago de forma segura.",
     noCardStored: "Nunca vemos ni almacenamos los datos de tu tarjeta.",
+    manageBilling: "Gestionar facturación", manageBillingHint: "Cambia de plan, actualiza tu tarjeta, descarga facturas o cancela, en la página segura de Stripe.",
   },
   listings: {
     publicPage: "Página pública", openHouseLink: "Copiar enlace de registro del open house", linkCopied: "Enlace copiado: imprímelo como código QR en la entrada", aiDescribe: "Descripción con IA",

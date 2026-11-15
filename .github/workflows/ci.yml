@@ -34,6 +34,10 @@ jobs:
       PORT: 4000
       NODE_ENV: development
       DISABLE_JOBS: "true"
+      # Placeholders (not real keys): they only let the smoke test exercise the billing webhook logic
+      STRIPE_SECRET_KEY: placeholder-not-a-real-key
+      STRIPE_PRICE_PRO_MONTHLY: price_smoke_pro_m
+      STRIPE_PRICE_ELITE_ANNUAL: price_smoke_elite_a
 
     steps:
       - name: Checkout repository
