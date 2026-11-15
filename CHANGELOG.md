@@ -21,6 +21,10 @@
 
 ## [未发布]
 
+---
+
+## [1.5.6.0] — 2026-11-14 · 安全与逻辑审查修复、按人收费（成员自付或公司代付）、套餐文案如实化、Google 日历实时同步 / Security and logic audit fixes, per-member billing (paid by the member or by the brokerage), truthful plan copy, Google Calendar instant sync
+
 #### 新增 / Added
 - Google 日历实时同步（第二步）：在“日程安排 → 与 Google 日历同步”点“连接 Google 日历”并授权后，新建、修改、取消和删除的日程会立即写进你的 Google 日历，连接时还会补上接下来的日程；可随时断开。订阅链接仍可使用。
   *Google Calendar instant sync (step 2): under Appointments → Sync with Google Calendar, click "Connect Google Calendar" and grant access; new, changed, cancelled and deleted appointments are then written to your Google Calendar right away, and your upcoming appointments are added when you connect. You can disconnect any time; the subscription link still works.*
