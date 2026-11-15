@@ -21,6 +21,10 @@
 
 ## [未发布]
 
+---
+
+## [1.5.7.0] — 2026-11-15 · 到期前提醒、公司代付的每日对账 / Reminders before the deadline, daily reconciliation of brokerage-paid seats
+
 #### 新增 / Added
 - 公司代付的每日对账（配置 Stripe 后生效）：系统每天把每家代付公司的订阅和 Stripe 核对一次——团队现在有几位内部成员、各是什么档位，Stripe 就按这个数收费；成员加入或离开时如果当时没能通知到 Stripe，最迟第二天自动补上，离开的成员不会一直被收费。公司订阅已取消或扣款失败而系统没收到通知的，也会在对账时更正。某家公司核对失败时一小时后重试，不影响其他公司。
   *Daily reconciliation of brokerage-paid plans (effective once Stripe is configured): once a day every paying brokerage's subscription is checked against Stripe, so Stripe charges for the internal members the team has today at each member's level. If Stripe could not be told when a member joined or left, it is corrected by the next day at the latest, and a member who left is not charged for indefinitely. A cancelled subscription or failed charge the system was never notified about is corrected too. A brokerage whose check fails is retried an hour later and never holds up the others.*
