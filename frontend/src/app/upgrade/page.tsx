@@ -7,6 +7,7 @@ import { useAuth } from "@/lib/auth/AuthContext";
 import { useToast } from "@/components/ui/Toast";
 import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
+import CompanyBilling from "@/components/billing/CompanyBilling";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
@@ -72,9 +73,9 @@ function UpgradePageInner() {
   const canPurchase = !["SUPERADMIN", "ATTORNEY", "LENDER", "TITLECO"].includes(user?.role || "");
 
   // Whether this member must choose a plan now, or by which date
-  const [billing, setBilling] = useState<{ planRequired: boolean; graceEndsAt: string | null } | null>(null);
+  const [billing, setBilling] = useState<{ planRequired: boolean; graceEndsAt: string | null; paidByCompany?: boolean } | null>(null);
   useEffect(() => {
-    api<{ planRequired: boolean; graceEndsAt: string | null }>("/api/payments/status").then(setBilling).catch(() => setBilling(null));
+    api<{ planRequired: boolean; graceEndsAt: string | null; paidByCompany?: boolean }>("/api/payments/status").then(setBilling).catch(() => setBilling(null));
   }, [user?.tier]);
 
   // Stripe's own page for changing plan, card, invoices and cancelling
@@ -149,6 +150,9 @@ function UpgradePageInner() {
         <p className="text-sm text-foreground/50 max-w-2xl mx-auto leading-relaxed">
           {t.upgrade.subtitle}
         </p>
+        {billing?.paidByCompany && (
+          <div className="max-w-xl mx-auto mt-4 px-4 py-2.5 rounded-lg bg-primary/10 text-primary text-sm">{UX.paidByCompany}</div>
+        )}
         {billing?.planRequired && (
           <div className="max-w-xl mx-auto mt-4 px-4 py-2.5 rounded-lg bg-primary/10 text-primary text-sm">{UX.planRequiredNotice}</div>
         )}
@@ -181,7 +185,7 @@ function UpgradePageInner() {
           </button>
         </div>
 
-        {user?.tier && user.tier !== "CORE" && (
+        {user?.tier && user.tier !== "CORE" && !billing?.paidByCompany && (
           <div className="mt-6">
             <button
               onClick={openBillingPortal}
@@ -285,6 +289,9 @@ function UpgradePageInner() {
           )}
         </div>
       </div>
+
+      {/* Firm admins: the brokerage can pay for all its members */}
+      {["SUPERADMIN", "FIRMADMIN"].includes(user?.role || "") && <CompanyBilling billingCycle={billingCycle} />}
 
       {/* Checkout Modal Overlay — success pane doubles as the post-Stripe return screen */}
       {showCheckout && (

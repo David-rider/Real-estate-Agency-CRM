@@ -4,7 +4,7 @@ import { parse } from 'csv-parse/sync';
 import { prisma } from '../server';
 import { AuthRequest } from '../middleware/authMiddleware';
 import { getSeatUsage } from '../lib/seats';
-import { inviterMustPay, PAY_BEFORE_INVITING } from './payments';
+import { inviterMustPay, PAY_BEFORE_INVITING, companyChanged } from './payments';
 import { audit } from '../lib/audit';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
@@ -108,6 +108,7 @@ router.post('/import', upload.single('file'), async (req: AuthRequest, res) => {
             }
         }
 
+        if (importedCount) await companyChanged(req.user.orgId); // new members get seats if the brokerage pays
         await audit(req, 'IMPORT_USERS', 'User', null, undefined, { importedCount, skipped: skipped.length });
         res.status(200).json({ message: `Imported ${importedCount} users`, importedCount, skipped });
     } catch (error: any) {

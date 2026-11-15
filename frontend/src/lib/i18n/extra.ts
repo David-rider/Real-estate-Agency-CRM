@@ -279,6 +279,10 @@ const en = {
     noCardStored: "We never see or store your card details.",
     manageBilling: "Manage billing", manageBillingHint: "Change your plan, update your card, download invoices or cancel — on Stripe's secure page.",
     planRequiredNotice: "Your team has two or more members, so each member needs a paid plan. Choose Pro or Elite to continue.",
+    companyTitle: "Pay for your team", companyDesc: "Your brokerage can pay for every internal member on one invoice instead of each member paying for themselves. Choose a level for each member; seats are added and removed automatically as people join or leave.",
+    levelFor: "Level", companyStart: "Pay for all {n} members", companyActive: "Your brokerage pays for {pro} Pro and {elite} Elite seats.", companyManage: "Manage company billing", levelSaved: "Level updated",
+    companyNote: "Outside collaborators (attorney, lender, title) are free and are not counted. A member who already pays for their own plan has that subscription cancelled once the brokerage pays for them.",
+    paidByCompany: "Your plan is paid by your brokerage.",
     graceNotice: "Your team has two or more members. From {date}, each member needs a paid plan — choose Pro or Elite before then to keep working.",
   },
   listings: {
@@ -674,6 +678,10 @@ const zhCN: Dict = {
     noCardStored: "我们绝不会查看或存储您的银行卡信息。",
     manageBilling: "管理账单", manageBillingHint: "更换套餐、更新银行卡、下载发票或取消订阅，都在 Stripe 的安全页面上完成。",
     planRequiredNotice: "你的团队有两位或更多成员，每位成员都需要付费套餐。请选择 Pro 或 Elite 后继续使用。",
+    companyTitle: "为团队付费", companyDesc: "公司可以用一张账单为所有内部成员付费，成员不用各自付费。可以给每位成员选择档位；成员加入或离开时，席位自动增减。",
+    levelFor: "档位", companyStart: "为全部 {n} 位成员付费", companyActive: "公司正在为 {pro} 个 Pro 席位和 {elite} 个 Elite 席位付费。", companyManage: "管理公司账单", levelSaved: "档位已更新",
+    companyNote: "外部协作方（律师、贷款方、产权公司）免费，不计入席位。已经自己付费的成员，在公司为其付费后，个人订阅会自动取消。",
+    paidByCompany: "你的套餐由公司支付。",
     graceNotice: "你的团队有两位或更多成员。从 {date} 起，每位成员都需要付费套餐——请在此之前选择 Pro 或 Elite，以便继续使用。",
   },
   listings: {
@@ -1067,6 +1075,10 @@ const zhTW: Dict = {
     noCardStored: "我們絕不會查看或儲存您的信用卡資訊。",
     manageBilling: "管理帳單", manageBillingHint: "更換方案、更新信用卡、下載發票或取消訂閱，都在 Stripe 的安全頁面上完成。",
     planRequiredNotice: "您的團隊有兩位或更多成員，每位成員都需要付費方案。請選擇 Pro 或 Elite 後繼續使用。",
+    companyTitle: "為團隊付費", companyDesc: "公司可以用一張帳單為所有內部成員付費，成員不用各自付費。可以為每位成員選擇等級；成員加入或離開時，席位自動增減。",
+    levelFor: "等級", companyStart: "為全部 {n} 位成員付費", companyActive: "公司正在為 {pro} 個 Pro 席位和 {elite} 個 Elite 席位付費。", companyManage: "管理公司帳單", levelSaved: "等級已更新",
+    companyNote: "外部協作方（律師、貸款方、產權公司）免費，不計入席位。已經自己付費的成員，在公司為其付費後，個人訂閱會自動取消。",
+    paidByCompany: "您的方案由公司支付。",
     graceNotice: "您的團隊有兩位或更多成員。從 {date} 起，每位成員都需要付費方案——請在此之前選擇 Pro 或 Elite，以便繼續使用。",
   },
   listings: {
@@ -1460,6 +1472,10 @@ const es: Dict = {
     noCardStored: "Nunca vemos ni almacenamos los datos de tu tarjeta.",
     manageBilling: "Gestionar facturación", manageBillingHint: "Cambia de plan, actualiza tu tarjeta, descarga facturas o cancela, en la página segura de Stripe.",
     planRequiredNotice: "Tu equipo tiene dos o más miembros, así que cada miembro necesita un plan de pago. Elige Pro o Elite para continuar.",
+    companyTitle: "Pagar por tu equipo", companyDesc: "Tu agencia puede pagar por todos los miembros internos en una sola factura, en lugar de que cada miembro pague el suyo. Elige un nivel para cada miembro; los puestos se añaden y se quitan automáticamente cuando alguien entra o sale.",
+    levelFor: "Nivel", companyStart: "Pagar por los {n} miembros", companyActive: "Tu agencia paga {pro} puestos Pro y {elite} puestos Elite.", companyManage: "Gestionar la facturación de la agencia", levelSaved: "Nivel actualizado",
+    companyNote: "Los colaboradores externos (abogado, prestamista, título) son gratuitos y no cuentan. Si un miembro ya paga su propio plan, esa suscripción se cancela cuando la agencia paga por él.",
+    paidByCompany: "Tu agencia paga tu plan.",
     graceNotice: "Tu equipo tiene dos o más miembros. A partir del {date}, cada miembro necesita un plan de pago: elige Pro o Elite antes de esa fecha para seguir trabajando.",
   },
   listings: {
