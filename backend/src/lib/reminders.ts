@@ -1,10 +1,11 @@
 import { prisma } from '../server';
 import { createNotification } from '../routes/notifications';
 import { normalizePreferences } from './policies';
-import { billingStart, graceEndsAt, reminderStage, FREE_ROLES } from './billing';
+import { billingStart, graceEndsAt, reminderStage, nextReconcileAt, FREE_ROLES } from './billing';
 import { sendEmail, billingReminderEmail } from './email';
 import { EMAIL, normalizeLang } from './messages';
 import { appUrl } from './appUrl';
+import { reconcileCompanyBilling } from '../routes/payments';
 
 const HOUR = 60 * 60 * 1000;
 
@@ -105,9 +106,18 @@ export async function sendBillingReminders(now = new Date()) {
 }
 
 export function startReminderLoop(intervalMs = 10 * 60 * 1000) {
+    // Brokerage-paid seats are checked against Stripe once a day (and shortly after every start, so a restart never delays it)
+    let reconcileAt = 0;
     const tick = () => {
         sendAppointmentReminders().catch(err => console.error('Reminder job failed:', err));
         sendBillingReminders().catch(err => console.error('Billing reminder job failed:', err));
+        if (Date.now() >= reconcileAt) {
+            const ranAt = Date.now();
+            reconcileAt = nextReconcileAt(ranAt, 0);
+            reconcileCompanyBilling()
+                .then(r => { reconcileAt = nextReconcileAt(ranAt, r.failed); })
+                .catch(err => { reconcileAt = nextReconcileAt(ranAt, 1); console.error('[billing-reconcile] job failed:', err); });
+        }
     };
     setTimeout(tick, 30 * 1000);
     return setInterval(tick, intervalMs);

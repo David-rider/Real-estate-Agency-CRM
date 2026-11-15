@@ -67,3 +67,26 @@ export function reminderStage(graceEnd: Date, lastStage: number | null, now = ne
     if (due === undefined) return null; // more than 14 days left
     return lastStage === null || due < lastStage ? due : null;
 }
+
+// A brokerage's subscription has one line per level (Pro, Elite), with one seat per internal member at that level.
+// Returns the changes that make the subscription charge for `seats`; an empty list means it is already right.
+export interface SeatLine { id: string; price: string; quantity: number }
+export type SeatChange = { id: string; quantity: number } | { id: string; deleted: true } | { price: string; quantity: number };
+export function seatChanges(lines: SeatLine[], seats: Record<string, number>, prices: Record<string, string | undefined>): SeatChange[] {
+    const changes: SeatChange[] = [];
+    for (const level of Object.keys(seats)) {
+        const price = prices[level];
+        if (!price) continue;
+        const want = seats[level];
+        const line = lines.find(l => l.price === price);
+        if (line && line.quantity === want) continue;
+        if (line) changes.push(want > 0 ? { id: line.id, quantity: want } : { id: line.id, deleted: true });
+        else if (want > 0) changes.push({ price, quantity: want });
+    }
+    return changes;
+}
+
+// When brokerage-paid seats are next checked against Stripe: once a day, and an hour after a run that had failures
+export function nextReconcileAt(ranAt: number, failed: number): number {
+    return ranAt + (failed > 0 ? 1 : 24) * 60 * 60 * 1000;
+}
