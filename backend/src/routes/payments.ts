@@ -2,7 +2,7 @@ import { appUrl as getAppUrl } from '../lib/appUrl';
 import express from 'express';
 import { prisma } from '../server';
 import { authenticateToken, authorizeRole, AuthRequest, invalidateAccount, clearAccountCache } from '../middleware/authMiddleware';
-import { stripe, isBillableRole, billingStart, graceEndsAt, planRequired, mustPay, FREE_ROLES } from '../lib/billing';
+import { stripe, isBillableRole, billingStart, graceEndsAt, planRequired, mustPay, seatChanges, FREE_ROLES } from '../lib/billing';
 
 const router = express.Router();
 
@@ -88,27 +88,26 @@ async function companySeats(orgId: string, org: OrgBilling & { companyPlan: stri
     return seats;
 }
 
-// Makes the brokerage's Stripe subscription charge for the seats it has now (one line per level, prorated by Stripe)
-async function syncCompanySeats(orgId: string): Promise<void> {
+// The two Stripe calls seat billing needs (so the daily reconciliation can be exercised without Stripe)
+export type SubscriptionsClient = { subscriptions: { retrieve(id: string): Promise<any>; update(id: string, params: any): Promise<any> } };
+
+// Makes the brokerage's Stripe subscription charge for the seats it has now (one line per level, prorated by Stripe).
+// Returns true when Stripe had to be corrected. `sub` may be passed when the caller has just fetched it.
+async function syncCompanySeats(orgId: string, client: SubscriptionsClient | null = stripe, sub?: any): Promise<boolean> {
     const org = await prisma.organization.findUnique({ where: { id: orgId }, select: { companyPlan: true, companyCycle: true, stripeSubscriptionId: true, subscriptionStatus: true } });
-    if (!stripe || !org || !companyPays(org)) return;
+    if (!client || !org || !companyPays(org)) return false;
     const cycle: Cycle = org.companyCycle === 'ANNUAL' ? 'ANNUAL' : 'MONTHLY';
     const seats = await companySeats(orgId, org);
-    const sub = await stripe.subscriptions.retrieve(org.stripeSubscriptionId!);
-    const items: any[] = [];
-    for (const level of ['PRO', 'ELITE'] as PaidTier[]) {
-        const price = PLAN_PRICES[`${level}_${cycle}`];
-        if (!price) continue;
-        const existing = sub.items.data.find(i => i.price.id === price);
-        if (existing && existing.quantity === seats[level]) continue;
-        if (existing) items.push(seats[level] > 0 ? { id: existing.id, quantity: seats[level] } : { id: existing.id, deleted: true });
-        else if (seats[level] > 0) items.push({ price, quantity: seats[level] });
-    }
-    if (items.length) await stripe.subscriptions.update(org.stripeSubscriptionId!, { items, proration_behavior: 'create_prorations' });
+    if (!sub) sub = await client.subscriptions.retrieve(org.stripeSubscriptionId!);
+    const lines = (sub.items?.data || []).map((i: any) => ({ id: String(i.id), price: idOf(i.price) || '', quantity: Number(i.quantity ?? 0) }));
+    const items = seatChanges(lines, seats, { PRO: PLAN_PRICES[`PRO_${cycle}`], ELITE: PLAN_PRICES[`ELITE_${cycle}`] });
+    if (!items.length) return false;
+    await client.subscriptions.update(org.stripeSubscriptionId!, { items, proration_behavior: 'create_prorations' });
+    return true;
 }
 
 // Call whenever a brokerage's members or their levels change (joined, deactivated, reactivated, role or level changed).
-// Never throws: a Stripe failure is logged and corrected on the next change or billing event.
+// Never throws: a Stripe failure is logged and corrected by the daily reconciliation (reconcileCompanyBilling).
 export async function companyChanged(orgId: string): Promise<void> {
     try { await syncCompanySeats(orgId); } catch (err: any) { console.error(`Could not update the seats billed to org ${orgId}:`, err?.message || err); }
     try { await refreshOrgTiers(orgId); } catch (err: any) { console.error(`Could not refresh plans of org ${orgId}:`, err?.message || err); }
@@ -141,8 +140,15 @@ function tierOfSubscription(sub: any): Tier | null {
 
 type Hints = { userId?: string | null; orgId?: string | null; companyPlan?: string | null; companyCycle?: string | null };
 
+type OrgSubscription = { id: string; stripeSubscriptionId: string | null; companyPlan: string | null; companyCycle: string | null };
+
 // A brokerage's subscription changed: record it and recompute its members' plans
-async function syncCompanySubscription(org: { id: string; stripeSubscriptionId: string | null; companyPlan: string | null; companyCycle: string | null }, sub: any, hints: Hints): Promise<void> {
+async function syncCompanySubscription(org: OrgSubscription, sub: any, hints: Hints): Promise<void> {
+    if (await recordCompanySubscription(org, sub, hints)) await companyChanged(org.id);
+}
+
+// Stores what Stripe says about a brokerage's subscription. Returns false for an older subscription (nothing stored).
+async function recordCompanySubscription(org: OrgSubscription, sub: any, hints: Hints): Promise<boolean> {
     const customerId = idOf(sub.customer)!;
     const subId = idOf(sub)!;
     const status = String(sub.status || '');
@@ -163,10 +169,45 @@ async function syncCompanySubscription(org: { id: string; stripeSubscriptionId: 
     } else if (isCurrent) {
         await prisma.organization.update({ where: { id: org.id }, data: { stripeCustomerId: customerId, subscriptionStatus: status || null } });
     } else {
-        return; // an older subscription: nothing to do
+        return false; // an older subscription: nothing to do
     }
     console.log(`Org ${org.id} company billing: subscription ${subId} is ${status}`);
-    await companyChanged(org.id);
+    return true;
+}
+
+// Daily reconciliation of brokerage-paid plans. Seat counts are pushed to Stripe whenever a team changes, but that
+// call can fail (Stripe unreachable) and a webhook can be missed. For every brokerage with a subscription this
+// re-reads it from Stripe, stores its real status, makes Stripe charge for the seats the team has today and
+// recomputes the members' plans. Safe to run at any time; one brokerage failing never stops the others.
+export async function reconcileCompanyBilling(client: SubscriptionsClient | null = stripe): Promise<{ checked: number; corrected: number; failed: number }> {
+    const result = { checked: 0, corrected: 0, failed: 0 };
+    if (!client) return result;
+    const orgs = await prisma.organization.findMany({
+        where: { stripeSubscriptionId: { not: null } },
+        select: { id: true, stripeSubscriptionId: true, subscriptionStatus: true, companyPlan: true, companyCycle: true },
+    });
+    for (const org of orgs) {
+        result.checked++;
+        try {
+            const sub = await client.subscriptions.retrieve(org.stripeSubscriptionId!);
+            const status = String(sub?.status || '');
+            let corrected = false;
+            if (status !== (org.subscriptionStatus || '')) {
+                corrected = await recordCompanySubscription(org, sub, {}); // a missed webhook: e.g. cancelled or past due
+            }
+            if (await syncCompanySeats(org.id, client, sub)) corrected = true;
+            await refreshOrgTiers(org.id);
+            if (corrected) {
+                result.corrected++;
+                console.log(`[billing-reconcile] org ${org.id}: brought in line with Stripe (subscription ${org.stripeSubscriptionId}, ${status})`);
+            }
+        } catch (err: any) {
+            result.failed++;
+            console.error(`[billing-reconcile] org ${org.id} FAILED, will retry:`, err?.message || err);
+        }
+    }
+    if (result.checked) console.log(`[billing-reconcile] ${result.checked} checked, ${result.corrected} corrected, ${result.failed} failed`);
+    return result;
 }
 
 // Brings one member, or one brokerage, in line with a Stripe subscription. Safe to run repeatedly.

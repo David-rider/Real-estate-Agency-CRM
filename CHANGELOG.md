@@ -22,6 +22,8 @@
 ## [未发布]
 
 #### 新增 / Added
+- 公司代付的每日对账（配置 Stripe 后生效）：系统每天把每家代付公司的订阅和 Stripe 核对一次——团队现在有几位内部成员、各是什么档位，Stripe 就按这个数收费；成员加入或离开时如果当时没能通知到 Stripe，最迟第二天自动补上，离开的成员不会一直被收费。公司订阅已取消或扣款失败而系统没收到通知的，也会在对账时更正。某家公司核对失败时一小时后重试，不影响其他公司。
+  *Daily reconciliation of brokerage-paid plans (effective once Stripe is configured): once a day every paying brokerage's subscription is checked against Stripe, so Stripe charges for the internal members the team has today at each member's level. If Stripe could not be told when a member joined or left, it is corrected by the next day at the latest, and a member who left is not charged for indefinitely. A cancelled subscription or failed charge the system was never notified about is corrected too. A brokerage whose check fails is retried an hour later and never holds up the others.*
 - 付费套餐到期前的提醒（开始收费后生效）：宽限期内，登录后的每个页面顶部都有一条横幅，写明还剩几天、从哪一天起需要付费套餐，并可一键前往选择套餐；同时在还剩 14、7、3、1 天时各发一封邮件，宽限期结束时再发一封，邮件使用收件人自己的语言。公司已代付或一个人使用的账号不会收到提醒。
   *Reminders before a paid plan becomes required (effective once billing has started): during the grace period every signed-in page shows a banner with the days left and the date from which a paid plan is needed, with a one-click link to choose a plan; an email also goes out at 14, 7, 3 and 1 days left and once more when the grace period ends, in the recipient's own language. Accounts whose brokerage pays, or that work alone, get no reminders.*
 

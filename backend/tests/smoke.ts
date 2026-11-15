@@ -1383,6 +1383,18 @@ async function main() {
         assert.deepEqual([o.companyPlan, o.stripeSubscriptionId], [null, null]);
         assert.deepEqual(await tiers('co', 'co-a1', 'co-a3'), ['CORE', 'CORE', 'ELITE']);
         assert.equal((await call('GET', '/api/payments/company', owner)).body.active, false);
+
+        // Daily reconciliation: what must change on the Stripe subscription so it charges for today's seats
+        const { seatChanges, nextReconcileAt } = await import('../src/lib/billing');
+        const prices = { PRO: 'price_p', ELITE: 'price_e' };
+        const line = (id: string, price: string, quantity: number) => ({ id, price, quantity });
+        assert.deepEqual(seatChanges([line('si_p', 'price_p', 3), line('si_e', 'price_e', 1)], { PRO: 3, ELITE: 1 }, prices), [], 'already right: Stripe is not touched');
+        assert.deepEqual(seatChanges([line('si_p', 'price_p', 1)], { PRO: 2, ELITE: 1 }, prices), [{ id: 'si_p', quantity: 2 }, { price: 'price_e', quantity: 1 }], 'a missed seat and a missing level are added');
+        assert.deepEqual(seatChanges([line('si_p', 'price_p', 3), line('si_e', 'price_e', 2)], { PRO: 4, ELITE: 0 }, prices), [{ id: 'si_p', quantity: 4 }, { id: 'si_e', deleted: true }], 'a level nobody is on is removed');
+        assert.deepEqual(seatChanges([line('si_x', 'price_other', 9)], { PRO: 1, ELITE: 0 }, prices), [{ price: 'price_p', quantity: 1 }], 'lines for other prices are left alone');
+        assert.deepEqual(seatChanges([], { PRO: 2, ELITE: 0 }, { PRO: undefined, ELITE: 'price_e' }), [], 'a level without a configured price is skipped');
+        const hour = 60 * 60 * 1000;
+        assert.deepEqual([nextReconcileAt(0, 0), nextReconcileAt(0, 2)], [24 * hour, hour], 'daily; an hour later after a failure');
     });
 
     await step('security policy is saved and enforced', async () => {
