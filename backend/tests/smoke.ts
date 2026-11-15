@@ -1306,6 +1306,78 @@ async function main() {
         assert.equal((await call('GET', '/api/payments/status', solo)).body.hasSubscription, false);
     });
 
+    await step('billing: a brokerage can pay for its members, with a level per member and seats that follow the team', async () => {
+        const hook = (type: string, object: Record<string, unknown>) => call('POST', '/api/payments/webhook', undefined, { type, data: { object } });
+        const owner = await register('co');
+        const a1 = await joinOrg(owner, 'co-a1', 'AGENT');
+        const a2 = await joinOrg(owner, 'co-a2', 'AGENT');
+        const atty = await joinOrg(owner, 'co-atty', 'ATTORNEY');
+        const stranger = await register('co-stranger');
+        const user = async (label: string) => (await db().user.findUnique({ where: { email: `${label}-${run}@smoke.test` } }))!;
+        const org = async () => (await db().organization.findUnique({ where: { id: (await user('co')).orgId } }))!;
+        const tiers = async (...labels: string[]) => Promise.all(labels.map(async l => (await user(l)).tier));
+
+        // Only an admin sees or changes what the brokerage pays for
+        assert.equal((await call('GET', '/api/payments/company', a1.token)).status, 403);
+        assert.equal((await call('POST', '/api/payments/company/checkout', a1.token, { plan: 'PRO', cycle: 'MONTHLY' })).status, 403);
+        const before = await call('GET', '/api/payments/company', owner);
+        assert.equal(before.status, 200, JSON.stringify(before.body));
+        assert.deepEqual([before.body.active, before.body.members.length], [false, 3], 'three internal members; the attorney is not a paid seat');
+
+        const probe = await hook('ping', {});
+        if (probe.status === 503) return; // Stripe is not configured on this server: nothing more to check
+
+        // The brokerage's checkout finished: every internal member gets the chosen level, outside roles are untouched
+        const sub = (status: string) => ({ id: `sub_co_${run}`, status, customer: `cus_co_${run}`, metadata: {}, items: { data: [] } });
+        const orgId = (await org()).id;
+        const done = await hook('checkout.session.completed', { mode: 'subscription', status: 'complete', metadata: { orgId, companyPlan: 'PRO', companyCycle: 'MONTHLY' }, subscription: { ...sub('active'), metadata: { orgId } } });
+        assert.equal(done.status, 200, JSON.stringify(done.body));
+        let o = await org();
+        assert.deepEqual([o.companyPlan, o.companyCycle, o.stripeSubscriptionId, o.subscriptionStatus], ['PRO', 'MONTHLY', `sub_co_${run}`, 'active']);
+        assert.deepEqual(await tiers('co', 'co-a1', 'co-a2', 'co-atty'), ['PRO', 'PRO', 'PRO', 'CORE']);
+        assert.equal((await user('co-stranger')).tier, 'CORE', 'another brokerage is untouched');
+        assert.equal((await call('GET', '/api/payments/status', a1.token)).body.paidByCompany, true);
+        assert.equal((await call('GET', '/api/payments/status', atty.token)).body.paidByCompany, false);
+        // A covered member cannot also buy a plan (that would charge twice); the brokerage cannot check out twice
+        assert.equal((await call('POST', '/api/payments/checkout', a2.token, { planId: 'PRO_MONTHLY' })).status, 409);
+        assert.equal((await call('POST', '/api/payments/company/checkout', owner, { plan: 'PRO', cycle: 'MONTHLY' })).status, 409);
+
+        // The admin gives one member Elite: only that member's plan changes
+        assert.equal((await call('PATCH', `/api/payments/company/members/${a2.id}`, a1.token, { level: 'ELITE' })).status, 403);
+        assert.equal((await call('PATCH', `/api/payments/company/members/${a2.id}`, stranger, { level: 'ELITE' })).status, 404, 'not a member of that brokerage');
+        assert.equal((await call('PATCH', `/api/payments/company/members/${atty.id}`, owner, { level: 'ELITE' })).status, 404, 'outside roles have no seat');
+        const lvl = await call('PATCH', `/api/payments/company/members/${a2.id}`, owner, { level: 'ELITE' });
+        assert.deepEqual([lvl.status, lvl.body.tier], [200, 'ELITE'], JSON.stringify(lvl.body));
+        assert.deepEqual(await tiers('co', 'co-a1', 'co-a2'), ['PRO', 'PRO', 'ELITE']);
+        assert.equal((await call('GET', '/api/finance/projections', a2.token)).status, 200);
+        assert.equal((await call('GET', '/api/finance/projections', a1.token)).status, 403);
+
+        // A new member gets a seat and the brokerage's default level as soon as they join
+        const a3 = await joinOrg(owner, 'co-a3', 'AGENT');
+        assert.equal((await user('co-a3')).tier, 'PRO');
+        let seats = (await call('GET', '/api/payments/company', owner)).body;
+        assert.deepEqual([seats.active, seats.plan, seats.seats], [true, 'PRO', { PRO: 3, ELITE: 1 }]);
+        // Deactivating a member frees their seat
+        assert.equal((await call('DELETE', `/api/settings/users/${a2.id}`, owner)).status, 200);
+        seats = (await call('GET', '/api/payments/company', owner)).body;
+        assert.deepEqual(seats.seats, { PRO: 3, ELITE: 0 });
+        assert.equal((await user('co-a2')).tier, 'CORE');
+
+        // A member who also pays for themselves keeps the higher of the two plans
+        await hook('customer.subscription.created', { id: `sub_own_${run}`, status: 'active', customer: `cus_own_${run}`, metadata: { userId: a3.id }, items: { data: [{ price: { id: 'price_smoke_elite_a' } }] } });
+        assert.equal((await user('co-a3')).tier, 'ELITE');
+
+        // A failed charge keeps the seats while Stripe retries; when the brokerage's subscription ends, members
+        // fall back to what they pay for themselves
+        await hook('customer.subscription.updated', { ...sub('past_due'), metadata: { orgId } });
+        assert.deepEqual(await tiers('co', 'co-a1'), ['PRO', 'PRO']);
+        await hook('customer.subscription.deleted', { ...sub('canceled'), metadata: { orgId } });
+        o = await org();
+        assert.deepEqual([o.companyPlan, o.stripeSubscriptionId], [null, null]);
+        assert.deepEqual(await tiers('co', 'co-a1', 'co-a3'), ['CORE', 'CORE', 'ELITE']);
+        assert.equal((await call('GET', '/api/payments/company', owner)).body.active, false);
+    });
+
     await step('security policy is saved and enforced', async () => {
         if (!process.env.DATABASE_URL || !process.env.JWT_SECRET) {
             console.log('    (skipped: set DATABASE_URL and JWT_SECRET to run the security policy checks)');

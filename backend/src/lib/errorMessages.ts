@@ -131,6 +131,8 @@ export const ERROR_TEXT: Record<string, T3> = {
     "You already have a subscription. Use Manage billing to change or cancel it.": ["你已有订阅。请用“管理账单”更换或取消。", "您已有訂閱。請用「管理帳單」更換或取消。", "Ya tiene una suscripción. Use Gestionar facturación para cambiarla o cancelarla."],
     "A paid plan is required to work in a team. Choose Pro or Elite to continue.": ["在团队中使用需要付费套餐。请选择 Pro 或 Elite 后继续。", "在團隊中使用需要付費方案。請選擇 Pro 或 Elite 後繼續。", "Para trabajar en equipo se necesita un plan de pago. Elija Pro o Elite para continuar."],
     "Choose a paid plan for yourself before adding team members.": ["添加团队成员之前，请先为自己选择付费套餐。", "新增團隊成員之前，請先為自己選擇付費方案。", "Elija un plan de pago para usted antes de añadir miembros al equipo."],
+    "Your brokerage pays for your plan. Ask your admin to change your level.": ["你的套餐由公司支付。如需更换档位，请联系管理员。", "您的方案由公司支付。如需更換等級，請聯絡管理員。", "Su agencia paga su plan. Pida a su administrador que cambie su nivel."],
+    "Your brokerage already pays for its members. Use Manage billing to change or cancel it.": ["贵公司已在为成员付费。请用“管理账单”更改或取消。", "貴公司已在為成員付費。請用「管理帳單」更改或取消。", "Su agencia ya paga por sus miembros. Use Gestionar facturación para cambiarlo o cancelarlo."],
     "Your role does not need a paid plan.": ["你的角色不需要付费套餐。", "您的角色不需要付費方案。", "Su rol no necesita un plan de pago."],
     "Failed to load billing status": ["无法加载账单状态", "無法載入帳單狀態", "No se pudo cargar el estado de facturación"],
     "Invalid priority": ["优先级无效", "優先順序無效", "Prioridad no válida"],

@@ -901,7 +901,7 @@ const base = {
     upgrade: {
       title: "Choose the plan that fits your team",
       adminOnly: "Your role does not need a paid plan.",
-      subtitle: "Prices are per person. Working on your own is free; in a team of two or more, each member chooses Pro or Elite and pays for their own plan.",
+      subtitle: "Prices are per person. Working on your own is free; in a team of two or more, each member needs Pro or Elite — paid by the member, or by the brokerage for the whole team.",
       monthly: "Monthly",
       annual: "Annually",
       save: "2 months free",
@@ -1940,7 +1940,7 @@ const base = {
     upgrade: {
       title: "选择适合你团队的套餐",
       adminOnly: "你的角色不需要付费套餐。",
-      subtitle: "价格按人计算。一个人使用免费；两人及以上的团队，每位成员各自选择 Pro 或 Elite 并为自己的套餐付费。",
+      subtitle: "价格按人计算。一个人使用免费；两人及以上的团队，每位成员都需要 Pro 或 Elite——可以由成员自己付费，也可以由公司为整个团队付费。",
       monthly: "按月付款",
       annual: "按年付款",
       save: "省 2 个月",
@@ -2979,7 +2979,7 @@ const base = {
     upgrade: {
       title: "選擇適合您團隊的方案",
       adminOnly: "您的角色不需要付費方案。",
-      subtitle: "價格按人計算。一個人使用免費；兩人以上的團隊，每位成員各自選擇 Pro 或 Elite 並為自己的方案付費。",
+      subtitle: "價格按人計算。一個人使用免費；兩人以上的團隊，每位成員都需要 Pro 或 Elite——可以由成員自己付費，也可以由公司為整個團隊付費。",
       monthly: "按月付款",
       annual: "按年付款",
       save: "省 2 個月",
@@ -3781,7 +3781,7 @@ const base = {
     upgrade: {
       title: "Elige el plan adecuado para tu equipo",
       adminOnly: "Su rol no necesita un plan de pago.",
-      subtitle: "Los precios son por persona. Trabajar solo es gratis; en un equipo de dos o más, cada miembro elige Pro o Elite y paga su propio plan.",
+      subtitle: "Los precios son por persona. Trabajar solo es gratis; en un equipo de dos o más, cada miembro necesita Pro o Elite, pagado por el miembro o por la agencia para todo el equipo.",
       monthly: "Mensual",
       annual: "Anual",
       save: "2 meses gratis",

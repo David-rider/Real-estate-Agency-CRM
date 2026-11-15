@@ -7,7 +7,7 @@ import crypto from 'crypto';
 import { sendEmail, inviteEmail } from '../lib/email';
 import { EMAIL, Lang, isLang, normalizeLang } from '../lib/messages';
 import { getSeatUsage } from '../lib/seats';
-import { cancelMemberSubscription, inviterMustPay, PAY_BEFORE_INVITING } from './payments';
+import { cancelMemberSubscription, inviterMustPay, PAY_BEFORE_INVITING, companyChanged } from './payments';
 import { isBillableRole } from '../lib/billing';
 import { audit, diffFields } from '../lib/audit';
 import { parseEntry, ipAllowed, normalizeIp, enforcementDisabled as ipEnforcementDisabled, MAX_ENTRIES as MAX_IP_ENTRIES } from '../lib/ipAllowlist';
@@ -369,9 +369,10 @@ router.patch('/users/:id', authorizeRole(['SUPERADMIN', 'FIRMADMIN', 'MANAGER'])
 router.put('/users/:id/role', authorizeRole(['SUPERADMIN', 'FIRMADMIN']), async (req: AuthRequest, res) => {
     try {
         await changeRole(req, res);
+        if (req.user) await companyChanged(req.user.orgId); // a role change can add or free a paid seat
     } catch (error) {
         console.error(error);
-        res.status(500).json({ error: 'Failed to update user role' });
+        if (!res.headersSent) res.status(500).json({ error: 'Failed to update user role' });
     }
 });
 
@@ -433,6 +434,7 @@ router.patch('/users/:id/reactivate', authorizeRole(['SUPERADMIN', 'FIRMADMIN'])
             select: { id: true, name: true, isActive: true },
         });
         await audit(req, 'REACTIVATE_USER', 'User', target.id, { isActive: false }, { isActive: true });
+        await companyChanged(req.user.orgId); // the member takes a paid seat again if the brokerage pays
         res.json(updated);
     } catch (error) {
         console.error(error);

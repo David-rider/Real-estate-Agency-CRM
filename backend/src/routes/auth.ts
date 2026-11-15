@@ -10,6 +10,7 @@ import { authenticateToken, AuthRequest, setAuthCookie, clearAuthCookie, invalid
 import { passwordPolicyError, orgPasswordPolicy } from '../lib/passwordPolicy';
 import { EMAIL, Lang, isLang, normalizeLang } from '../lib/messages';
 import { getSeatUsage } from '../lib/seats';
+import { companyChanged } from './payments';
 import { orgSlug } from '../lib/slug';
 import { issueSession } from '../lib/session';
 import { ipAllowed, IP_BLOCKED } from '../lib/ipAllowlist';
@@ -374,6 +375,10 @@ router.post('/accept-invite', authLimiter, async (req, res) => {
                 preferredLanguage: normalizeLang(req.body.language),
             },
         });
+
+        // If the brokerage pays for its members, the new member gets a seat and their plan right away
+        await companyChanged(newUser.orgId);
+        newUser.tier = (await prisma.user.findUnique({ where: { id: newUser.id }, select: { tier: true } }))?.tier ?? newUser.tier;
 
         // Mark invitation as consumed (single-use)
         await prisma.invitation.update({

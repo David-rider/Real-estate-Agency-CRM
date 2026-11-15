@@ -41,10 +41,13 @@ model Organization {
   ipAllowlist                String[] @default([])
   // Custom contract-to-close checklist: [{ title, anchor: CONTRACT|CLOSING, offsetDays, priority }]; null = standard
   checklistTemplate          Json?
-  // Not used: billing is per member (see User.stripeCustomerId). Columns kept so no data-dropping migration is needed.
+  // Company-paid plans: the Stripe customer and subscription with which the brokerage pays for its internal members.
+  // companyPlan = the level given to members without their own setting (User.companyTier); null = the brokerage does not pay.
   stripeCustomerId     String? @unique
   stripeSubscriptionId String?
   subscriptionStatus   String?
+  companyPlan          Tier?
+  companyCycle         String?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
@@ -93,7 +96,11 @@ model User {
   gcalEmail         String?
   name              String
   role              Role         @default(AGENT)
+  // tier = the plan the member has: the higher of what they pay for themselves (selfTier) and what the brokerage pays for them
   tier              Tier         @default(CORE)
+  selfTier          Tier         @default(CORE)
+  // Level the brokerage pays for this member when it pays for its members; null = the brokerage default (Organization.companyPlan)
+  companyTier       Tier?
   preferredLanguage String       @default("en")
   orgId             String
   organization      Organization @relation(fields: [orgId], references: [id])
