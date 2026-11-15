@@ -202,6 +202,7 @@ export interface EmailStrings {
     invite: { subject: (org: string) => string; title: string; body: (inviter: string, org: string, role: string) => string; instruction: string; button: string; expires: string };
     notification: { greeting: (name: string) => string; button: string; footer: string; subject: (title: string) => string };
     loginAlert: { subject: string; title: string; body: (name: string) => string; device: string; ip: string; time: string; notYou: string; button: string; turnOff: string };
+    billing: { subject: (days: number) => string; subjectNow: string; title: string; body: (name: string, date: string, days: number) => string; bodyNow: (name: string) => string; how: string; button: string };
 }
 
 export const EMAIL: Record<Lang, EmailStrings> = {
@@ -233,6 +234,14 @@ export const EMAIL: Record<Lang, EmailStrings> = {
             notYou: "If this was you, there's nothing to do. If not, reset your password right away.",
             button: 'Reset Password', turnOff: 'You can turn these alerts off in Settings → Security.',
         },
+        billing: {
+            subject: (d) => d === 1 ? 'Choose your plan: 1 day left' : `Choose your plan: ${d} days left`, subjectNow: 'A paid plan is now required for your team',
+            title: 'Choose your plan',
+            body: (n, date, d) => `Hi ${n}, your team has two or more members, so from ${date} each member needs a paid plan (Pro or Elite). You have ${d === 1 ? '1 day' : `${d} days`} left. Until then everything works as usual.`,
+            bodyNow: (n) => `Hi ${n}, your team has two or more members and the free period has ended. Choose Pro or Elite to keep working. Your data is safe and waiting for you.`,
+            how: 'You can pay for your own plan, or your brokerage admin can pay for the whole team from the same page.',
+            button: 'Choose a plan',
+        },
     },
     'zh-CN': {
         footerNote: '房产经纪 CRM · 纽约',
@@ -261,6 +270,14 @@ export const EMAIL: Record<Lang, EmailStrings> = {
             device: '设备', ip: 'IP 地址', time: '时间',
             notYou: '如果是你本人，无需任何操作；如果不是，请立即重置密码。',
             button: '重置密码', turnOff: '你可以在“设置 → 安全”中关闭此提醒。',
+        },
+        billing: {
+            subject: (d) => `请选择套餐：还剩 ${d} 天`, subjectNow: '你的团队现在需要付费套餐',
+            title: '请选择套餐',
+            body: (n, date, d) => `${n}，你好！你的团队有两位或更多成员，从 ${date} 起每位成员都需要付费套餐（Pro 或 Elite）。还剩 ${d} 天，在此之前一切照常使用。`,
+            bodyNow: (n) => `${n}，你好！你的团队有两位或更多成员，免费使用期已结束。请选择 Pro 或 Elite 后继续使用。你的数据完好保留。`,
+            how: '你可以为自己的套餐付费，也可以由公司管理员在同一页面为整个团队付费。',
+            button: '选择套餐',
         },
     },
     'zh-TW': {
@@ -291,6 +308,14 @@ export const EMAIL: Record<Lang, EmailStrings> = {
             notYou: '如果是你本人，無需任何操作；如果不是，請立即重設密碼。',
             button: '重設密碼', turnOff: '你可以在「設定 → 安全」中關閉此提醒。',
         },
+        billing: {
+            subject: (d) => `請選擇方案：還剩 ${d} 天`, subjectNow: '您的團隊現在需要付費方案',
+            title: '請選擇方案',
+            body: (n, date, d) => `${n}，您好！您的團隊有兩位或更多成員，從 ${date} 起每位成員都需要付費方案（Pro 或 Elite）。還剩 ${d} 天，在此之前一切照常使用。`,
+            bodyNow: (n) => `${n}，您好！您的團隊有兩位或更多成員，免費使用期已結束。請選擇 Pro 或 Elite 後繼續使用。您的資料完好保留。`,
+            how: '您可以為自己的方案付費，也可以由公司管理員在同一頁面為整個團隊付費。',
+            button: '選擇方案',
+        },
     },
     es: {
         footerNote: 'CRM para corredurías inmobiliarias · Nueva York',
@@ -319,6 +344,14 @@ export const EMAIL: Record<Lang, EmailStrings> = {
             device: 'Dispositivo', ip: 'Dirección IP', time: 'Hora',
             notYou: 'Si fue usted, no tiene que hacer nada. Si no, restablezca su contraseña de inmediato.',
             button: 'Restablecer contraseña', turnOff: 'Puede desactivar estas alertas en Configuración → Seguridad.',
+        },
+        billing: {
+            subject: (d) => d === 1 ? 'Elija su plan: queda 1 día' : `Elija su plan: quedan ${d} días`, subjectNow: 'Su equipo ahora necesita un plan de pago',
+            title: 'Elija su plan',
+            body: (n, date, d) => `Hola ${n}, su equipo tiene dos o más miembros, así que a partir del ${date} cada miembro necesita un plan de pago (Pro o Elite). ${d === 1 ? 'Queda 1 día' : `Quedan ${d} días`}. Hasta entonces todo funciona como siempre.`,
+            bodyNow: (n) => `Hola ${n}, su equipo tiene dos o más miembros y el periodo gratuito ha terminado. Elija Pro o Elite para seguir trabajando. Sus datos están a salvo.`,
+            how: 'Puede pagar su propio plan, o el administrador de su agencia puede pagar por todo el equipo desde la misma página.',
+            button: 'Elegir un plan',
         },
     },
 };

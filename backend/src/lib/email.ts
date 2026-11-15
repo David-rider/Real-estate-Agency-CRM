@@ -140,6 +140,17 @@ export function loginAlertEmail(d: { name: string; device: string; ip: string; w
 ${shellFoot(lang)}`;
 }
 
+// Sent during the grace period (daysLeft > 0) and once when a plan has become required (daysLeft = 0)
+export function billingReminderEmail(d: { name: string; date: string; daysLeft: number; upgradeUrl: string }, lang: Lang = 'en'): EmailOptions['html'] {
+    const t = EMAIL[lang].billing;
+    return `${SHELL_HEAD}
+    <div style="font-size:24px; font-weight:700; color:#111; margin-bottom:8px;">${t.title}</div>
+    <p style="color:#374151; margin:0 0 12px;">${d.daysLeft > 0 ? t.body(escapeHtml(d.name), escapeHtml(d.date), d.daysLeft) : t.bodyNow(escapeHtml(d.name))}</p>
+    <p style="color:#6b7280; margin:0 0 24px;">${t.how}</p>
+    <a href="${d.upgradeUrl}" style="${BUTTON}">${t.button}</a>
+${shellFoot(lang)}`;
+}
+
 export function appointmentReminderEmail(details: { clientName: string; date: string; address: string; agentName: string }): EmailOptions['html'] {
     return `
 <!DOCTYPE html>

@@ -21,6 +21,14 @@
 
 ## [未发布]
 
+#### 新增 / Added
+- 付费套餐到期前的提醒（开始收费后生效）：宽限期内，登录后的每个页面顶部都有一条横幅，写明还剩几天、从哪一天起需要付费套餐，并可一键前往选择套餐；同时在还剩 14、7、3、1 天时各发一封邮件，宽限期结束时再发一封，邮件使用收件人自己的语言。公司已代付或一个人使用的账号不会收到提醒。
+  *Reminders before a paid plan becomes required (effective once billing has started): during the grace period every signed-in page shows a banner with the days left and the date from which a paid plan is needed, with a one-click link to choose a plan; an email also goes out at 14, 7, 3 and 1 days left and once more when the grace period ends, in the recipient's own language. Accounts whose brokerage pays, or that work alone, get no reminders.*
+
+#### 变更 / Changed
+- 1.5.6.0 已部署，线上已确认（2026-11-14，`GET /api/health` 返回 `1.5.6.0`）。
+  *1.5.6.0 is deployed and confirmed live (2026-11-14, `GET /api/health` returns `1.5.6.0`).*
+
 ---
 
 ## [1.5.6.0] — 2026-11-14 · 安全与逻辑审查修复、按人收费（成员自付或公司代付）、套餐文案如实化、Google 日历实时同步 / Security and logic audit fixes, per-member billing (paid by the member or by the brokerage), truthful plan copy, Google Calendar instant sync

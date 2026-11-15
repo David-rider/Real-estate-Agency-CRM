@@ -1240,6 +1240,13 @@ async function main() {
         assert.equal(planRequired(fresh, 2, start, at(6)), true, 'a team of two needs paid plans');
         assert.equal(planRequired(old, 2, start, at(10)), false);
         assert.deepEqual(['/api/payments/status', '/api/auth/logout', '/api/settings/profile?x=1', '/api/clients', '/api/settings/org'].map(openWhilePlanRequired), [true, true, true, false, false]);
+        // Reminder emails: 14, 7, 3 and 1 days before the grace period ends, then once when a plan is required; each only once
+        const { reminderStage } = await import('../src/lib/billing');
+        const end = at(30);
+        const stageAt = (d: number, last: number | null) => reminderStage(end, last, new Date(end.getTime() - d * day));
+        assert.deepEqual([stageAt(20, null), stageAt(14, null), stageAt(10, null), stageAt(7, 14), stageAt(3, 7), stageAt(1, 3), stageAt(0, 1), stageAt(-1, 1)], [null, 14, 14, 7, 3, 1, 0, 0]);
+        assert.deepEqual([stageAt(10, 14), stageAt(7, 7), stageAt(0.5, 1), stageAt(-1, 0), stageAt(-5, null)], [null, null, null, null, null], 'never twice, and nothing long after');
+        assert.equal(stageAt(2, null), 3, 'a member who qualifies late gets the reminder that fits the time left');
 
         const hook = (type: string, object: Record<string, unknown>) => call('POST', '/api/payments/webhook', undefined, { type, data: { object } });
         const owner = await register('bill');

@@ -101,6 +101,8 @@ model User {
   selfTier          Tier         @default(CORE)
   // Level the brokerage pays for this member when it pays for its members; null = the brokerage default (Organization.companyPlan)
   companyTier       Tier?
+  // Last "choose a plan" reminder emailed during the grace period (days left: 14, 7, 3, 1, 0); null = none yet
+  billingReminderStage Int?
   preferredLanguage String       @default("en")
   orgId             String
   organization      Organization @relation(fields: [orgId], references: [id])
