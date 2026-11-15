@@ -278,6 +278,8 @@ const en = {
     secureCheckout: "Secure Checkout", redirectNotice: "You will be redirected to Stripe to complete your payment securely.",
     noCardStored: "We never see or store your card details.",
     manageBilling: "Manage billing", manageBillingHint: "Change your plan, update your card, download invoices or cancel — on Stripe's secure page.",
+    planRequiredNotice: "Your team has two or more members, so each member needs a paid plan. Choose Pro or Elite to continue.",
+    graceNotice: "Your team has two or more members. From {date}, each member needs a paid plan — choose Pro or Elite before then to keep working.",
   },
   listings: {
     publicPage: "Public page", openHouseLink: "Copy open-house sign-in link", linkCopied: "Link copied — print it as a QR code at the door", aiDescribe: "AI description",
@@ -671,6 +673,8 @@ const zhCN: Dict = {
     secureCheckout: "安全结账", redirectNotice: "您将跳转至 Stripe 安全完成支付。",
     noCardStored: "我们绝不会查看或存储您的银行卡信息。",
     manageBilling: "管理账单", manageBillingHint: "更换套餐、更新银行卡、下载发票或取消订阅，都在 Stripe 的安全页面上完成。",
+    planRequiredNotice: "你的团队有两位或更多成员，每位成员都需要付费套餐。请选择 Pro 或 Elite 后继续使用。",
+    graceNotice: "你的团队有两位或更多成员。从 {date} 起，每位成员都需要付费套餐——请在此之前选择 Pro 或 Elite，以便继续使用。",
   },
   listings: {
     publicPage: "公开页面", openHouseLink: "复制开放日签到链接", linkCopied: "链接已复制——可打印成二维码放在门口", aiDescribe: "AI 写文案",
@@ -1062,6 +1066,8 @@ const zhTW: Dict = {
     secureCheckout: "安全結帳", redirectNotice: "您將跳轉至 Stripe 安全完成付款。",
     noCardStored: "我們絕不會查看或儲存您的信用卡資訊。",
     manageBilling: "管理帳單", manageBillingHint: "更換方案、更新信用卡、下載發票或取消訂閱，都在 Stripe 的安全頁面上完成。",
+    planRequiredNotice: "您的團隊有兩位或更多成員，每位成員都需要付費方案。請選擇 Pro 或 Elite 後繼續使用。",
+    graceNotice: "您的團隊有兩位或更多成員。從 {date} 起，每位成員都需要付費方案——請在此之前選擇 Pro 或 Elite，以便繼續使用。",
   },
   listings: {
     publicPage: "公開頁面", openHouseLink: "複製開放參觀簽到連結", linkCopied: "連結已複製——可列印成 QR code 放在門口", aiDescribe: "AI 撰寫文案",
@@ -1453,6 +1459,8 @@ const es: Dict = {
     secureCheckout: "Pago seguro", redirectNotice: "Serás redirigido a Stripe para completar tu pago de forma segura.",
     noCardStored: "Nunca vemos ni almacenamos los datos de tu tarjeta.",
     manageBilling: "Gestionar facturación", manageBillingHint: "Cambia de plan, actualiza tu tarjeta, descarga facturas o cancela, en la página segura de Stripe.",
+    planRequiredNotice: "Tu equipo tiene dos o más miembros, así que cada miembro necesita un plan de pago. Elige Pro o Elite para continuar.",
+    graceNotice: "Tu equipo tiene dos o más miembros. A partir del {date}, cada miembro necesita un plan de pago: elige Pro o Elite antes de esa fecha para seguir trabajando.",
   },
   listings: {
     publicPage: "Página pública", openHouseLink: "Copiar enlace de registro del open house", linkCopied: "Enlace copiado: imprímelo como código QR en la entrada", aiDescribe: "Descripción con IA",

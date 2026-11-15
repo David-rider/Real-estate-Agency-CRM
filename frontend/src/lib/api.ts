@@ -41,6 +41,10 @@ export async function api<T = any>(path: string, options: { method?: string; bod
     localStorage.removeItem("user");
     window.location.href = "/login";
   }
+  // 402: this member must choose a paid plan before working in a team
+  if (res.status === 402 && data?.code === "PLAN_REQUIRED" && typeof window !== "undefined" && !window.location.pathname.startsWith("/upgrade")) {
+    window.location.href = "/upgrade";
+  }
   if (!res.ok) throw new ApiError(res.status, data);
   return data as T;
 }

@@ -1,3 +1,4 @@
+import { billingStart, mustPay, FREE_ROLES, openWhilePlanRequired, PLAN_REQUIRED } from '../lib/billing';
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../server';
@@ -86,6 +87,8 @@ interface CachedAccount {
     logoutOnPasswordChange: boolean;
     ipAllowlist: string[];
     policies: OrgPolicies;
+    // Per-member billing: true while this member must choose a paid plan before working in a team
+    planRequired: boolean;
 }
 const accountCache = new Map<string, { at: number; user: CachedAccount | null }>();
 
@@ -105,10 +108,17 @@ async function currentAccount(userId: string) {
     const u = await prisma.user.findUnique({
         where: { id: userId },
         select: {
-            role: true, tier: true, orgId: true, isActive: true, passwordChangedAt: true, sessionsRevokedAt: true, preferredLanguage: true,
+            role: true, tier: true, orgId: true, isActive: true, createdAt: true, passwordChangedAt: true, sessionsRevokedAt: true, preferredLanguage: true,
             organization: { select: { sessionTimeoutMinutes: true, logoutOnPasswordChange: true, ipAllowlist: true, policies: true } },
         },
     });
+    let planNeeded = false;
+    const start = billingStart();
+    if (u && u.isActive && mustPay(u, start)) {
+        // Only counted for unpaid members once billing is on, so it costs nothing otherwise
+        const internalMembers = await prisma.user.count({ where: { orgId: u.orgId, isActive: true, role: { notIn: FREE_ROLES as any } } });
+        planNeeded = internalMembers > 1;
+    }
     const user: CachedAccount | null = u && u.isActive ? {
         role: u.role, tier: u.tier, orgId: u.orgId, lang: u.preferredLanguage,
         passwordChangedAtSec: u.passwordChangedAt ? Math.floor(u.passwordChangedAt.getTime() / 1000) : null,
@@ -117,6 +127,7 @@ async function currentAccount(userId: string) {
         logoutOnPasswordChange: u.organization.logoutOnPasswordChange,
         ipAllowlist: u.organization.ipAllowlist,
         policies: normalizeOrgPolicies(u.organization.policies),
+        planRequired: planNeeded,
     } : null;
     accountCache.set(userId, { at: Date.now(), user });
     if (accountCache.size > 5000) accountCache.clear();
@@ -181,6 +192,8 @@ export const authenticateToken = async (req: AuthRequest, res: Response, next: N
                 return res.status(401).json({ error: 'Your password was changed. Please sign in again.', code: 'PASSWORD_CHANGED' });
             }
         }
+        // 402: signed in, but this member has to choose a paid plan first (paying and the profile stay open)
+        if (account.planRequired && !openWhilePlanRequired(req.originalUrl)) return res.status(402).json(PLAN_REQUIRED);
         req.user = { userId: decoded.userId, role: account.role, tier: account.tier, orgId: account.orgId, policies: account.policies, lang: account.lang };
         next();
     } catch (err) {

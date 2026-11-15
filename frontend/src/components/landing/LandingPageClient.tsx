@@ -110,7 +110,7 @@ const COPY: Record<string, LandingCopy> = {
       },
       {
         q: "Is there a free plan available?",
-        a: "Yes. The Core plan is free and includes the full CRM for up to 3 team members. No credit card required.",
+        a: "Yes. The Core plan is free for one person and includes the full CRM. No credit card required. In a team of two or more, each member chooses Pro or Elite.",
       },
       {
         q: "How does commission tracking work?",
@@ -197,7 +197,7 @@ const COPY: Record<string, LandingCopy> = {
       },
       {
         q: "有免费版本可以使用吗？",
-        a: "有的。Core 套餐免费，包含完整的 CRM 功能，最多 3 位团队成员，注册时无需绑定信用卡。",
+        a: "有的。Core 套餐供一个人免费使用，包含完整的 CRM 功能，注册时无需绑定信用卡。两人及以上的团队，每位成员各自选择 Pro 或 Elite。",
       },
       {
         q: "如何切换中文或其他语言界面？",
@@ -284,7 +284,7 @@ const COPY: Record<string, LandingCopy> = {
       },
       {
         q: "有免費版本可以使用嗎？",
-        a: "有的。Core 方案免費，包含完整的 CRM 功能，最多 3 位團隊成員，註冊時無需綁定信用卡。",
+        a: "有的。Core 方案供一個人免費使用，包含完整的 CRM 功能，註冊時無需綁定信用卡。兩人以上的團隊，每位成員各自選擇 Pro 或 Elite。",
       },
       {
         q: "如何切換中文或其他語言介面？",
@@ -372,7 +372,7 @@ const COPY: Record<string, LandingCopy> = {
       },
       {
         q: "¿Hay un plan gratuito?",
-        a: "Sí. El plan Core es gratuito e incluye el CRM completo para hasta 3 miembros del equipo. No se necesita tarjeta de crédito.",
+        a: "Sí. El plan Core es gratuito para una persona e incluye el CRM completo. No se necesita tarjeta de crédito. En un equipo de dos o más, cada miembro elige Pro o Elite.",
       },
       {
         q: "¿Cómo cambio el idioma de la plataforma?",

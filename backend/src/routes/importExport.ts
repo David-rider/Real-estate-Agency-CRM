@@ -4,6 +4,7 @@ import { parse } from 'csv-parse/sync';
 import { prisma } from '../server';
 import { AuthRequest } from '../middleware/authMiddleware';
 import { getSeatUsage } from '../lib/seats';
+import { inviterMustPay, PAY_BEFORE_INVITING } from './payments';
 import { audit } from '../lib/audit';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
@@ -73,7 +74,8 @@ router.post('/import', upload.single('file'), async (req: AuthRequest, res) => {
         const skipped: string[] = [];
         const seats = await getSeatUsage(req.user.orgId);
         let used = seats.users + seats.pendingInvites;
-        const tier = ORG_SUB_TO_TIER[seats.subscription] || 'CORE';
+        const tier = 'CORE' as const; // billing is per member: each member chooses and pays for their own plan
+        if (await inviterMustPay(req.user.userId)) return res.status(403).json({ error: PAY_BEFORE_INVITING });
         // Bulk import can create staff roles, never platform or firm admins
         const IMPORTABLE_ROLES = ['AGENT', 'MANAGER', 'OFFICE_SUPPORT', 'MARKETING'];
 

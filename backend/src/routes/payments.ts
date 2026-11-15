@@ -1,14 +1,10 @@
 import { appUrl as getAppUrl } from '../lib/appUrl';
 import express from 'express';
-import Stripe from 'stripe';
 import { prisma } from '../server';
-import { authenticateToken, AuthRequest, clearAccountCache } from '../middleware/authMiddleware';
+import { authenticateToken, AuthRequest, invalidateAccount } from '../middleware/authMiddleware';
+import { stripe, isBillableRole, billingStart, graceEndsAt, planRequired, mustPay, FREE_ROLES } from '../lib/billing';
 
 const router = express.Router();
-
-const stripe = process.env.STRIPE_SECRET_KEY
-    ? new Stripe(process.env.STRIPE_SECRET_KEY)
-    : null;
 
 const PLAN_PRICES: Record<string, string | undefined> = {
     PRO_MONTHLY: process.env.STRIPE_PRICE_PRO_MONTHLY,
@@ -25,30 +21,12 @@ for (const [plan, price] of Object.entries(PLAN_PRICES)) {
     if (price) PRICE_TIER[price] = plan.startsWith('ELITE') ? 'ELITE' : 'PRO';
 }
 
-// Subscription is ORG-LEVEL: purchasing upgrades the whole organization.
-// User.tier mirrors the org subscription so requireTier keeps working.
-const TIER_TO_ORG_SUB: Record<Tier, 'BASIC' | 'PRO' | 'ENTERPRISE'> = {
-    CORE: 'BASIC',
-    PRO: 'PRO',
-    ELITE: 'ENTERPRISE',
-};
+const NO_PLAN_NEEDED = 'Your role does not need a paid plan.';
 
-const BILLING_ADMINS = ['SUPERADMIN', 'FIRMADMIN'];
-const ADMIN_ONLY = 'Only your Firm Admin can manage the subscription. Please contact them to upgrade.';
-
-// Applies a plan to the whole organization, together with the Stripe references that go with it
-async function applyOrgTier(orgId: string, tier: Tier, billing: { stripeCustomerId?: string; stripeSubscriptionId?: string | null; subscriptionStatus?: string | null } = {}) {
-    await prisma.$transaction([
-        prisma.organization.update({
-            where: { id: orgId },
-            data:  { subscription: TIER_TO_ORG_SUB[tier], ...billing },
-        }),
-        prisma.user.updateMany({
-            where: { orgId },
-            data:  { tier },
-        }),
-    ]);
-    clearAccountCache(); // the new plan applies on the next request, not 30 s later
+// Billing is PER MEMBER (see lib/billing.ts): a subscription belongs to one user and sets that user's plan only.
+async function applyUserTier(userId: string, tier: Tier, billing: { stripeCustomerId?: string; stripeSubscriptionId?: string | null; subscriptionStatus?: string | null } = {}) {
+    await prisma.user.update({ where: { id: userId }, data: { tier, ...billing } });
+    invalidateAccount(userId); // the new plan applies on the next request, not 30 s later
 }
 
 const idOf = (v: unknown): string | null =>
@@ -70,73 +48,114 @@ function tierOfSubscription(sub: any): Tier | null {
     return tier;
 }
 
-// Brings one organization in line with a Stripe subscription. Safe to run repeatedly.
-// The organization is found by its stored Stripe customer, or by the orgId this server wrote into the metadata.
-async function syncSubscription(sub: any, orgIdHint?: string | null): Promise<Tier | null> {
+// Brings one member in line with a Stripe subscription. Safe to run repeatedly.
+// The member is found by their stored Stripe customer, or by the userId this server wrote into the metadata.
+async function syncSubscription(sub: any, userIdHint?: string | null): Promise<Tier | null> {
     const customerId = idOf(sub?.customer);
     const subId = idOf(sub);
     if (!customerId || !subId) return null;
 
-    let org = await prisma.organization.findUnique({ where: { stripeCustomerId: customerId } });
-    if (!org) {
-        const orgId = orgIdHint || sub?.metadata?.orgId;
-        if (typeof orgId === 'string' && orgId) {
-            const candidate = await prisma.organization.findUnique({ where: { id: orgId } });
-            // Never re-point a brokerage that already belongs to another Stripe customer
-            if (candidate && !candidate.stripeCustomerId) org = candidate;
+    let user = await prisma.user.findUnique({ where: { stripeCustomerId: customerId } });
+    if (!user) {
+        const userId = userIdHint || sub?.metadata?.userId;
+        if (typeof userId === 'string' && userId) {
+            const candidate = await prisma.user.findUnique({ where: { id: userId } });
+            // Never re-point a member who already belongs to another Stripe customer
+            if (candidate && !candidate.stripeCustomerId) user = candidate;
         }
     }
-    if (!org) {
-        console.error(`Stripe subscription ${subId}: no brokerage matches customer ${customerId}`);
+    if (!user) {
+        console.error(`Stripe subscription ${subId}: no member matches customer ${customerId}`);
         return null;
     }
 
     const tier = tierOfSubscription(sub);
-    const isCurrent = !org.stripeSubscriptionId || org.stripeSubscriptionId === subId;
+    const isCurrent = !user.stripeSubscriptionId || user.stripeSubscriptionId === subId;
     // An older subscription ending must not take away the plan paid for by the current one
     if (!isCurrent && tier === 'CORE') return null;
     if (tier === null) {
         if (isCurrent) {
-            await prisma.organization.update({ where: { id: org.id }, data: { stripeCustomerId: customerId, subscriptionStatus: String(sub.status || '') || null } });
+            await prisma.user.update({ where: { id: user.id }, data: { stripeCustomerId: customerId, subscriptionStatus: String(sub.status || '') || null } });
         }
         return null;
     }
-    await applyOrgTier(org.id, tier, {
+    await applyUserTier(user.id, tier, {
         stripeCustomerId: customerId,
         stripeSubscriptionId: tier === 'CORE' ? null : subId,
         subscriptionStatus: String(sub.status || '') || null,
     });
-    console.log(`Org ${org.id} plan is now ${tier} (Stripe subscription ${subId}, ${sub.status})`);
+    console.log(`User ${user.id} plan is now ${tier} (Stripe subscription ${subId}, ${sub.status})`);
     return tier;
 }
 
-// A finished Checkout Session: apply the subscription it created to the brokerage that started it
+// A finished Checkout Session: apply the subscription it created to the member who started it
 async function applyCheckoutSession(session: any): Promise<Tier | null> {
     if (session?.mode && session.mode !== 'subscription') return null;
     if (session?.status && session.status !== 'complete') return null;
-    let orgId: string | null = session?.metadata?.orgId || null;
-    if (!orgId) {
-        // Sessions created before orgId was recorded only carry the purchaser's user id
-        const userId = session?.metadata?.userId || session?.client_reference_id;
-        const purchaser = userId ? await prisma.user.findUnique({ where: { id: String(userId) }, select: { orgId: true } }) : null;
-        orgId = purchaser?.orgId || null;
-    }
     if (!session?.subscription) return null;
+    const userId = session?.metadata?.userId || session?.client_reference_id || null;
     const sub = typeof session.subscription === 'string'
         ? await stripe!.subscriptions.retrieve(session.subscription)
         : session.subscription;
-    return syncSubscription(sub, orgId);
+    return syncSubscription(sub, userId ? String(userId) : null);
 }
 
-// POST /api/payments/checkout — create Stripe Checkout Session
+// Once plans are required, a member still on the free plan must upgrade before adding team members
+// (a team of two or more needs every internal member on a paid plan).
+export const PAY_BEFORE_INVITING = 'Choose a paid plan for yourself before adding team members.';
+export async function inviterMustPay(userId: string): Promise<boolean> {
+    const start = billingStart();
+    if (!start) return false;
+    const u = await prisma.user.findUnique({ where: { id: userId }, select: { role: true, tier: true, createdAt: true } });
+    return !!u && mustPay(u, start);
+}
+
+// A member who leaves the brokerage (deactivated) must stop being charged.
+// Best effort: a Stripe failure is logged and never blocks the deactivation.
+export async function cancelMemberSubscription(userId: string): Promise<void> {
+    try {
+        const user = await prisma.user.findUnique({ where: { id: userId }, select: { stripeSubscriptionId: true, tier: true } });
+        if (!user) return;
+        if (stripe && user.stripeSubscriptionId) await stripe.subscriptions.cancel(user.stripeSubscriptionId);
+        if (user.stripeSubscriptionId || user.tier !== 'CORE') {
+            await applyUserTier(userId, 'CORE', { stripeSubscriptionId: null, subscriptionStatus: user.stripeSubscriptionId ? 'canceled' : null });
+        }
+    } catch (err: any) {
+        console.error(`Could not cancel the subscription of user ${userId}:`, err?.message || err);
+    }
+}
+
+// GET /api/payments/status — the caller's own plan, and whether (and from when) a paid plan is required
+router.get('/status', authenticateToken, async (req: AuthRequest, res) => {
+    try {
+        if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+        const user = await prisma.user.findUnique({ where: { id: req.user.userId }, select: { role: true, tier: true, createdAt: true, stripeSubscriptionId: true, subscriptionStatus: true } });
+        if (!user) return res.status(404).json({ error: 'User not found' });
+        const start = billingStart();
+        const internalMembers = await prisma.user.count({ where: { orgId: req.user.orgId, isActive: true, role: { notIn: FREE_ROLES as any } } });
+        const inTeam = internalMembers > 1;
+        const grace = graceEndsAt(user, start);
+        res.json({
+            tier: user.tier,
+            billable: isBillableRole(user.role),
+            hasSubscription: Boolean(user.stripeSubscriptionId),
+            subscriptionStatus: user.subscriptionStatus,
+            // A plan is needed now (blocked until one is chosen)
+            planRequired: planRequired(user, internalMembers, start),
+            // Still free for now, but a plan will be needed on this date
+            graceEndsAt: start && inTeam && isBillableRole(user.role) && user.tier === 'CORE' && grace && grace.getTime() > Date.now() ? grace.toISOString() : null,
+        });
+    } catch (error) {
+        console.error('Billing status error:', error);
+        res.status(500).json({ error: 'Failed to load billing status' });
+    }
+});
+
+// POST /api/payments/checkout — a member buys a plan for themselves
 router.post('/checkout', authenticateToken, async (req: AuthRequest, res) => {
     try {
         if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
-
-        // Billing is org-wide — only org admins may purchase
-        if (!BILLING_ADMINS.includes(req.user.role)) {
-            return res.status(403).json({ error: ADMIN_ONLY });
-        }
+        if (!isBillableRole(req.user.role)) return res.status(403).json({ error: NO_PLAN_NEEDED });
 
         if (!stripe) return res.status(503).json({ error: 'Payment service not configured. Set STRIPE_SECRET_KEY.' });
 
@@ -144,22 +163,19 @@ router.post('/checkout', authenticateToken, async (req: AuthRequest, res) => {
         const priceId = typeof planId === 'string' ? PLAN_PRICES[planId] : undefined;
         if (!priceId) return res.status(400).json({ error: 'Invalid plan ID' });
 
-        const [org, user] = await Promise.all([
-            prisma.organization.findUnique({ where: { id: req.user.orgId } }),
-            prisma.user.findUnique({ where: { id: req.user.userId }, select: { email: true } }),
-        ]);
-        if (!org || !user) return res.status(404).json({ error: 'User not found' });
+        const user = await prisma.user.findUnique({ where: { id: req.user.userId } });
+        if (!user) return res.status(404).json({ error: 'User not found' });
 
-        // One subscription per brokerage: a second checkout would bill twice. Changes go through the billing page.
-        if (org.stripeSubscriptionId && org.subscription !== 'BASIC') {
-            return res.status(409).json({ error: 'Your brokerage already has a subscription. Use Manage billing to change or cancel it.' });
+        // One subscription per member: a second checkout would bill twice. Changes go through the billing page.
+        if (user.stripeSubscriptionId && user.tier !== 'CORE') {
+            return res.status(409).json({ error: 'You already have a subscription. Use Manage billing to change or cancel it.' });
         }
 
-        let customerId = org.stripeCustomerId;
+        let customerId = user.stripeCustomerId;
         if (!customerId) {
-            const customer = await stripe.customers.create({ email: user.email, name: org.name, metadata: { orgId: org.id } });
+            const customer = await stripe.customers.create({ email: user.email, name: user.name, metadata: { userId: user.id } });
             customerId = customer.id;
-            await prisma.organization.update({ where: { id: org.id }, data: { stripeCustomerId: customerId } });
+            await prisma.user.update({ where: { id: user.id }, data: { stripeCustomerId: customerId } });
         }
 
         const appUrl = getAppUrl();
@@ -170,9 +186,9 @@ router.post('/checkout', authenticateToken, async (req: AuthRequest, res) => {
             line_items: [{ price: priceId, quantity: 1 }],
             success_url: `${appUrl}/upgrade?success=true&session_id={CHECKOUT_SESSION_ID}`,
             cancel_url: `${appUrl}/upgrade?canceled=true`,
-            client_reference_id: org.id,
-            metadata: { planId, orgId: org.id, userId: req.user.userId },
-            subscription_data: { metadata: { orgId: org.id } },
+            client_reference_id: user.id,
+            metadata: { planId, userId: user.id },
+            subscription_data: { metadata: { userId: user.id } },
         });
 
         res.json({ sessionId: session.id, url: session.url });
@@ -183,7 +199,7 @@ router.post('/checkout', authenticateToken, async (req: AuthRequest, res) => {
 });
 
 // POST /api/payments/confirm — called when the buyer returns from Stripe, so the plan is applied
-// even if the webhook has not arrived yet. The session must belong to the caller's brokerage.
+// even if the webhook has not arrived yet. The session must be the caller's own.
 router.post('/confirm', authenticateToken, async (req: AuthRequest, res) => {
     try {
         if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
@@ -193,7 +209,7 @@ router.post('/confirm', authenticateToken, async (req: AuthRequest, res) => {
             return res.status(400).json({ error: 'Invalid checkout session' });
         }
         const session = await stripe.checkout.sessions.retrieve(sessionId, { expand: ['subscription'] });
-        if (session.metadata?.orgId !== req.user.orgId) return res.status(400).json({ error: 'Invalid checkout session' });
+        if (session.metadata?.userId !== req.user.userId) return res.status(400).json({ error: 'Invalid checkout session' });
         const tier = await applyCheckoutSession(session);
         res.json({ applied: tier !== null, tier });
     } catch (error: any) {
@@ -248,18 +264,17 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
     res.json({ received: true });
 });
 
-// GET /api/payments/portal — Stripe Customer Portal for the brokerage's own subscription
+// GET /api/payments/portal — Stripe Customer Portal for the caller's own subscription
 router.get('/portal', authenticateToken, async (req: AuthRequest, res) => {
     try {
         if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
-        if (!BILLING_ADMINS.includes(req.user.role)) return res.status(403).json({ error: ADMIN_ONLY });
         if (!stripe) return res.status(503).json({ error: 'Payment service not configured' });
 
-        const org = await prisma.organization.findUnique({ where: { id: req.user.orgId }, select: { stripeCustomerId: true } });
-        if (!org?.stripeCustomerId) return res.status(400).json({ error: 'There is no paid subscription to manage yet.' });
+        const user = await prisma.user.findUnique({ where: { id: req.user.userId }, select: { stripeCustomerId: true } });
+        if (!user?.stripeCustomerId) return res.status(400).json({ error: 'There is no paid subscription to manage yet.' });
 
         const portalSession = await stripe.billingPortal.sessions.create({
-            customer: org.stripeCustomerId,
+            customer: user.stripeCustomerId,
             return_url: `${getAppUrl()}/upgrade`,
         });
 
