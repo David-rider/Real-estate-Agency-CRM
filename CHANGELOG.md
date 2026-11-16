@@ -21,6 +21,10 @@
 
 ## [未发布]
 
+#### 变更 / Changed
+- 1.5.7.0 已部署，线上已确认（2026-11-15，`GET /api/health` 返回 `1.5.7.0`）；标签 `v1.5.6.0`、`v1.5.7.0` 已推送。
+  *1.5.7.0 is deployed and confirmed live (2026-11-15, `GET /api/health` returns `1.5.7.0`); tags `v1.5.6.0` and `v1.5.7.0` are pushed.*
+
 ---
 
 ## [1.5.7.0] — 2026-11-15 · 到期前提醒、公司代付的每日对账 / Reminders before the deadline, daily reconciliation of brokerage-paid seats
