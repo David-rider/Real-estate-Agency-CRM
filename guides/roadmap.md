@@ -65,7 +65,7 @@ This file lists what to do after the trial launch, in priority order by stage. E
 | 1.5.0.0 | 4 AI 助手正式上线<br>*AI assistant goes live* | ⏸ | 代码已有，开关关闭（“正在开发”）<br>*Code exists, switch is off (“in development”)* |
 | 2.x.0.0 | 5.x 团队管理与移动端<br>*Team management and mobile* | ⬜ | 按客户反馈排序<br>*Ordered by customer feedback* |
 | 1.5.x | 6.1 资料包分享与查看追踪（Elite）<br>*Document package sharing with view tracking (Elite)* | ⬜ | 2026-11-17 业主确认列入；参考 Papermark<br>*Added 2026-11-17 at the owner's request; modelled on Papermark* |
-| 1.5.x | 6.2 公司代付席位阶梯折扣<br>*Volume discount for brokerage-paid seats* | ⬜ | 阶梯已由业主确认（2026-11-17，见 6.2）<br>*Tiers confirmed by the owner (2026-11-17, see 6.2)* |
+| 1.5.x | 6.2 公司代付席位阶梯折扣<br>*Volume discount for brokerage-paid seats* | ✅ | 已完成（2026-11-17）：5–24 人 10%、25–49 人 15%、50 人及以上单独谈；Stripe 百分比优惠券随人数自动调整，手工谈好的优惠券不会被覆盖<br>*Done (2026-11-17): 10% for 5–24, 15% for 25–49, 50+ negotiated; a Stripe percent-off coupon follows the headcount, and a hand-negotiated coupon is never overwritten* |
 | 1.5.x | 6.3 新公司 14 天 Elite 免费试用<br>*14-day free Elite trial for new brokerages* | ✅ | 已完成（2026-11-17）：新公司全体内部成员 14 天 Elite、顶部横幅、升级页说明，到期自动回到原套餐；`TRIAL_DAYS` 可调<br>*Done (2026-11-17): Elite for every internal member of a new brokerage for 14 days, a top banner, a notice on the upgrade page, automatic return to the paid plan afterwards; `TRIAL_DAYS` adjustable* |
 | — | 6.4 公司管控功能按管理员角色开放<br>*Brokerage controls open to company admins* | ✅ | 已核对（2026-11-17）：审计日志、安全设置、业务策略、角色与成员管理、线索分配都按管理员 / 经理角色控制，不看套餐，无需改动<br>*Checked 2026-11-17: audit log, security settings, policies, roles and members, lead routing are all controlled by the admin / manager role, not the plan; no change needed* |
 
