@@ -22,8 +22,8 @@ This file lists what to do after the trial launch, in priority order by stage. E
 
 ## 版本规划与进度跟踪 / Version plan and progress tracking
 
-当前版本：**1.4.2.0**（2026-11-12，四段式版本号 `X.Y.Z.W`）。每开始或完成一项，就更新下表的状态和对应版本；实际改动记录在 `CHANGELOG.md`。
-*Current version: **1.4.2.0** (2026-11-12, 4-segment version `X.Y.Z.W`). Whenever an item starts or finishes, update its status and version in the table below; actual changes are recorded in `CHANGELOG.md`.*
+当前版本：**1.5.9.0**（2026-11-17，四段式版本号 `X.Y.Z.W`）。每开始或完成一项，就更新下表的状态和对应版本；实际改动记录在 `CHANGELOG.md`。
+*Current version: **1.5.9.0** (2026-11-17, 4-segment version `X.Y.Z.W`). Whenever an item starts or finishes, update its status and version in the table below; actual changes are recorded in `CHANGELOG.md`.*
 *Status: ⬜ not started · 🟡 in progress · ✅ done · ⏸ postponed*
 状态：⬜ 待开始 · 🟡 进行中 · ✅ 已完成 · ⏸ 暂缓
 
@@ -64,6 +64,10 @@ This file lists what to do after the trial launch, in priority order by stage. E
 | 1.4.0.0 | 3.5 交易流程增强<br>*Deal-flow enhancements* | ✅ | 交易详情面板（关键日期时间轴、清单勾选、佣金比例）、合作经纪人按比例分佣、按公司自定义过户清单模板<br>*Deal detail panel (key-date timeline, checklist ticking, commission rate), co-agent commission split, per-company custom closing-checklist template* |
 | 1.5.0.0 | 4 AI 助手正式上线<br>*AI assistant goes live* | ⏸ | 代码已有，开关关闭（“正在开发”）<br>*Code exists, switch is off (“in development”)* |
 | 2.x.0.0 | 5.x 团队管理与移动端<br>*Team management and mobile* | ⬜ | 按客户反馈排序<br>*Ordered by customer feedback* |
+| 1.5.x | 6.1 资料包分享与查看追踪（Elite）<br>*Document package sharing with view tracking (Elite)* | ⬜ | 2026-11-17 业主确认列入；参考 Papermark<br>*Added 2026-11-17 at the owner's request; modelled on Papermark* |
+| 1.5.x | 6.2 公司代付席位阶梯折扣<br>*Volume discount for brokerage-paid seats* | ⬜ | 阶梯已由业主确认（2026-11-17，见 6.2）<br>*Tiers confirmed by the owner (2026-11-17, see 6.2)* |
+| 1.5.x | 6.3 新公司 14 天 Elite 免费试用<br>*14-day free Elite trial for new brokerages* | 🟡 | 2026-11-17 业主确认 14 天，开始开发<br>*Owner confirmed 14 days on 2026-11-17; development started* |
+| — | 6.4 公司管控功能按管理员角色开放<br>*Brokerage controls open to company admins* | ✅ | 已核对（2026-11-17）：审计日志、安全设置、业务策略、角色与成员管理、线索分配都按管理员 / 经理角色控制，不看套餐，无需改动<br>*Checked 2026-11-17: audit log, security settings, policies, roles and members, lead routing are all controlled by the admin / manager role, not the plan; no change needed* |
 
 ---
 
@@ -294,6 +298,72 @@ This file lists what to do after the trial launch, in priority order by stage. E
 
 ---
 
+## 阶段 6：定价与转化（参考 Papermark，2026-11-17） / Stage 6: pricing and conversion (modelled on Papermark, 2026-11-17)
+
+思路：访客永远免费；经纪人日常功能便宜；老板关心的管控和保密功能是升级理由。保持 Core / Pro / Elite 三档，不增加档位。
+*Idea: visitors are always free; everyday agent features stay cheap; the controls and confidentiality features a boss cares about are the reason to upgrade. Keep the three tiers Core / Pro / Elite; no new tiers.*
+
+### 6.1 资料包分享与查看追踪（Elite） / Document package sharing with view tracking (Elite)
+- **痛点**：经纪人把披露文件、报价资料、场外房源资料发给买家或合作经纪人后，不知道对方有没有看、看了哪几页；场外房源资料被随意转发。
+  *Pain point: after sending disclosures, offer packages or off-market listing material to a buyer or co-op agent, the agent cannot tell whether it was opened or which pages were read, and off-market material gets forwarded freely.*
+- **目标**：从房源或客户页选几份文档打成一个“资料包”，生成分享链接；对方打开时可要求留邮箱、先同意保密协议（NDA）；文档带查看人邮箱的水印；经纪人能看到谁、何时打开、每页看了多久，首次打开时收到通知。
+  *Goal: pick documents from a listing or client page into a "package" and create a share link; opening it can require an email and agreeing to an NDA first; documents carry a watermark with the viewer's email; the agent sees who opened it, when, and how long each page was viewed, and is notified on the first open.*
+- **数据**：新表 `SharePackage`（orgId、创建人、关联房源 / 客户、标题、文档列表）、`ShareLink`（随机令牌、收件人邮箱、要求邮箱、要求 NDA 及 NDA 文本、水印、允许下载、过期时间、已撤销）、`ShareView`（链接、查看人邮箱、同意 NDA 的时间、IP、开始时间、每页停留秒数 JSON）。
+  *Data: new tables `SharePackage` (orgId, creator, linked listing / client, title, document list), `ShareLink` (random token, recipient email, require email, require NDA plus NDA text, watermark, allow download, expiry, revoked), `ShareView` (link, viewer email, NDA accepted at, IP, started at, seconds per page as JSON).*
+- **接口**：经纪人侧 `POST/GET/PATCH /api/shares`（创建、列表、撤销、查看记录，按 `orgId` 限定，引用的文档用 `checkRefs` 校验）；公开侧 `GET /api/public/shares/:token`、`POST .../view`（留邮箱 / 同意 NDA）、`POST .../pages`（上报每页停留时间，限流）；文件仍走现有的 10 分钟签名链接。
+  *API: agent side `POST/GET/PATCH /api/shares` (create, list, revoke, view history; scoped by `orgId`, referenced documents checked with `checkRefs`); public side `GET /api/public/shares/:token`, `POST .../view` (email / NDA), `POST .../pages` (seconds per page, rate-limited); files still use the existing 10-minute signed links.*
+- **页面**：公开查看页 `/share?t=`（静态导出用查询参数，加进 `publicRoutes` 和 `PUBLIC_ROUTES`，四语言切换）；PDF 用 pdf.js 逐页显示以便统计每页时间（需核对 CSP）；房源 / 客户页的“分享资料包”弹窗和查看记录。
+  *Pages: public viewer `/share?t=` (query parameter for the static export, added to `publicRoutes` and `PUBLIC_ROUTES`, with the four-language switcher); PDFs shown page by page with pdf.js so time per page can be measured (check the CSP); a "Share package" dialog and view history on listing / client pages.*
+- **套餐**：创建资料包需要 Elite（`requireTier('ELITE')`）；查看的人不需要账号、不收费。
+  *Plan: creating packages needs Elite (`requireTier('ELITE')`); viewers need no account and are never charged.*
+- **风险**：水印和禁止下载只能防君子，无法阻止截屏或拍照，界面和条款里要如实说明；NDA 只是记录“已同意”，法律效力需律师确认；查看记录含个人信息，隐私政策要补充。
+  *Risks: watermarks and disabled downloads only deter; screenshots or photos cannot be prevented, and the screen and terms must say so honestly; the NDA only records "agreed", and its legal weight needs a lawyer's review; view records are personal data, so the privacy policy needs an addition.*
+- **验收**：要求 NDA 的链接不同意就看不到文档；水印显示查看人邮箱；经纪人能看到每页停留时间并在首次打开时收到通知；撤销或过期后链接失效；其他公司的人看不到本公司资料包的记录。
+  *Acceptance: with an NDA required, nothing is shown until it is accepted; the watermark shows the viewer's email; the agent sees time per page and is notified on the first open; a revoked or expired link stops working; nobody outside the company can see its package records.*
+- **工作量**：8–10 人天。
+  *Effort: 8–10 person-days.*
+
+### 6.2 公司代付席位阶梯折扣 / Volume discount for brokerage-paid seats
+- **目标**：公司替成员付费时，人越多每席越便宜，鼓励老板统一付费；成员自己付费仍按原价。
+  *Goal: when the brokerage pays for its members, each seat gets cheaper as the team grows, encouraging the owner to pay for everyone; members paying for themselves keep the list price.*
+- **阶梯（业主 2026-11-17 确认）**：按公司代付的内部成员总数（Pro 和 Elite 合计）决定折扣，全部席位按达到的档计价：
+  *Tiers (confirmed by the owner on 2026-11-17): the discount depends on the total number of brokerage-paid internal members (Pro and Elite together), and every seat is priced at the tier reached:*
+
+  | 代付人数<br>*Paid seats* | 折扣<br>*Discount* | Pro 每人每月<br>*Pro per seat / month* | Elite 每人每月<br>*Elite per seat / month* |
+  |---|---|---|---|
+  | 1–4 | 原价 / list price | $39 | $79 |
+  | 5–24 | 10% | $35.10 | $71.10 |
+  | 25–49 | 15% | $33.15 | $67.15 |
+  | 50+ | 单独谈 / negotiated | — | — |
+
+  年付在年付价（$390 / $790）上打同样的折扣；50 人及以上单独谈（系统内先按 15% 计，另行约定）。
+  *Annual plans get the same discount on the annual price ($390 / $790); 50+ seats are negotiated separately (the system applies 15% until a separate agreement).*
+- **实现**：价格数字只放在一处（前端套餐数据 + 后端 `lib/billing.ts` 的纯函数 `volumeDiscount(seats)`）；Stripe 上用百分比优惠券挂在公司订阅上，人数变化时由 `companyChanged` 和每日对账一起调整；升级页和“为团队付费”界面显示当前档和再加几人可到下一档。
+  *Implementation: the numbers live in one place (frontend plan data + a pure `volumeDiscount(seats)` in `lib/billing.ts`); on Stripe a percent-off coupon sits on the brokerage subscription and is adjusted by `companyChanged` and the daily reconciliation when the headcount changes; the upgrade page and "Pay for the team" screen show the current tier and how many more seats reach the next one.*
+- **风险**：真实 Stripe 的数量与优惠券变化尚未测过，开始收费前要在 Stripe 测试模式完整走一遍。
+  *Risks: quantity and coupon changes have not been tested against real Stripe; run the full flow in Stripe test mode before charging.*
+- **工作量**：3 人天。
+  *Effort: 3 person-days.*
+
+### 6.3 新公司 14 天 Elite 免费试用 / 14-day free Elite trial for new brokerages
+- **目标**：新注册的公司（邮箱注册或 Google 登录新建）前 14 天全体内部成员享受 Elite，不用绑卡；到期自动回到各自原来的套餐。用过高级功能的人更愿意付费。
+  *Goal: a newly registered brokerage (email sign-up or a new Google sign-in) gets Elite for every internal member for the first 14 days, no card needed; afterwards everyone returns to the plan they had. People who have used the premium features are more willing to pay.*
+- **数据**：`Organization.trialEndsAt`（幂等迁移）；试用天数用环境变量 `TRIAL_DAYS`（默认 14，设为 0 关闭）。
+  *Data: `Organization.trialEndsAt` (idempotent migration); the trial length comes from the env var `TRIAL_DAYS` (default 14, 0 turns it off).*
+- **逻辑**：有效套餐 = 自付、公司代付、试用三者中最高的；试用期内的成员不会被“需要付费”拦截；到期后由定时任务重算套餐。
+  *Logic: the effective plan is the highest of self-paid, brokerage-paid and trial; members on trial are never blocked by "plan required"; after expiry a scheduled job recomputes plans.*
+- **页面**：登录后顶部横幅显示“Elite 试用还剩 N 天”，链接到升级页。
+  *Pages: a banner at the top of signed-in pages shows "N days left in your Elite trial", linking to the upgrade page.*
+- **验收**：新公司注册后即为 Elite；试用期内邀请的成员也是 Elite；到期后回到原套餐；老公司不受影响。
+  *Acceptance: a new brokerage is Elite right after sign-up; members invited during the trial are Elite too; after expiry everyone returns to their plan; existing brokerages are unaffected.*
+- **工作量**：1.5 人天。
+  *Effort: 1.5 person-days.*
+
+### 6.4 公司管控功能 / Brokerage controls
+- 已核对（2026-11-17）：审计日志、安全设置（会话、密码、两步验证、IP 白名单）、业务策略、成员与角色、线索分配都按公司管理员 / 经理角色开放，不看套餐。保持现状，定价页把它们写成“公司管控”卖点即可。
+  *Checked 2026-11-17: the audit log, security settings (sessions, passwords, 2FA, IP allowlist), policies, members and roles, and lead routing are open to the company admin / manager role regardless of plan. Keep it that way; the pricing page just needs to present them as "brokerage controls".*
+
+---
 ## 建议排期 / Suggested schedule
 
 | 周次<br>*Week* | 内容<br>*Content* |
