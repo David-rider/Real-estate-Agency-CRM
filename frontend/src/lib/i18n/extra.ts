@@ -89,7 +89,7 @@ const en = {
     colPrice: "Price",
     colBedsBaths: "Beds / baths",
     colStatus: "Status",
-    noSourceData: "No leads recorded this year yet.", noDealData: "No deals yet.",
+    noSourceData: "No leads recorded this year yet.", noDealData: "No deals yet.", viewInLanguage: "View this page in English",
     newPhotos: "Photos",
     newPhotosHint: "Upload from your computer or paste image links. Drag order with the arrows — the first photo is the cover.",
     addFiles: "Upload photos",
@@ -489,7 +489,7 @@ const zhCN: Dict = {
     colPrice: "价格",
     colBedsBaths: "卧室 / 浴室",
     colStatus: "状态",
-    noSourceData: "本年度还没有线索记录。", noDealData: "还没有交易。",
+    noSourceData: "本年度还没有线索记录。", noDealData: "还没有交易。", viewInLanguage: "查看简体中文版",
     newPhotos: "照片",
     newPhotosHint: "可以从电脑上传，也可以粘贴图片链接。用箭头调整顺序，第一张是封面。",
     addFiles: "上传照片",
@@ -887,7 +887,7 @@ const zhTW: Dict = {
     colPrice: "價格",
     colBedsBaths: "臥室 / 浴室",
     colStatus: "狀態",
-    noSourceData: "本年度還沒有線索記錄。", noDealData: "還沒有交易。",
+    noSourceData: "本年度還沒有線索記錄。", noDealData: "還沒有交易。", viewInLanguage: "查看繁體中文版",
     newPhotos: "照片",
     newPhotosHint: "可以從電腦上傳，也可以貼上圖片連結。用箭頭調整順序，第一張是封面。",
     addFiles: "上傳照片",
@@ -1285,7 +1285,7 @@ const es: Dict = {
     colPrice: "Precio",
     colBedsBaths: "Dorm. / baños",
     colStatus: "Estado",
-    noSourceData: "Aún no hay prospectos registrados este año.", noDealData: "Aún no hay operaciones.",
+    noSourceData: "Aún no hay prospectos registrados este año.", noDealData: "Aún no hay operaciones.", viewInLanguage: "Ver esta página en español",
     newPhotos: "Fotos",
     newPhotosHint: "Súbalas desde su computadora o pegue enlaces de imágenes. Ordénelas con las flechas: la primera es la portada.",
     addFiles: "Subir fotos",
@@ -1597,6 +1597,11 @@ const es: Dict = {
 };
 
 const DICTS: Record<string, Dict> = { en, "zh-CN": zhCN, "zh-TW": zhTW, es };
+
+// The strings of one given language (e.g. to offer a page in the visitor's own language)
+export function extraFor(language: string): Dict {
+  return DICTS[language] || en;
+}
 
 export function useExtra(): Dict {
   const { language } = useI18n();

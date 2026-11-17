@@ -21,6 +21,16 @@
 
 ## [未发布]
 
+#### 新增 / Added
+- 首页按语言分成四个地址：`/`（英文）、`/zh-CN`、`/zh-TW`、`/es`。每个地址打开时就是该语言的完整页面（标题、描述和分享卡片也是），搜索引擎可以分别收录，分享中文链接对方打开就是中文。切换语言会跳到对应语言的地址并记住选择；之前选过其他语言的访客打开 `/` 会进入该语言的首页；第一次来、浏览器是中文或西语的访客，会在页面底部看到一个“查看中文版”之类的提示，不会被强制跳转。
+  *The home page has four addresses, one per language: `/` (English), `/zh-CN`, `/zh-TW` and `/es`. Each opens as a complete page in that language (title, description and share card included), so search engines index each one and a shared Chinese link opens in Chinese. Switching language moves to that language's address and remembers the choice; a visitor who chose another language before is taken to that home page from `/`; a first-time visitor whose browser is in Chinese or Spanish sees a small "view this page in Chinese"-style prompt at the bottom, never a forced redirect.*
+
+#### 修复 / Fixed
+- 在页面之间跳转后，浏览器标签页标题和页面语言标记有时会变回之前的语言（页面里存在两个语言状态）。
+  *After moving between pages, the browser tab title and the page's language tag sometimes went back to the previous language (the page held two language states).*
+- 规范链接、站点地图和 robots 默认指向 Cloudflare 地址（以前默认是 vercel.app）。
+  *Canonical links, the sitemap and robots now default to the Cloudflare address (they defaulted to vercel.app).*
+
 ---
 
 ## [1.5.8.0] — 2026-11-17 · 演示走查修复：客户活动历史多语言、报表真实数据、如实文案 / Demo walkthrough fixes: localized client history, real report data, truthful copy
@@ -672,6 +682,7 @@
 | 后端<br>*Backend* | `DISABLE_JOBS` | 可选，设为 `true` 关闭预约提醒任务<br>*Optional; `true` turns off the appointment-reminder job* |
 | 后端<br>*Backend* | `SEED_PASSWORD` / `ALLOW_SEED` | 仅种子脚本使用<br>*Used only by the seed script* |
 | 前端<br>*Frontend* | `NEXT_PUBLIC_GOOGLE_CLIENT_ID` | Google 登录的 OAuth 客户端 ID（公开值，不是密钥）；与后端 `GOOGLE_CLIENT_ID` 填同一个值。未设置时 Google 按钮显示“即将推出”<br>*Google sign-in OAuth client ID (a public value, not a secret); same value as the backend `GOOGLE_CLIENT_ID`. When unset, the Google button shows "Coming soon"* |
+| 前端<br>*Frontend* | `NEXT_PUBLIC_SITE_URL` | 网站对外地址，用于规范链接（canonical）、各语言首页之间的互相标注（hreflang）和站点地图；每个托管平台填各自应使用的地址。不设置时默认为 Cloudflare 地址 `https://real-estate-agency-crm.apexzone.workers.dev`<br>*The public address of the site, used for canonical links, the per-language home pages' hreflang and the sitemap; set it on each host to the address people should use. Defaults to the Cloudflare address `https://real-estate-agency-crm.apexzone.workers.dev` when unset* |
 | 后端<br>*Backend* | `GOOGLE_CLIENT_SECRET` | Google 日历实时推送用的 OAuth 客户端密钥（密钥，只填在 Render，不入库）。未设置时“连接 Google 日历”不显示<br>*OAuth client secret for Google Calendar push (a secret: Render only, never committed). When unset, "Connect Google Calendar" is hidden* |
 | 后端<br>*Backend* | `TOKEN_ENCRYPTION_KEY` | 可选：加密保存 Google 令牌的密钥；不设置时由 `JWT_SECRET` 推出（更换后用户需重新连接）<br>*Optional: key for encrypting stored Google tokens; derived from `JWT_SECRET` when unset (changing it means users reconnect)* |
 | 前端<br>*Frontend* | `NEXT_PUBLIC_AI_ASSISTANT_ENABLED` | AI 助手开关，默认 `false`<br>*AI assistant switch, default `false`* |

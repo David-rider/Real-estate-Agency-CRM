@@ -9,6 +9,7 @@ import { useAuth } from '@/lib/auth/AuthContext';
 import { useExtra } from '@/lib/i18n/extra';
 
 const PUBLIC_ROUTES = [
+    '/zh-CN', '/zh-TW', '/es', // the home page in other languages
     '/login', '/signup', '/forgot-password', '/reset-password',
     '/verify-email', '/public-listings', '/property', '/privacy', '/terms', '/not-found',
 ];
