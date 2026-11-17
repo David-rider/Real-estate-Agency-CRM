@@ -11,6 +11,18 @@ import { Lang, isLang } from './messages';
 type T3 = [string, string, string]; // zh-CN, zh-TW, es
 
 export const ERROR_TEXT: Record<string, T3> = {
+    "Please enter a valid email address": ["请填写有效的邮箱地址", "請填寫有效的電子郵件地址", "Introduce una dirección de correo válida"],
+    "Please enter the confidentiality agreement text": ["请填写保密协议的内容", "請填寫保密協議的內容", "Introduce el texto del acuerdo de confidencialidad"],
+    "The expiry must be in the future": ["过期时间必须晚于现在", "到期時間必須晚於現在", "La fecha de vencimiento debe ser futura"],
+    "This link is not available.": ["这个链接无法使用。", "這個連結無法使用。", "Este enlace no está disponible."],
+    "Your viewing session has ended. Please open the link again.": ["查看已超时，请重新打开链接。", "瀏覽已逾時，請重新開啟連結。", "Tu sesión de visualización terminó. Vuelve a abrir el enlace."],
+    "A title is required": ["请填写标题", "請填寫標題", "Se requiere un título"],
+    "Choose at least one document": ["请至少选择一份文档", "請至少選擇一份文件", "Elige al menos un documento"],
+    "Nothing to change": ["没有需要修改的内容", "沒有需要修改的內容", "No hay nada que cambiar"],
+    "Too many documents in one package (at most 20)": ["一个资料包里的文档太多（最多 20 份）", "一個資料包裡的文件太多（最多 20 份）", "Demasiados documentos en un paquete (máximo 20)"],
+    "Please enter your email address to view these documents.": ["请填写邮箱地址后查看这些文档。", "請填寫電子郵件地址後查看這些文件。", "Introduce tu correo electrónico para ver estos documentos."],
+    "This link was sent to a different email address.": ["这个链接是发给另一个邮箱地址的。", "這個連結是寄給另一個電子郵件地址的。", "Este enlace se envió a otra dirección de correo."],
+    "Please accept the confidentiality agreement to continue.": ["请先同意保密协议再继续。", "請先同意保密協議再繼續。", "Acepta el acuerdo de confidencialidad para continuar."],
     "Apple identity token is required": ["缺少 Apple 身份令牌", "缺少 Apple 身分權杖", "Se requiere el token de Apple"],
     "Invalid Apple token": ["Apple 身份令牌无效", "Apple 身分權杖無效", "Token de Apple no válido"],
     "This account is already linked to another user": ["这个账号已经关联到另一个用户", "這個帳號已經連結到另一個使用者", "Esta cuenta ya está vinculada a otro usuario"],

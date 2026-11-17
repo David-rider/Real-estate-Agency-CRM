@@ -8,14 +8,14 @@ import { audit, diffFields } from '../lib/audit';
 const router = express.Router();
 const DOC_TYPES = ['CONTRACT', 'INSPECTION', 'APPRAISAL', 'BOARD_PACKAGE', 'ID', 'DISCLOSURE', 'OTHER'];
 
-function getRequestBaseUrl(req: express.Request): string {
+export function getRequestBaseUrl(req: express.Request): string {
     const protoHeader = req.headers['x-forwarded-proto'];
     const proto = typeof protoHeader === 'string' ? protoHeader.split(',')[0].trim() : req.protocol;
     const host = req.get('host') || 'localhost:4000';
     return `${proto}://${host}`;
 }
 
-async function canAccessDocument(user: NonNullable<AuthRequest['user']>, doc: { uploadedById: string | null; transactionId: string | null; orgId: string }): Promise<boolean> {
+export async function canAccessDocument(user: NonNullable<AuthRequest['user']>, doc: { uploadedById: string | null; transactionId: string | null; orgId: string }): Promise<boolean> {
     if (doc.orgId !== user.orgId) return false;
     if (isManager(user) || user.role === 'OFFICE_SUPPORT') return true;
     if (doc.uploadedById === user.userId) return true;

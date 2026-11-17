@@ -420,8 +420,75 @@ model Document {
   uploadedById  String?
   orgId         String
   organization  Organization @relation(fields: [orgId], references: [id])
+  sharedIn      SharePackageDocument[]
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
+}
+
+// ─── Shared document packages ────────────────────────────────────────────────
+// An agent shares a few documents through a link; viewers need no account and every view is recorded.
+
+model SharePackage {
+  id          String   @id @default(uuid())
+  orgId       String
+  createdById String
+  title       String
+  message     String?
+  propertyId  String?
+  clientId    String?
+  documents   SharePackageDocument[]
+  links       ShareLink[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([orgId, createdById])
+}
+
+model SharePackageDocument {
+  packageId  String
+  package    SharePackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  documentId String
+  document   Document     @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  position   Int          @default(0)
+
+  @@id([packageId, documentId])
+}
+
+model ShareLink {
+  id             String       @id @default(uuid())
+  packageId      String
+  package        SharePackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  orgId          String
+  token          String       @unique
+  recipientEmail String?
+  requireEmail   Boolean      @default(true)
+  requireNda     Boolean      @default(false)
+  ndaText        String?
+  watermark      Boolean      @default(true)
+  allowDownload  Boolean      @default(false)
+  expiresAt      DateTime?
+  revokedAt      DateTime?
+  views          ShareView[]
+  createdAt      DateTime     @default(now())
+}
+
+model ShareView {
+  id            String    @id @default(uuid())
+  linkId        String
+  link          ShareLink @relation(fields: [linkId], references: [id], onDelete: Cascade)
+  orgId         String
+  sessionToken  String    @unique
+  viewerEmail   String?
+  ndaAcceptedAt DateTime?
+  ip            String?
+  userAgent     String?
+  startedAt     DateTime  @default(now())
+  lastSeenAt    DateTime  @default(now())
+  totalSeconds  Int       @default(0)
+  // Seconds spent per page: { "<documentId>": { "<page>": seconds } }
+  pages         Json?
+
+  @@index([linkId])
 }
 
 // ─── Appointment ─────────────────────────────────────────────────────────────

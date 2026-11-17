@@ -22,6 +22,8 @@
 ## [未发布]
 
 #### 新增 / Added
+- 资料包分享（第 1 步，服务器部分）：Elite 用户可以把几份文档打成资料包并生成分享链接，可要求对方留邮箱、先同意保密协议、只发给指定邮箱、设置过期时间，并随时撤销；对方不需要账号，每次查看都有记录。分享界面和查看页在下一步上线。数据库新增 4 张表（幂等迁移 `20261118000100_share_packages`）。
+  *Document package sharing (step 1, server side): Elite users can bundle documents into a package with a share link that can require an email, acceptance of a confidentiality agreement, a specific recipient and an expiry, and can be revoked at any time; viewers need no account and every view is recorded. The sharing screens and the viewer page come in the next step. Four new tables (idempotent migration `20261118000100_share_packages`).*
 - 公司替成员统一付费时享阶梯折扣：5–24 人每席优惠 10%，25–49 人优惠 15%，50 人及以上单独报价；成员自己付费仍是原价。“升级 → 为团队付费”显示当前折扣和再加几人可到下一档，结账和人数变化时自动套用。
   *Volume discount when the brokerage pays for its members: 10% off every seat for 5–24, 15% for 25–49, a custom price from 50; members paying for themselves keep the list price. "Upgrade → Pay for your team" shows the current discount and how many more members reach the next tier, and it is applied automatically at checkout and when the team changes.*
 - 新注册的公司（邮箱注册或 Google 登录新建）前 14 天全体内部成员免费使用 Elite，不用绑卡；试用期内邀请的成员也是 Elite，外部协作方不变。每个页面顶部显示“Elite 免费试用：还剩 N 天”，升级页说明试用到期日，试用中仍可直接购买套餐；到期后自动回到各自原来的套餐。老公司不受影响。
