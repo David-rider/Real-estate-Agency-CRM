@@ -88,6 +88,8 @@ export default function ReportsPage() {
     const STAGES = ["OFFER_REVIEW", "IN_CONTRACT", "BOARD_PACKAGE", "CLEARED_TO_CLOSE", "CLOSED"];
     const pipelineData = (dashData?.pipeline ?? STAGES.map((stage) => ({ stage, count: 0 })))
         .map((r) => ({ stage: Tpipe.columns?.[r.stage] ?? r.stage, count: r.count }));
+    // The pie leaves out empty stages (their 0% labels would pile up); each stage keeps its colour from the Pipeline tab
+    const pieSlices = pipelineData.map((r, colorIndex) => ({ ...r, colorIndex })).filter((r) => r.count > 0);
 
     const leaderboard = finMetrics?.leaderboard || [];
 
@@ -190,16 +192,20 @@ export default function ReportsPage() {
 
                     <div className="bg-surface border border-border rounded-xl p-6">
                         <h3 className="text-sm font-semibold text-foreground mb-4">{T.charts?.pipelineDistribution}</h3>
+                        {pieSlices.length === 0 ? (
+                            <p className="text-sm text-foreground/50 py-16 text-center">{XR.ui.noDealData}</p>
+                        ) : (
                         <ResponsiveContainer width="100%" height={220}>
                             <PieChart>
-                                <Pie data={pipelineData} dataKey="count" nameKey="stage" cx="50%" cy="50%" outerRadius={80} label={(props) => `${(props as unknown as Record<string,unknown>).stage} ${((Number(props.percent) || 0) * 100).toFixed(0)}%`}>
-                                    {pipelineData.map((_, i) => (
-                                        <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                                <Pie data={pieSlices} dataKey="count" nameKey="stage" cx="50%" cy="50%" outerRadius={80} label={(props) => `${(props as unknown as Record<string,unknown>).stage} ${((Number(props.percent) || 0) * 100).toFixed(0)}%`}>
+                                    {pieSlices.map((s) => (
+                                        <Cell key={s.stage} fill={COLORS[s.colorIndex % COLORS.length]} />
                                     ))}
                                 </Pie>
                                 <Tooltip contentStyle={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", borderRadius: 8, fontSize: 12 }} />
                             </PieChart>
                         </ResponsiveContainer>
+                        )}
                     </div>
 
                     <div className="bg-surface border border-border rounded-xl p-6">

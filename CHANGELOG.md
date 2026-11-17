@@ -22,6 +22,8 @@
 ## [未发布]
 
 #### 修复 / Fixed
+- 报表的“交易阶段分布”饼图不再画数量为 0 的阶段（以前几个“0%”标签叠在一起）；一笔交易都没有时显示“还没有交易”。
+  *The Reports "Pipeline Distribution" pie no longer draws stages with no deals (their "0%" labels used to overlap); with no deals at all it says "No deals yet".*
 - 工作台和报表的“成交数”改为统计当月真正成交的交易（按过户日期，没有则按标记成交的时间）；以前统计的是当月新建的交易。
   *"Deals closed" on the dashboard and in Reports now counts deals actually closed that month (by closing date, or by when the deal was marked closed); it used to count deals created that month.*
 - 报表的“交易阶段分布”图和“交易”标签页显示各阶段的真实交易数（以前一直为空）。
