@@ -6,6 +6,8 @@ import { useToast } from "@/components/ui/Toast";
 import { useExtra, fmt } from "@/lib/i18n/extra";
 import { useSettings } from "@/lib/settings/useSettings";
 import { api, uploadFile } from "@/lib/api";
+import ShareDialog from "@/components/share/ShareDialog";
+import SharedPackages from "@/components/share/SharedPackages";
 
 export default function DocumentsPage() {
   const { t } = useI18n();
@@ -25,6 +27,11 @@ export default function DocumentsPage() {
   const [isAddModalOpen, setIsAddModalOpen] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [previewDoc, setPreviewDoc] = React.useState<any>(null);
+  // Document package sharing: ticked documents, the share dialog and the "Shared packages" tab
+  const [tab, setTab] = React.useState<"docs" | "shared">("docs");
+  const [selected, setSelected] = React.useState<string[]>([]);
+  const [shareOpen, setShareOpen] = React.useState(false);
+  const toggleSelected = (id: string) => setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   const [selectedFile, setSelectedFile] = React.useState<File | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
 
@@ -182,6 +189,20 @@ export default function DocumentsPage() {
         </button>
       </div>
 
+      {/* Tabs: documents / shared packages */}
+      <div className="flex gap-6 border-b border-border">
+        {(["docs", "shared"] as const).map((k) => (
+          <button
+            key={k}
+            onClick={() => setTab(k)}
+            className={`pb-3 -mb-px text-sm uppercase tracking-widest border-b-2 transition-colors ${tab === k ? "border-primary text-primary" : "border-transparent text-foreground/50 hover:text-foreground"}`}
+          >
+            {k === "docs" ? X.share.tabDocuments : X.share.tabShared}
+          </button>
+        ))}
+      </div>
+
+      {tab === "shared" ? <SharedPackages /> : (<>
       {/* Toolbar */}
       <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center bg-surface border border-border p-6">
         <input
@@ -202,6 +223,14 @@ export default function DocumentsPage() {
           <option value="BOARD_PACKAGE">{t.documents.modal.typeBoard}</option>
           <option value="OTHER">{t.documents.modal.typeOther}</option>
         </select>
+        {selected.length > 0 && (
+          <button
+            onClick={() => setShareOpen(true)}
+            className="px-5 py-3 bg-primary text-background text-sm uppercase tracking-widest font-medium whitespace-nowrap"
+          >
+            {fmt(X.share.shareSelected, { n: selected.length })}
+          </button>
+        )}
       </div>
 
       {/* Document Table */}
@@ -210,6 +239,7 @@ export default function DocumentsPage() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-surface border-b border-border text-sm uppercase tracking-widest text-foreground/40 font-sans">
+                <th className="pl-6 py-6 w-8" />
                 <th className="p-6 font-medium whitespace-nowrap">
                   {t.documents.table.name}
                 </th>
@@ -231,7 +261,7 @@ export default function DocumentsPage() {
               {loading ? (
                 <tr>
                   <td
-                    colSpan={5}
+                    colSpan={6}
                     className="p-12 text-center text-foreground/40 font-sans text-sm uppercase tracking-widest"
                   >
                     {X.ui.loading}
@@ -240,7 +270,7 @@ export default function DocumentsPage() {
               ) : filteredDocs.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={5}
+                    colSpan={6}
                     className="p-12 text-center text-foreground/40 font-sans text-sm uppercase tracking-widest bg-surface/30"
                   >
                     {t.documents.empty}
@@ -252,6 +282,15 @@ export default function DocumentsPage() {
                     key={doc.id}
                     className="hover:bg-surface/50 transition-colors group"
                   >
+                    <td className="pl-6 py-6 w-8">
+                      <input
+                        type="checkbox"
+                        aria-label={X.share.selectDoc}
+                        checked={selected.includes(doc.id)}
+                        onChange={() => toggleSelected(doc.id)}
+                        className="cursor-pointer"
+                      />
+                    </td>
                     <td className="p-6">
                       <div className="flex items-center gap-4">
                         <div className="w-10 h-10 bg-surface border border-border flex items-center justify-center text-primary group-hover:border-primary/30 transition-colors">
@@ -312,6 +351,16 @@ export default function DocumentsPage() {
           </table>
         </div>
       </div>
+
+      </>)}
+
+      {shareOpen && (
+        <ShareDialog
+          docs={documents.filter((d) => selected.includes(d.id)).map((d) => ({ id: d.id, name: d.name }))}
+          onClose={() => setShareOpen(false)}
+          onCreated={() => setSelected([])}
+        />
+      )}
 
       {/* Upload Modal */}
       {isAddModalOpen && (

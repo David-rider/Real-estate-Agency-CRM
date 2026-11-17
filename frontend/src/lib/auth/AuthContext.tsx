@@ -75,7 +75,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     useEffect(() => {
         if (isLoading) return;
 
-        const publicRoutes = ['/zh-CN', '/zh-TW', '/es', '/login', '/signup', '/forgot-password', '/reset-password', '/verify-email', '/public-listings', '/property', '/privacy', '/terms'];
+        const publicRoutes = ['/zh-CN', '/zh-TW', '/es', '/login', '/signup', '/forgot-password', '/reset-password', '/verify-email', '/public-listings', '/property', '/privacy', '/terms', '/share'];
         // "/" is the public landing page; sub-pages of public routes (e.g. a listing) are public too
         const isPublic = pathname === '/' || publicRoutes.some(r => pathname === r || pathname.startsWith(r + '/'));
         // Route protection
