@@ -21,6 +21,10 @@
 
 ## [未发布]
 
+#### 变更 / Changed
+- 1.5.10.0 已部署，线上已确认（2026-11-17，`GET /api/health` 返回 `1.5.10.0`）；标签 `v1.5.10.0` 已推送。
+  *1.5.10.0 is deployed and confirmed live (2026-11-17, `GET /api/health` returns `1.5.10.0`); tag `v1.5.10.0` is pushed.*
+
 ---
 
 ## [1.5.10.0] — 2026-11-17 · Elite 免费试用、团队阶梯折扣、资料包分享 / Free Elite trial, team volume discount, shared document packages
