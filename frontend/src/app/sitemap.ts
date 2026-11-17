@@ -1,5 +1,5 @@
 import { MetadataRoute } from 'next';
-import { LANGUAGES, SITE_URL, homeUrl } from '@/lib/site';
+import { LANGUAGES, SITE_URL, homeUrl, localizedUrl } from '@/lib/site';
 
 export const dynamic = 'force-static';
 
@@ -10,6 +10,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();
 
   return [
+    // Privacy policy and terms, once per language with their alternates
+    ...(['/privacy', '/terms'] as const).flatMap((page) => LANGUAGES.map((l) => ({
+      url: localizedUrl(l, page),
+      lastModified: now,
+      changeFrequency: 'yearly' as const,
+      priority: 0.3,
+      alternates: { languages: Object.fromEntries(LANGUAGES.map((x) => [x, localizedUrl(x, page)])) },
+    }))),
     ...LANGUAGES.map((l) => ({
       url: homeUrl(l),
       lastModified: now,

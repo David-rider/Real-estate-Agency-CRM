@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { localizedPath } from "@/lib/site";
 import { useI18n } from "@/lib/i18n/I18nContext";
 import { useExtra } from "@/lib/i18n/extra";
 import { api } from "@/lib/api";
@@ -174,7 +175,7 @@ function PublicListingPage() {
                 </button>
                 <p className="text-[11px] text-foreground/50">
                   {LG.inquiryNotice}{" "}
-                  <Link href="/privacy" className="underline hover:text-primary">{LG.privacyLink}</Link>
+                  <Link href={localizedPath(language, "/privacy")} className="underline hover:text-primary">{LG.privacyLink}</Link>
                 </p>
               </form>
             )}

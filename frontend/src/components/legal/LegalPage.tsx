@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useI18n } from "@/lib/i18n/I18nContext";
 import type { Language } from "@/lib/i18n/translations";
 import { LEGAL } from "@/lib/i18n/legal";
+import LanguagePage from "@/components/i18n/LanguagePage";
+import { localizedPath } from "@/lib/site";
 
 const LANGS: { code: Language; label: string }[] = [
   { code: "en", label: "English" },
@@ -13,8 +15,16 @@ const LANGS: { code: Language; label: string }[] = [
   { code: "es", label: "Español" },
 ];
 
-/** Public privacy policy / terms page, readable signed out, in all four languages. */
-export default function LegalPage({ doc }: { doc: "privacy" | "terms" }) {
+/** Public privacy policy / terms page, readable signed out, with one address per language (/privacy, /zh-CN/privacy …). */
+export default function LegalPage({ doc, lang }: { doc: "privacy" | "terms"; lang: Language }) {
+  return (
+    <LanguagePage lang={lang} page={`/${doc}`}>
+      <LegalContent doc={doc} />
+    </LanguagePage>
+  );
+}
+
+function LegalContent({ doc }: { doc: "privacy" | "terms" }) {
   const { language, setLanguage } = useI18n();
   const L = LEGAL[language] ?? LEGAL.en;
   const d = L[doc];
@@ -22,7 +32,7 @@ export default function LegalPage({ doc }: { doc: "privacy" | "terms" }) {
     <div className="min-h-screen bg-background text-foreground">
       <header className="border-b border-border">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-4">
-          <Link href="/" className="text-sm text-foreground/60 hover:text-foreground">← {L.back}</Link>
+          <Link href={localizedPath(language)} className="text-sm text-foreground/60 hover:text-foreground">← {L.back}</Link>
           <select
             value={language}
             onChange={(e) => setLanguage(e.target.value as Language)}
@@ -43,8 +53,8 @@ export default function LegalPage({ doc }: { doc: "privacy" | "terms" }) {
           </section>
         ))}
         <nav className="border-t border-border pt-6 flex gap-6 text-sm text-foreground/60">
-          <Link href="/privacy" className="hover:text-foreground">{L.privacyLink}</Link>
-          <Link href="/terms" className="hover:text-foreground">{L.termsLink}</Link>
+          <Link href={localizedPath(language, "/privacy")} className="hover:text-foreground">{L.privacyLink}</Link>
+          <Link href={localizedPath(language, "/terms")} className="hover:text-foreground">{L.termsLink}</Link>
         </nav>
       </main>
     </div>

@@ -9,6 +9,7 @@ import { useAuth } from "@/lib/auth/AuthContext";
 import { useI18n } from "@/lib/i18n/I18nContext";
 import { useExtra } from "@/lib/i18n/extra";
 import Link from "next/link";
+import { localizedPath } from "@/lib/site";
 import { LEGAL } from "@/lib/i18n/legal";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
@@ -305,9 +306,9 @@ function SignupForm() {
 
             <p className="mt-4 font-sans text-xs text-foreground/50">
               {LG.agree}{" "}
-              <Link href="/terms" className="text-primary hover:underline">{LG.termsLink}</Link>{" "}
+              <Link href={localizedPath(language, "/terms")} className="text-primary hover:underline">{LG.termsLink}</Link>{" "}
               {LG.and}{" "}
-              <Link href="/privacy" className="text-primary hover:underline">{LG.privacyLink}</Link>
+              <Link href={localizedPath(language, "/privacy")} className="text-primary hover:underline">{LG.privacyLink}</Link>
             </p>
 
             <div className="mt-5 pt-5 border-t border-border font-sans text-sm text-foreground/50">
