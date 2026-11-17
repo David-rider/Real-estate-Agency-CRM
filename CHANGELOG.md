@@ -21,6 +21,10 @@
 
 ## [未发布]
 
+---
+
+## [1.5.10.0] — 2026-11-17 · Elite 免费试用、团队阶梯折扣、资料包分享 / Free Elite trial, team volume discount, shared document packages
+
 #### 新增 / Added
 - 资料包分享（第 3 步，查看追踪）：对方查看时自动记录每一页停留了多久（只在页面显示在前台时计时，每次上报最多算 60 秒）；某条链接第一次被打开时，分享人会收到站内通知；“已分享的资料包”里点“详情”可以看到每次查看的邮箱、时间、总时长、是否同意保密协议，以及每份文档每一页的停留时间。隐私政策补充了这部分查看记录的说明（四种语言）。
   *Document package sharing (step 3, view tracking): the time spent on each page is recorded while the viewer reads (only while the page is in front, at most 60 seconds per report); the first open of a link sends the person who shared it an in-app notification; "Details" under "Shared packages" shows each view's email, time, total duration, NDA acceptance, and the time per page of every document. The privacy policy now explains these view records (four languages).*
