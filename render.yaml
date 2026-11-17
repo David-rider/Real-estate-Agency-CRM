@@ -50,6 +50,9 @@ services:
       # Day paid plans become required (YYYY-MM-DD); empty = nothing enforced
       - key: BILLING_START_DATE
         sync: false
+      # Free Elite trial for new brokerages, in days (0 = off)
+      - key: TRIAL_DAYS
+        value: "14"
       - key: STRIPE_PRICE_PRO_MONTHLY
         sync: false
       - key: STRIPE_PRICE_PRO_ANNUAL

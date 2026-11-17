@@ -8,6 +8,7 @@ import { issueSession } from './session';
 import { signChallenge } from './totp';
 import { ipAllowed, IP_BLOCKED } from './ipAllowlist';
 import { invalidateAccount } from '../middleware/authMiddleware';
+import { newTrialEnd } from './billing';
 
 /*
  * Social sign-in (Google today; Apple ready for when a developer account exists).
@@ -127,9 +128,10 @@ export async function signInWithIdentity(prisma: PrismaClient, req: express.Requ
         } else {
             // First sign-in creates the person's own brokerage; joining one only happens through an invitation
             const display = id.name || id.email.split('@')[0];
-            const org = await prisma.organization.create({ data: { name: `${display}'s Brokerage`, slug: orgSlug(display) } });
+            const trialEndsAt = newTrialEnd();
+            const org = await prisma.organization.create({ data: { name: `${display}'s Brokerage`, slug: orgSlug(display), trialEndsAt } });
             user = await prisma.user.create({
-                data: { name: display, email: id.email, [field]: id.subject, role: 'FIRMADMIN', tier: 'CORE', emailVerified: true, orgId: org.id },
+                data: { name: display, email: id.email, [field]: id.subject, role: 'FIRMADMIN', tier: trialEndsAt ? 'ELITE' : 'CORE', emailVerified: true, orgId: org.id },
             });
         }
     }

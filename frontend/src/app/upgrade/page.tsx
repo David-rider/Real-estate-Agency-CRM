@@ -73,10 +73,13 @@ function UpgradePageInner() {
   const canPurchase = !["SUPERADMIN", "ATTORNEY", "LENDER", "TITLECO"].includes(user?.role || "");
 
   // Whether this member must choose a plan now, or by which date
-  const [billing, setBilling] = useState<{ planRequired: boolean; graceEndsAt: string | null; paidByCompany?: boolean } | null>(null);
+  type BillingStatus = { planRequired: boolean; graceEndsAt: string | null; paidByCompany?: boolean; paidTier?: "CORE" | "PRO" | "ELITE"; trialEndsAt?: string | null };
+  const [billing, setBilling] = useState<BillingStatus | null>(null);
   useEffect(() => {
-    api<{ planRequired: boolean; graceEndsAt: string | null; paidByCompany?: boolean }>("/api/payments/status").then(setBilling).catch(() => setBilling(null));
+    api<BillingStatus>("/api/payments/status").then(setBilling).catch(() => setBilling(null));
   }, [user?.tier]);
+  // The plan the member actually pays for: during the brokerage's free Elite trial they can still buy any plan
+  const owned = (billing?.trialEndsAt ? billing.paidTier : user?.tier) || "CORE";
 
   // Stripe's own page for changing plan, card, invoices and cancelling
   const [openingPortal, setOpeningPortal] = useState(false);
@@ -92,7 +95,7 @@ function UpgradePageInner() {
   };
 
   const handleSelectPlan = (plan: "CORE" | "PRO" | "ELITE") => {
-    if (plan === user?.tier) return;
+    if (plan === owned) return;
     if (plan === "CORE") return; // cannot downgrade to core from here
     if (!canPurchase) {
       toast.info(t.upgrade.adminOnly);
@@ -156,6 +159,11 @@ function UpgradePageInner() {
         {billing?.planRequired && (
           <div className="max-w-xl mx-auto mt-4 px-4 py-2.5 rounded-lg bg-primary/10 text-primary text-sm">{UX.planRequiredNotice}</div>
         )}
+        {billing?.trialEndsAt && (
+          <div className="max-w-xl mx-auto mt-4 px-4 py-2.5 rounded-lg bg-primary/10 text-primary text-sm">
+            {fmt(UX.trialNotice, { date: new Date(billing.trialEndsAt).toLocaleDateString() })}
+          </div>
+        )}
         {!billing?.planRequired && billing?.graceEndsAt && (
           <div className="max-w-xl mx-auto mt-4 px-4 py-2.5 rounded-lg bg-primary/10 text-primary text-sm">
             {fmt(UX.graceNotice, { date: new Date(billing.graceEndsAt).toLocaleDateString(undefined, { timeZone: "UTC" }) })}
@@ -185,7 +193,7 @@ function UpgradePageInner() {
           </button>
         </div>
 
-        {user?.tier && user.tier !== "CORE" && !billing?.paidByCompany && (
+        {owned !== "CORE" && !billing?.paidByCompany && (
           <div className="mt-6">
             <button
               onClick={openBillingPortal}
@@ -203,7 +211,7 @@ function UpgradePageInner() {
       <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-6 pb-12 animate-in fade-in slide-in-from-bottom-12 duration-1000 delay-200">
         
         {/* Core Card */}
-        <div className={`p-6 rounded-xl flex flex-col transition-all duration-300 ${user?.tier === "CORE" ? "bg-surface ring-2 ring-primary/20 shadow-lg" : "bg-background border border-border hover:shadow-md"}`}>
+        <div className={`p-6 rounded-xl flex flex-col transition-all duration-300 ${owned === "CORE" ? "bg-surface ring-2 ring-primary/20 shadow-lg" : "bg-background border border-border hover:shadow-md"}`}>
           <div className="mb-8">
             <h3 className="font-sans font-medium tracking-wide text-2xl mb-2">{t.upgrade.core.name}</h3>
             <div className="flex items-baseline gap-1 mt-4">
@@ -222,12 +230,12 @@ function UpgradePageInner() {
             ))}
           </ul>
           <button disabled className="w-full py-3 rounded-xl border border-border/60 text-foreground/40 font-medium cursor-not-allowed">
-            {user?.tier === "CORE" ? t.upgrade.core.btn : "-"}
+            {owned === "CORE" ? t.upgrade.core.btn : "-"}
           </button>
         </div>
 
         {/* Pro Card */}
-        <div className={`p-8 rounded-2xl flex flex-col relative transition-all duration-300 transform shadow-2xl ${user?.tier === "PRO" ? "bg-gradient-to-b from-surface to-background ring-2 ring-primary" : "bg-gradient-to-b from-primary/5 to-background border border-primary/20 hover:ring-1 hover:ring-primary/40"}`}>
+        <div className={`p-8 rounded-2xl flex flex-col relative transition-all duration-300 transform shadow-2xl ${owned === "PRO" ? "bg-gradient-to-b from-surface to-background ring-2 ring-primary" : "bg-gradient-to-b from-primary/5 to-background border border-primary/20 hover:ring-1 hover:ring-primary/40"}`}>
           <div className="absolute top-0 inset-x-0 h-1.5 bg-primary rounded-t-2xl"></div>
           <div className="mb-8 mt-2">
             <h3 className="font-sans font-bold tracking-wide text-2xl mb-2 text-primary">{t.upgrade.pro.name}</h3>
@@ -247,7 +255,7 @@ function UpgradePageInner() {
               </li>
             ))}
           </ul>
-          {user?.tier === "PRO" ? (
+          {owned === "PRO" ? (
              <button disabled className="w-full py-3 rounded-xl bg-surface border border-primary/50 text-primary font-semibold">
                {t.upgrade.core.btn}
              </button>
@@ -259,7 +267,7 @@ function UpgradePageInner() {
         </div>
 
         {/* Elite Card */}
-        <div className={`p-8 rounded-2xl flex flex-col transition-all duration-300 ${user?.tier === "ELITE" ? "bg-surface ring-2 ring-primary/40 shadow-xl" : "bg-background border border-border/50 hover:shadow-md hover:border-border"}`}>
+        <div className={`p-8 rounded-2xl flex flex-col transition-all duration-300 ${owned === "ELITE" ? "bg-surface ring-2 ring-primary/40 shadow-xl" : "bg-background border border-border/50 hover:shadow-md hover:border-border"}`}>
           <div className="mb-8">
             <h3 className="font-sans font-medium tracking-wide text-2xl mb-2">{t.upgrade.elite.name}</h3>
             <div className="flex items-baseline gap-1 mt-4">
@@ -278,7 +286,7 @@ function UpgradePageInner() {
               </li>
             ))}
           </ul>
-          {user?.tier === "ELITE" ? (
+          {owned === "ELITE" ? (
              <button disabled className="w-full py-3 rounded-xl bg-surface border border-primary/50 text-primary font-semibold">
                {t.upgrade.core.btn}
              </button>

@@ -15,6 +15,25 @@ export const isBillableRole = (role: string) => !FREE_ROLES.includes(role);
 // Accounts that existed before billing started get this long to choose a plan
 export const GRACE_DAYS = 30;
 
+// New brokerages get a free Elite trial for every internal member. TRIAL_DAYS (default 14) sets its length; 0 turns it off.
+export function trialDays(env: NodeJS.ProcessEnv = process.env): number {
+    const raw = env.TRIAL_DAYS;
+    if (raw === undefined || raw.trim() === '') return 14;
+    const n = Number(raw);
+    return Number.isFinite(n) && n > 0 ? Math.min(Math.floor(n), 90) : 0;
+}
+
+// When a brokerage created now ends its trial; null = no trial
+export function newTrialEnd(now = new Date(), env: NodeJS.ProcessEnv = process.env): Date | null {
+    const days = trialDays(env);
+    return days > 0 ? new Date(now.getTime() + days * 24 * 60 * 60 * 1000) : null;
+}
+
+// True while the brokerage's trial gives this member Elite (outside collaborators and deactivated members get nothing)
+export function onTrial(u: { role: string; isActive: boolean }, org: { trialEndsAt: Date | null }, now = new Date()): boolean {
+    return Boolean(org.trialEndsAt && org.trialEndsAt.getTime() > now.getTime() && u.isActive && isBillableRole(u.role));
+}
+
 // The day paid plans became required. Nothing is enforced unless Stripe is configured AND this date
 // is set and has passed — a member can never be locked out while there is no way to pay.
 export function billingStart(now = new Date(), env: NodeJS.ProcessEnv = process.env): Date | null {

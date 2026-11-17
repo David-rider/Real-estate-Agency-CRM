@@ -39,6 +39,8 @@ model Organization {
   logoutOnPasswordChange     Boolean @default(true)
   // Members may only sign in / use the API from these IPs or CIDR ranges; empty = anywhere
   ipAllowlist                String[] @default([])
+  // Free Elite trial for every internal member of a new brokerage until this moment; null = no trial
+  trialEndsAt                DateTime?
   // Custom contract-to-close checklist: [{ title, anchor: CONTRACT|CLOSING, offsetDays, priority }]; null = standard
   checklistTemplate          Json?
   // Company-paid plans: the Stripe customer and subscription with which the brokerage pays for its internal members.

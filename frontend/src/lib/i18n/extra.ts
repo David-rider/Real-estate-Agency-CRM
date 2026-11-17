@@ -284,6 +284,8 @@ const en = {
     companyNote: "Outside collaborators (attorney, lender, title) are free and are not counted. A member who already pays for their own plan has that subscription cancelled once the brokerage pays for them.",
     paidByCompany: "Your plan is paid by your brokerage.",
     bannerText: "{days} days left: from {date}, each member of your team needs a paid plan.", bannerCta: "Choose a plan",
+    trialBanner: "Free Elite trial: {days} days left (until {date}).",
+    trialNotice: "Your brokerage is on a free Elite trial until {date}. Choose a plan to keep using these features after that.",
     graceNotice: "Your team has two or more members. From {date}, each member needs a paid plan — choose Pro or Elite before then to keep working.",
   },
   listings: {
@@ -684,6 +686,8 @@ const zhCN: Dict = {
     companyNote: "外部协作方（律师、贷款方、产权公司）免费，不计入席位。已经自己付费的成员，在公司为其付费后，个人订阅会自动取消。",
     paidByCompany: "你的套餐由公司支付。",
     bannerText: "还剩 {days} 天：从 {date} 起，团队里的每位成员都需要付费套餐。", bannerCta: "选择套餐",
+    trialBanner: "Elite 免费试用：还剩 {days} 天（到 {date}）。",
+    trialNotice: "你的公司正在免费试用 Elite，到 {date} 结束。到期后如需继续使用这些功能，请选择套餐。",
     graceNotice: "你的团队有两位或更多成员。从 {date} 起，每位成员都需要付费套餐——请在此之前选择 Pro 或 Elite，以便继续使用。",
   },
   listings: {
@@ -1082,6 +1086,8 @@ const zhTW: Dict = {
     companyNote: "外部協作方（律師、貸款方、產權公司）免費，不計入席位。已經自己付費的成員，在公司為其付費後，個人訂閱會自動取消。",
     paidByCompany: "您的方案由公司支付。",
     bannerText: "還剩 {days} 天：從 {date} 起，團隊裡的每位成員都需要付費方案。", bannerCta: "選擇方案",
+    trialBanner: "Elite 免費試用：還剩 {days} 天（至 {date}）。",
+    trialNotice: "您的公司正在免費試用 Elite，至 {date} 結束。到期後如需繼續使用這些功能，請選擇方案。",
     graceNotice: "您的團隊有兩位或更多成員。從 {date} 起，每位成員都需要付費方案——請在此之前選擇 Pro 或 Elite，以便繼續使用。",
   },
   listings: {
@@ -1480,6 +1486,8 @@ const es: Dict = {
     companyNote: "Los colaboradores externos (abogado, prestamista, título) son gratuitos y no cuentan. Si un miembro ya paga su propio plan, esa suscripción se cancela cuando la agencia paga por él.",
     paidByCompany: "Tu agencia paga tu plan.",
     bannerText: "Quedan {days} días: a partir del {date}, cada miembro de tu equipo necesita un plan de pago.", bannerCta: "Elegir un plan",
+    trialBanner: "Prueba gratuita de Elite: quedan {days} días (hasta el {date}).",
+    trialNotice: "Tu agencia tiene una prueba gratuita de Elite hasta el {date}. Elige un plan para seguir usando estas funciones después.",
     graceNotice: "Tu equipo tiene dos o más miembros. A partir del {date}, cada miembro necesita un plan de pago: elige Pro o Elite antes de esa fecha para seguir trabajando.",
   },
   listings: {

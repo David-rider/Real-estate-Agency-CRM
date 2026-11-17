@@ -11,6 +11,7 @@ import { passwordPolicyError, orgPasswordPolicy } from '../lib/passwordPolicy';
 import { EMAIL, Lang, isLang, normalizeLang } from '../lib/messages';
 import { getSeatUsage } from '../lib/seats';
 import { companyChanged } from './payments';
+import { newTrialEnd } from '../lib/billing';
 import { orgSlug } from '../lib/slug';
 import { issueSession } from '../lib/session';
 import { ipAllowed, IP_BLOCKED } from '../lib/ipAllowlist';
@@ -181,8 +182,9 @@ router.post('/register', authLimiter, async (req, res) => {
         // user-typed name. Organization names are not unique identifiers — two real
         // brokerages can legitimately share a name (e.g. "Sunrise Realty" in different
         // cities) — so name-matching was never a valid way to detect "does this org exist".
+        const trialEndsAt = newTrialEnd();
         const org = await prisma.organization.create({
-            data: { name: orgName.trim(), slug: orgSlug(orgName.trim()) }
+            data: { name: orgName.trim(), slug: orgSlug(orgName.trim()), trialEndsAt }
         });
         const newRole = 'FIRMADMIN'; // Creator of a new org becomes its admin
 
@@ -195,7 +197,7 @@ router.post('/register', authLimiter, async (req, res) => {
                 email,
                 password: hashedPassword,
                 role: newRole as any,
-                tier: 'CORE',
+                tier: trialEndsAt ? 'ELITE' : 'CORE', // a new brokerage starts on the free Elite trial
                 orgId: org.id,
                 preferredLanguage: lang,
                 // No email service → nothing to click, auto-verify so login isn't blocked
