@@ -1395,6 +1395,7 @@ async function main() {
         assert.equal((await call('GET', '/api/payments/company', a1.token)).status, 403);
         assert.equal((await call('POST', '/api/payments/company/checkout', a1.token, { plan: 'PRO', cycle: 'MONTHLY' })).status, 403);
         const before = await call('GET', '/api/payments/company', owner);
+        assert.deepEqual([before.body.discount?.percent, before.body.discount?.next?.from], [0, 5], 'a small team gets no volume discount yet');
         assert.equal(before.status, 200, JSON.stringify(before.body));
         assert.deepEqual([before.body.active, before.body.members.length], [false, 3], 'three internal members; the attorney is not a paid seat');
 
@@ -1452,7 +1453,19 @@ async function main() {
         assert.equal((await call('GET', '/api/payments/company', owner)).body.active, false);
 
         // Daily reconciliation: what must change on the Stripe subscription so it charges for today's seats
-        const { seatChanges, nextReconcileAt } = await import('../src/lib/billing');
+        const { seatChanges, nextReconcileAt, volumeDiscount, volumeInfo, discountChange } = await import('../src/lib/billing');
+        // Volume discount for brokerage-paid seats: 10% from 5, 15% from 25, negotiated from 50 (Pro and Elite together)
+        assert.deepEqual([1, 4, 5, 24, 25, 49, 50, 200].map(volumeDiscount), [0, 0, 10, 10, 15, 15, 15, 15]);
+        assert.deepEqual(volumeInfo(3), { seats: 3, percent: 0, next: { from: 5, percent: 10 }, negotiated: false });
+        assert.deepEqual(volumeInfo(30), { seats: 30, percent: 15, next: null, negotiated: false });
+        assert.equal(volumeInfo(50).negotiated, true);
+        assert.deepEqual(discountChange([], 10), { coupon: 'crm-volume-10' }, 'a team reaching 5 seats gets the coupon');
+        assert.equal(discountChange(['crm-volume-10'], 10), null, 'already right: Stripe is not touched');
+        assert.deepEqual(discountChange(['crm-volume-10'], 15), { coupon: 'crm-volume-15' }, 'moving up a tier swaps the coupon');
+        assert.equal(discountChange(['crm-volume-10'], 0), 'clear', 'below 5 seats our coupon is removed');
+        assert.equal(discountChange([], 0), null);
+        assert.equal(discountChange(['negotiated-20'], 10), null, 'a negotiated coupon is never touched');
+        assert.equal(discountChange([null], 0), null, 'an unreadable discount is left alone');
         const prices = { PRO: 'price_p', ELITE: 'price_e' };
         const line = (id: string, price: string, quantity: number) => ({ id, price, quantity });
         assert.deepEqual(seatChanges([line('si_p', 'price_p', 3), line('si_e', 'price_e', 1)], { PRO: 3, ELITE: 1 }, prices), [], 'already right: Stripe is not touched');

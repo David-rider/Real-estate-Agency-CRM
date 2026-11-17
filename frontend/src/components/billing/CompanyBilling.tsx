@@ -12,6 +12,12 @@ type CompanyBillingData = {
   plan: Level | null;
   seats: { PRO: number; ELITE: number };
   members: { id: string; name: string; email: string; level: Level; paysForSelf: boolean }[];
+  // Volume discount for brokerage-paid seats (the tier table comes from the server, never repeated here)
+  discount?: {
+    seats: number; percent: number; negotiated: boolean; negotiatedFrom: number;
+    next: { from: number; percent: number } | null;
+    tiers: { from: number; percent: number }[];
+  };
 };
 
 // Firm admins: let the brokerage pay for every internal member on one invoice, with a level per member.
@@ -59,6 +65,19 @@ export default function CompanyBilling({ billingCycle }: { billingCycle: "monthl
       <div className="p-6 rounded-xl border border-border bg-surface">
         <h3 className="font-sans font-medium text-xl mb-2">{UX.companyTitle}</h3>
         <p className="text-sm text-foreground/60 leading-relaxed">{UX.companyDesc}</p>
+        {data.discount && data.discount.tiers.length >= 2 && (
+          <div className="mt-3 px-4 py-3 rounded-lg bg-primary/10 text-sm text-primary space-y-1">
+            <p>{fmt(UX.volumeRules, { a: data.discount.tiers[0].from, p1: data.discount.tiers[0].percent, b: data.discount.tiers[1].from, p2: data.discount.tiers[1].percent, n: data.discount.negotiatedFrom })}</p>
+            {data.discount.negotiated ? (
+              <p className="font-medium">{fmt(UX.volumeNegotiated, { n: data.discount.negotiatedFrom })}</p>
+            ) : (
+              <>
+                {data.discount.percent > 0 && <p className="font-medium">{fmt(UX.volumeNow, { seats: data.discount.seats, percent: data.discount.percent })}</p>}
+                {data.discount.next && <p>{fmt(UX.volumeNext, { more: data.discount.next.from - data.discount.seats, percent: data.discount.next.percent })}</p>}
+              </>
+            )}
+          </div>
+        )}
 
         {data.active ? (
           <>

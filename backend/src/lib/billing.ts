@@ -105,6 +105,33 @@ export function seatChanges(lines: SeatLine[], seats: Record<string, number>, pr
     return changes;
 }
 
+// Volume discount when the brokerage pays for its members (members paying for themselves keep the list price).
+// Pro and Elite seats count together; every seat gets the discount of the tier reached. From 50 seats the price is
+// negotiated separately: the system keeps 15% and a hand-made coupon in Stripe takes over (see discountChange).
+export const VOLUME_TIERS = [{ from: 5, percent: 10 }, { from: 25, percent: 15 }];
+export const NEGOTIATED_FROM = 50;
+export function volumeDiscount(seats: number): number {
+    let percent = 0;
+    for (const t of VOLUME_TIERS) if (seats >= t.from) percent = t.percent;
+    return percent;
+}
+// What the admin sees: the current discount, the next tier (if any) and whether the price is negotiated
+export function volumeInfo(seats: number): { seats: number; percent: number; next: { from: number; percent: number } | null; negotiated: boolean } {
+    return { seats, percent: volumeDiscount(seats), next: VOLUME_TIERS.find(t => seats < t.from) || null, negotiated: seats >= NEGOTIATED_FROM };
+}
+// Our Stripe coupons are named by their percentage
+export const VOLUME_COUPON_PREFIX = 'crm-volume-';
+export const volumeCouponId = (percent: number) => `${VOLUME_COUPON_PREFIX}${percent}`;
+// How the subscription's discount must change. `current` holds the coupon ids on the subscription (null = one that
+// could not be read). A coupon this server did not create (a negotiated price) is never touched.
+// Returns the coupon to set, 'clear' to remove ours, or null when nothing has to change.
+export function discountChange(current: (string | null)[], percent: number): { coupon: string } | 'clear' | null {
+    if (current.some(c => c === null || !c.startsWith(VOLUME_COUPON_PREFIX))) return null;
+    const want = percent > 0 ? volumeCouponId(percent) : null;
+    if (!want) return current.length ? 'clear' : null;
+    return current.length === 1 && current[0] === want ? null : { coupon: want };
+}
+
 // When brokerage-paid seats are next checked against Stripe: once a day, and an hour after a run that had failures
 export function nextReconcileAt(ranAt: number, failed: number): number {
     return ranAt + (failed > 0 ? 1 : 24) * 60 * 60 * 1000;
