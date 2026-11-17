@@ -1890,6 +1890,96 @@ async function main() {
         assert.equal((await call('PATCH', `/api/appointments/${fits.body.id}`, owner, { notes: 'just a note' })).status, 200, 'edits that do not move it are not re-checked');
     });
 
+    await step('shared document packages: Elite creates links, viewers pass the gate, links can be revoked', async () => {
+        const { gateError, linkSettings, linkUsable, normalizeEmail, isShareToken, newShareToken } = await import('../src/lib/shares');
+        const now = new Date('2027-01-01T00:00:00Z');
+        assert.equal(isShareToken(newShareToken()), true);
+        assert.equal(isShareToken('../etc'), false);
+        assert.deepEqual([linkUsable({ revokedAt: null, expiresAt: null }, now), linkUsable({ revokedAt: now, expiresAt: null }, now), linkUsable({ revokedAt: null, expiresAt: new Date(now.getTime() - 1) }, now)], [true, false, false]);
+        assert.equal(normalizeEmail(' A@B.co '), 'a@b.co');
+        const gate = { requireEmail: true, requireNda: true, recipientEmail: null };
+        assert.deepEqual([gateError(gate, {}), gateError(gate, { email: 'x@y.z' }), gateError(gate, { email: 'x@y.z', ndaAccepted: true })], ['EMAIL_REQUIRED', 'NDA_REQUIRED', null]);
+        assert.equal(gateError({ requireEmail: false, requireNda: false, recipientEmail: 'buyer@y.z' }, { email: 'other@y.z' }), 'WRONG_RECIPIENT', 'a link for one recipient opens only for them');
+        assert.equal(gateError({ requireEmail: false, requireNda: false, recipientEmail: null }, {}), null);
+        assert.deepEqual(linkSettings({ requireNda: true }, now), { error: 'Please enter the confidentiality agreement text' });
+        assert.ok('error' in linkSettings({ expiresAt: '2026-01-01' }, now), 'an expiry in the past is refused');
+        const defaults = linkSettings({}, now) as any;
+        assert.deepEqual([defaults.requireEmail, defaults.watermark, defaults.allowDownload, defaults.requireNda], [true, true, false, false], 'safe defaults');
+
+        if (needsDb('shared packages')) return;
+        const owner = await register('share');
+        // Grant Elite the way the system does (selfTier) before the server has cached this account
+        await db().user.updateMany({ where: { email: `share-${run}@smoke.test` }, data: { selfTier: 'ELITE', tier: 'ELITE' } });
+        const agent = await joinOrg(owner, 'share-agent', 'AGENT');
+        const other = await register('share-other');
+
+        const pdf = Buffer.from('%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF');
+        const up = await uploadFile(owner, pdf, 'application/pdf', 'disclosure.pdf', 'PRIVATE');
+        assert.equal(up.status, 201, JSON.stringify(up.body));
+        const doc = await call('POST', '/api/documents', owner, { name: 'Disclosure.pdf', url: up.body.url, storageKey: up.body.storageKey, mimeType: 'application/pdf', type: 'DISCLOSURE' });
+        assert.equal(doc.status, 201, JSON.stringify(doc.body));
+        const otherUp = await uploadFile(other, pdf, 'application/pdf', 'x.pdf', 'PRIVATE');
+        const otherDoc = await call('POST', '/api/documents', other, { name: 'X.pdf', url: otherUp.body.url, storageKey: otherUp.body.storageKey });
+
+        const body = { title: 'Disclosure package', message: 'Please review', documentIds: [doc.body.id], requireNda: true, ndaText: 'I will keep this confidential.' };
+        assert.equal((await call('POST', '/api/shares', other, { ...body, documentIds: [otherDoc.body.id] })).status, 403, 'sharing packages needs Elite');
+
+        assert.equal((await call('POST', '/api/shares', owner, { ...body, documentIds: [otherDoc.body.id] })).status, 400, 'documents of another brokerage cannot be shared');
+        assert.equal((await call('POST', '/api/shares', owner, { ...body, documentIds: [] })).status, 400);
+        assert.equal((await call('POST', '/api/shares', owner, { ...body, ndaText: '' })).status, 400, 'an NDA needs its text');
+        const created = await call('POST', '/api/shares', owner, body);
+        assert.equal(created.status, 201, JSON.stringify(created.body));
+        const token = created.body.link.token as string;
+        assert.equal(created.body.link.active, true);
+
+        // The public page shows what is needed before opening, never a file address
+        const pub = await call('GET', `/api/public/shares/${token}`);
+        assert.equal(pub.status, 200, JSON.stringify(pub.body));
+        assert.deepEqual([pub.body.title, pub.body.requireEmail, pub.body.requireNda, pub.body.ndaText, pub.body.allowDownload], ['Disclosure package', true, true, 'I will keep this confidential.', false]);
+        assert.ok(!JSON.stringify(pub.body).includes('/api/uploads/'), 'no file address before the gate');
+        assert.equal((await call('GET', '/api/public/shares/not-a-real-token')).status, 404);
+
+        // The gate: email and NDA first
+        assert.equal((await call('POST', `/api/public/shares/${token}/view`, undefined, {})).body.code, 'EMAIL_REQUIRED');
+        assert.equal((await call('POST', `/api/public/shares/${token}/view`, undefined, { email: 'buyer@example.com' })).body.code, 'NDA_REQUIRED');
+        const view = await call('POST', `/api/public/shares/${token}/view`, undefined, { email: 'Buyer@Example.com', ndaAccepted: true });
+        assert.equal(view.status, 201, JSON.stringify(view.body));
+        assert.equal(view.body.files.length, 1);
+        assert.equal(view.body.files[0].downloadUrl, null, 'downloads are off by default');
+        const file = await fetch(view.body.files[0].url);
+        assert.equal(file.status, 200, 'the signed address serves the document');
+        const fresh = await call('POST', `/api/public/shares/${token}/files`, undefined, { session: view.body.session });
+        assert.equal(fresh.status, 200);
+        assert.equal((await call('POST', `/api/public/shares/${token}/files`, undefined, { session: newShareToken() })).status, 401);
+
+        // The agent sees the view; a colleague who is not a manager does not see the package; another brokerage never does
+        const detail = await call('GET', `/api/shares/${created.body.id}`, owner);
+        assert.equal(detail.status, 200);
+        assert.equal(detail.body.links[0].views[0].viewerEmail, 'buyer@example.com');
+        assert.ok(detail.body.links[0].views[0].ndaAcceptedAt, 'the NDA acceptance time is recorded');
+        assert.equal((await call('GET', `/api/shares/${created.body.id}`, agent.token)).status, 404);
+        assert.equal((await call('GET', '/api/shares', agent.token)).body.length, 0);
+        assert.equal((await call('GET', `/api/shares/${created.body.id}`, other)).status, 404);
+
+        // A second link for one recipient only
+        const second = await call('POST', `/api/shares/${created.body.id}/links`, owner, { recipientEmail: 'lawyer@example.com', requireEmail: false, allowDownload: true });
+        assert.equal(second.status, 201, JSON.stringify(second.body));
+        assert.equal((await call('POST', `/api/public/shares/${second.body.token}/view`, undefined, { email: 'someone@example.com' })).body.code, 'WRONG_RECIPIENT');
+        const lawyer = await call('POST', `/api/public/shares/${second.body.token}/view`, undefined, { email: 'lawyer@example.com' });
+        assert.equal(lawyer.status, 201);
+        assert.ok(lawyer.body.files[0].downloadUrl, 'downloads when the agent allowed them');
+
+        // Revoked links look like they never existed
+        assert.equal((await call('PATCH', `/api/shares/links/${created.body.link.id}`, agent.token, { revoked: true })).status, 404, 'only the owner or a manager can revoke');
+        assert.equal((await call('PATCH', `/api/shares/links/${created.body.link.id}`, owner, { revoked: true })).status, 200);
+        assert.equal((await call('GET', `/api/public/shares/${token}`)).status, 404);
+        assert.equal((await call('POST', `/api/public/shares/${token}/files`, undefined, { session: view.body.session })).status, 404);
+
+        // Deleting the document removes it from the package; deleting the package removes its links
+        assert.equal((await call('DELETE', `/api/shares/${created.body.id}`, owner)).status, 200);
+        assert.equal((await call('GET', `/api/public/shares/${second.body.token}`)).status, 404);
+    });
+
     await step('Documents policy is enforced: allowed formats and file size limit', async () => {
         if (needsDb('Documents policy')) return;
         const owner = await register('docpol');

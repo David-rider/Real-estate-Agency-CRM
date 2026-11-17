@@ -41,6 +41,8 @@ import twoFactorRoutes from './routes/twoFactor';
 import socialLinkRoutes from './routes/socialLinks';
 import offersRoutes from './routes/offers';
 import documentsRoutes from './routes/documents';
+import sharesRoutes from './routes/shares';
+import publicSharesRoutes from './routes/publicShares';
 import appointmentsRoutes from './routes/appointments';
 import mediaRoutes from './routes/media';
 import marketingTasksRoutes from './routes/marketing-tasks';
@@ -114,6 +116,8 @@ app.use('/api/settings', authenticateToken, settingsRoutes);
 app.use('/api/settings/users', authenticateToken, importExportRoutes);
 app.use('/api/offers', authenticateToken, offersRoutes);
 app.use('/api/documents', authenticateToken, documentsRoutes);
+app.use('/api/shares', authenticateToken, sharesRoutes);
+app.use('/api/public/shares', publicSharesRoutes); // public: anyone with the link
 app.use('/api/appointments', authenticateToken, appointmentsRoutes);
 app.use('/api/media', authenticateToken, mediaRoutes);
 app.use('/api/marketing-tasks', authenticateToken, marketingTasksRoutes);
