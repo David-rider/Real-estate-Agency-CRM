@@ -65,7 +65,7 @@ This file lists what to do after the trial launch, in priority order by stage. E
 | 1.5.0.0 | 4 AI 助手正式上线<br>*AI assistant goes live* | ⏸ | 代码已有，开关关闭（“正在开发”）<br>*Code exists, switch is off (“in development”)* |
 | 2.x.0.0 | 5.x 团队管理与移动端<br>*Team management and mobile* | ⬜ | 按客户反馈排序<br>*Ordered by customer feedback* |
 | 1.5.x | 6.1 资料包分享与查看追踪（Elite）<br>*Document package sharing with view tracking (Elite)* | ⬜ | 2026-11-17 业主确认列入；参考 Papermark<br>*Added 2026-11-17 at the owner's request; modelled on Papermark* |
-| 1.5.x | 6.2 公司代付席位阶梯折扣<br>*Volume discount for brokerage-paid seats* | ⬜ | 阶梯方案待业主确认（见 6.2）<br>*Tier schedule awaiting the owner's confirmation (see 6.2)* |
+| 1.5.x | 6.2 公司代付席位阶梯折扣<br>*Volume discount for brokerage-paid seats* | ⬜ | 阶梯已由业主确认（2026-11-17，见 6.2）<br>*Tiers confirmed by the owner (2026-11-17, see 6.2)* |
 | 1.5.x | 6.3 新公司 14 天 Elite 免费试用<br>*14-day free Elite trial for new brokerages* | 🟡 | 2026-11-17 业主确认 14 天，开始开发<br>*Owner confirmed 14 days on 2026-11-17; development started* |
 | — | 6.4 公司管控功能按管理员角色开放<br>*Brokerage controls open to company admins* | ✅ | 已核对（2026-11-17）：审计日志、安全设置、业务策略、角色与成员管理、线索分配都按管理员 / 经理角色控制，不看套餐，无需改动<br>*Checked 2026-11-17: audit log, security settings, policies, roles and members, lead routing are all controlled by the admin / manager role, not the plan; no change needed* |
 
@@ -326,24 +326,24 @@ This file lists what to do after the trial launch, in priority order by stage. E
 ### 6.2 公司代付席位阶梯折扣 / Volume discount for brokerage-paid seats
 - **目标**：公司替成员付费时，人越多每席越便宜，鼓励老板统一付费；成员自己付费仍按原价。
   *Goal: when the brokerage pays for its members, each seat gets cheaper as the team grows, encouraging the owner to pay for everyone; members paying for themselves keep the list price.*
-- **建议阶梯（待业主确认）**：按公司代付的内部成员总数（Pro 和 Elite 合计）决定折扣，全部席位按达到的档计价：
-  *Proposed tiers (awaiting the owner's confirmation): the discount depends on the total number of brokerage-paid internal members (Pro and Elite together), and every seat is priced at the tier reached:*
+- **阶梯（业主 2026-11-17 确认）**：按公司代付的内部成员总数（Pro 和 Elite 合计）决定折扣，全部席位按达到的档计价：
+  *Tiers (confirmed by the owner on 2026-11-17): the discount depends on the total number of brokerage-paid internal members (Pro and Elite together), and every seat is priced at the tier reached:*
 
   | 代付人数<br>*Paid seats* | 折扣<br>*Discount* | Pro 每人每月<br>*Pro per seat / month* | Elite 每人每月<br>*Elite per seat / month* |
   |---|---|---|---|
   | 1–4 | 原价 / list price | $39 | $79 |
-  | 5–9 | 10% | $35 | $71 |
-  | 10–24 | 15% | $33 | $67 |
-  | 25+ | 20% | $31 | $63 |
+  | 5–24 | 10% | $35.10 | $71.10 |
+  | 25–49 | 15% | $33.15 | $67.15 |
+  | 50+ | 单独谈 / negotiated | — | — |
 
-  年付在年付价（$390 / $790）上打同样的折扣；50 人以上可以单独谈。
-  *Annual plans get the same discount on the annual price ($390 / $790); 50+ seats can be negotiated separately.*
+  年付在年付价（$390 / $790）上打同样的折扣；50 人及以上单独谈（系统内先按 15% 计，另行约定）。
+  *Annual plans get the same discount on the annual price ($390 / $790); 50+ seats are negotiated separately (the system applies 15% until a separate agreement).*
 - **实现**：价格数字只放在一处（前端套餐数据 + 后端 `lib/billing.ts` 的纯函数 `volumeDiscount(seats)`）；Stripe 上用百分比优惠券挂在公司订阅上，人数变化时由 `companyChanged` 和每日对账一起调整；升级页和“为团队付费”界面显示当前档和再加几人可到下一档。
   *Implementation: the numbers live in one place (frontend plan data + a pure `volumeDiscount(seats)` in `lib/billing.ts`); on Stripe a percent-off coupon sits on the brokerage subscription and is adjusted by `companyChanged` and the daily reconciliation when the headcount changes; the upgrade page and "Pay for the team" screen show the current tier and how many more seats reach the next one.*
 - **风险**：真实 Stripe 的数量与优惠券变化尚未测过，开始收费前要在 Stripe 测试模式完整走一遍。
   *Risks: quantity and coupon changes have not been tested against real Stripe; run the full flow in Stripe test mode before charging.*
-- **工作量**：3 人天（阶梯确认后）。
-  *Effort: 3 person-days (after the tiers are confirmed).*
+- **工作量**：3 人天。
+  *Effort: 3 person-days.*
 
 ### 6.3 新公司 14 天 Elite 免费试用 / 14-day free Elite trial for new brokerages
 - **目标**：新注册的公司（邮箱注册或 Google 登录新建）前 14 天全体内部成员享受 Elite，不用绑卡；到期自动回到各自原来的套餐。用过高级功能的人更愿意付费。
