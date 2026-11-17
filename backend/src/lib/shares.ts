@@ -18,6 +18,24 @@ export function linkUsable(link: LinkState, now = new Date()): boolean {
     return !link.expiresAt || link.expiresAt.getTime() > now.getTime();
 }
 
+// Time spent per page, reported by the viewer every few seconds. One report counts at most this many seconds,
+// so a page left open in a background tab cannot inflate the numbers.
+export const MAX_SECONDS_PER_REPORT = 60;
+export const MAX_PAGE = 5000;
+export type PageSeconds = Record<string, Record<string, number>>;
+// Adds one report to the record; returns null for a report that is not valid (nothing is stored then)
+export function addPageSeconds(pages: unknown, docId: string, page: unknown, seconds: unknown): { pages: PageSeconds; added: number } | null {
+    const p = Number(page), sec = Number(seconds);
+    if (!Number.isInteger(p) || p < 1 || p > MAX_PAGE) return null;
+    if (!Number.isFinite(sec) || sec <= 0) return null;
+    const added = Math.min(Math.round(sec), MAX_SECONDS_PER_REPORT);
+    if (!added) return null;
+    const out: PageSeconds = pages && typeof pages === 'object' && !Array.isArray(pages) ? JSON.parse(JSON.stringify(pages)) : {};
+    const doc = (out[docId] ??= {});
+    doc[String(p)] = (doc[String(p)] || 0) + added;
+    return { pages: out, added };
+}
+
 export const normalizeEmail = (v: unknown): string | null => {
     if (typeof v !== 'string') return null;
     const e = v.trim().toLowerCase();

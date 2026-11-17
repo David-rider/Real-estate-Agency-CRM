@@ -22,6 +22,8 @@
 ## [未发布]
 
 #### 新增 / Added
+- 资料包分享（第 3 步，查看追踪）：对方查看时自动记录每一页停留了多久（只在页面显示在前台时计时，每次上报最多算 60 秒）；某条链接第一次被打开时，分享人会收到站内通知；“已分享的资料包”里点“详情”可以看到每次查看的邮箱、时间、总时长、是否同意保密协议，以及每份文档每一页的停留时间。隐私政策补充了这部分查看记录的说明（四种语言）。
+  *Document package sharing (step 3, view tracking): the time spent on each page is recorded while the viewer reads (only while the page is in front, at most 60 seconds per report); the first open of a link sends the person who shared it an in-app notification; "Details" under "Shared packages" shows each view's email, time, total duration, NDA acceptance, and the time per page of every document. The privacy policy now explains these view records (four languages).*
 - 资料包分享（第 2 步，界面）：文档页可以勾选文档后点“分享”，填写标题、留言、只发给某个邮箱、关联房源或客户、各项开关和到期日，生成链接后一键复制；新增“已分享的资料包”标签，可以看到每条链接是否有效、被查看了几次、最近一次查看时间，并能复制、撤销或删除。对方打开 `/share?t=…` 后按要求留邮箱、同意保密协议，即可逐页查看 PDF 和图片，页面上带有对方邮箱的水印；允许下载时才显示下载按钮。
   *Document package sharing (step 2, screens): on the Documents page, tick documents and choose Share to set a title, message, a single recipient email, a linked listing or client, the switches and an expiry, then copy the link; a new "Shared packages" tab shows whether each link is active, how many times it was viewed and when, with copy, revoke and delete. The recipient opens `/share?t=…`, gives an email and accepts the NDA if asked, and reads the PDFs and images page by page with their email as a watermark; a download button appears only when downloads are allowed.*
 - 资料包分享（第 1 步，服务器部分）：Elite 用户可以把几份文档打成资料包并生成分享链接，可要求对方留邮箱、先同意保密协议、只发给指定邮箱、设置过期时间，并随时撤销；对方不需要账号，每次查看都有记录。分享界面和查看页在下一步上线。数据库新增 4 张表（幂等迁移 `20261118000100_share_packages`）。

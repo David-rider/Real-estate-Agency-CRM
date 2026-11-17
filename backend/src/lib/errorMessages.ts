@@ -11,6 +11,7 @@ import { Lang, isLang } from './messages';
 type T3 = [string, string, string]; // zh-CN, zh-TW, es
 
 export const ERROR_TEXT: Record<string, T3> = {
+    "Invalid request": ["请求无效", "請求無效", "Solicitud no válida"],
     "Please enter a valid email address": ["请填写有效的邮箱地址", "請填寫有效的電子郵件地址", "Introduce una dirección de correo válida"],
     "Please enter the confidentiality agreement text": ["请填写保密协议的内容", "請填寫保密協議的內容", "Introduce el texto del acuerdo de confidencialidad"],
     "The expiry must be in the future": ["过期时间必须晚于现在", "到期時間必須晚於現在", "La fecha de vencimiento debe ser futura"],

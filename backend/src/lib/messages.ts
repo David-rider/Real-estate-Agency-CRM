@@ -72,6 +72,12 @@ export interface NotificationText { title: string; message: string }
 type Tpl = (p: any) => NotificationText;
 
 const N: Record<string, Record<Lang, Tpl>> = {
+    sharePackageOpened: {
+        en: (p) => ({ title: 'Shared package opened', message: `"${p.title}" was opened${p.viewer ? ` by ${p.viewer}` : ''}.` }),
+        'zh-CN': (p) => ({ title: '资料包已被打开', message: `“${p.title}”已被${p.viewer ? ` ${p.viewer} ` : ''}打开。` }),
+        'zh-TW': (p) => ({ title: '資料包已被開啟', message: `「${p.title}」已被${p.viewer ? ` ${p.viewer} ` : ''}開啟。` }),
+        es: (p) => ({ title: 'Paquete compartido abierto', message: `«${p.title}» fue abierto${p.viewer ? ` por ${p.viewer}` : ''}.` }),
+    },
     dealStatus: {
         en: (p) => ({ title: 'Deal status updated', message: `Deal moved to ${label(DEAL_STATUS, p.status, 'en')}.` }),
         'zh-CN': (p) => ({ title: '交易状态已更新', message: `交易已进入“${label(DEAL_STATUS, p.status, 'zh-CN')}”状态。` }),
