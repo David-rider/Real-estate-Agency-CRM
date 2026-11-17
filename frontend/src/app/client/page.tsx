@@ -219,7 +219,7 @@ function ClientProfilePage() {
                   {t.crm.timeline.email}
                 </label>
                 <p className="font-sans text-base text-foreground/80 break-all">
-                  {client.email || "N/A"}
+                  {client.email || X.crm.notProvided}
                 </p>
               </div>
               <div>
@@ -227,7 +227,7 @@ function ClientProfilePage() {
                   {t.crm.timeline.phone}
                 </label>
                 <p className="font-sans text-base text-foreground/80">
-                  {client.phone || "N/A"}
+                  {client.phone || X.crm.notProvided}
                 </p>
               </div>
               <div>
@@ -235,7 +235,7 @@ function ClientProfilePage() {
                   {t.crm.timeline.budget}
                 </label>
                 <p className="font-sans text-base text-foreground/80">
-                  {client.budget || "N/A"}
+                  {client.budget || X.crm.notProvided}
                 </p>
               </div>
               <div>

@@ -22,6 +22,12 @@
 ## [未发布]
 
 #### 修复 / Fixed
+- 工作台和报表的“成交数”改为统计当月真正成交的交易（按过户日期，没有则按标记成交的时间）；以前统计的是当月新建的交易。
+  *"Deals closed" on the dashboard and in Reports now counts deals actually closed that month (by closing date, or by when the deal was marked closed); it used to count deals created that month.*
+- 报表的“交易阶段分布”图和“交易”标签页显示各阶段的真实交易数（以前一直为空）。
+  *The Reports "Pipeline Distribution" chart and Pipeline tab show the real number of deals in each stage (they were always empty).*
+- 客户详情里没填的邮箱、电话、预算显示“未填写”，跟随界面语言（以前是英文的 “N/A”）。
+  *Client detail: an empty email, phone or budget shows "Not provided" in the interface language (it was an English "N/A").*
 - 客户详情：活动历史（创建记录、交易、报价、日程、任务、礼品、备注）按当前界面语言显示；客户类型、状态和各类标签不再显示 `IN_CONTRACT`、`BUYER` 这样的代码；时间按界面语言的格式显示。
   *Client detail: the activity history (record created, deals, offers, appointments, tasks, gifts, notes) follows the interface language; client type, status and tags no longer show codes such as `IN_CONTRACT` or `BUYER`; times use the interface language's format.*
 - 报表：月度成交与佣金图表显示最近六个月的真实数据（以前一直是 1–6 月的空图）。

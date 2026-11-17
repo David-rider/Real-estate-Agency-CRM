@@ -193,6 +193,10 @@ async function main() {
         assert.equal(r.status, 200, JSON.stringify(r.body));
         assert.equal(r.body.chartData.length, 6);
         assert.ok(r.body.ytdCommission >= 19950);
+        // The deal closed above counts in this month's "deals closed", and the stage breakdown includes it
+        assert.ok(r.body.chartData[5].deals >= 1, JSON.stringify(r.body.chartData));
+        assert.deepEqual(r.body.pipeline.map((p: any) => p.stage), ['OFFER_REVIEW', 'IN_CONTRACT', 'BOARD_PACKAGE', 'CLEARED_TO_CLOSE', 'CLOSED']);
+        assert.ok(r.body.pipeline.find((p: any) => p.stage === 'CLOSED').count >= 1);
     });
 
     await step('public listing inquiry creates a HOT lead + urgent task', async () => {

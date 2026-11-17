@@ -140,7 +140,7 @@ const en = {
     duplicateConfirm: "{msg}\n\nCreate a separate record anyway?",
     typeRenter: "Renter", typeInvestor: "Investor", archive: "Archive client",
     archiveConfirm: "Archive this client? They will be hidden from lists but their history is kept.",
-    archived: "Client archived", statusArchived: "Archived", notes: "Notes", preferredContact: "Preferred contact",
+    archived: "Client archived", statusArchived: "Archived", notProvided: "Not provided", notes: "Notes", preferredContact: "Preferred contact",
   },
   detail: {
     EMAIL: "Email", TEXT: "Text", NOTE: "Note", CALL: "Call", MEETING: "Meeting", SHOWING: "Showing",
@@ -540,7 +540,7 @@ const zhCN: Dict = {
     duplicateConfirm: "{msg}\n\n仍然创建一条新记录？",
     typeRenter: "租客", typeInvestor: "投资者", archive: "归档客户",
     archiveConfirm: "归档该客户？客户将从列表中隐藏，但历史记录会保留。",
-    archived: "客户已归档", statusArchived: "已归档", notes: "备注", preferredContact: "首选联系方式",
+    archived: "客户已归档", statusArchived: "已归档", notProvided: "未填写", notes: "备注", preferredContact: "首选联系方式",
   },
   detail: {
     EMAIL: "邮件", TEXT: "短信", NOTE: "备注", CALL: "电话", MEETING: "会面", SHOWING: "带看",
@@ -938,7 +938,7 @@ const zhTW: Dict = {
     duplicateConfirm: "{msg}\n\n仍要建立一筆新紀錄？",
     typeRenter: "租客", typeInvestor: "投資者", archive: "封存客戶",
     archiveConfirm: "封存此客戶？客戶將從列表隱藏，但歷史紀錄會保留。",
-    archived: "客戶已封存", statusArchived: "已封存", notes: "備註", preferredContact: "偏好聯絡方式",
+    archived: "客戶已封存", statusArchived: "已封存", notProvided: "未填寫", notes: "備註", preferredContact: "偏好聯絡方式",
   },
   detail: {
     EMAIL: "郵件", TEXT: "簡訊", NOTE: "備註", CALL: "電話", MEETING: "會面", SHOWING: "帶看",
@@ -1336,7 +1336,7 @@ const es: Dict = {
     duplicateConfirm: "{msg}\n\n¿Crear un registro separado de todos modos?",
     typeRenter: "Inquilino", typeInvestor: "Inversionista", archive: "Archivar cliente",
     archiveConfirm: "¿Archivar este cliente? Se ocultará de las listas, pero su historial se conserva.",
-    archived: "Cliente archivado", statusArchived: "Archivado", notes: "Notas", preferredContact: "Contacto preferido",
+    archived: "Cliente archivado", statusArchived: "Archivado", notProvided: "No indicado", notes: "Notas", preferredContact: "Contacto preferido",
   },
   detail: {
     EMAIL: "Correo", TEXT: "Mensaje", NOTE: "Nota", CALL: "Llamada", MEETING: "Reunión", SHOWING: "Visita",
