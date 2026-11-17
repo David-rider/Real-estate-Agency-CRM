@@ -21,6 +21,10 @@
 
 ## [未发布]
 
+#### 变更 / Changed
+- 1.5.9.0 已部署，线上已确认（2026-11-17，`GET /api/health` 返回 `1.5.9.0`）；标签 `v1.5.9.0` 已推送。
+  *1.5.9.0 is deployed and confirmed live (2026-11-17, `GET /api/health` returns `1.5.9.0`); tag `v1.5.9.0` is pushed.*
+
 ---
 
 ## [1.5.9.0] — 2026-11-17 · 首页、隐私政策与服务条款按语言分页 / One address per language for the home page, privacy policy and terms
