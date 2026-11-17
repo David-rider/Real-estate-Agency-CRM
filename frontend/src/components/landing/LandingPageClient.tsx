@@ -4,6 +4,7 @@ import { LEGAL } from "@/lib/i18n/legal";
 import { useExtra } from "@/lib/i18n/extra";
 import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import { localizedPath } from "@/lib/site";
 import { useI18n } from "@/lib/i18n/I18nContext";
 import { useTheme, ThemeName } from "@/lib/theme/ThemeContext";
 import { useAuth } from "@/lib/auth/AuthContext";
@@ -810,10 +811,10 @@ export default function LandingPageClient() {
             <Link href="/signup" className="hover:text-foreground transition-colors">
               {copy.nav.getStarted}
             </Link>
-            <Link href="/privacy" className="hover:text-foreground transition-colors">
+            <Link href={localizedPath(language, "/privacy")} className="hover:text-foreground transition-colors">
               {(LEGAL[language] ?? LEGAL.en).privacyLink}
             </Link>
-            <Link href="/terms" className="hover:text-foreground transition-colors">
+            <Link href={localizedPath(language, "/terms")} className="hover:text-foreground transition-colors">
               {(LEGAL[language] ?? LEGAL.en).termsLink}
             </Link>
           </div>

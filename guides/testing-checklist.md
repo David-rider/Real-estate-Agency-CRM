@@ -112,6 +112,8 @@ happen; note anything that doesn't.
 ## 9. Language / 语言
 - [ ] Open `/zh-CN`, `/zh-TW` and `/es` directly (not signed in): each opens in its language right away, with the browser tab title in that language. Switch the language in the top bar: the address changes to that language's page and the choice is remembered (open `/` afterwards and you land on the page of the language you chose; choose English to stay on `/`).
       *未登录时直接打开 `/zh-CN`、`/zh-TW`、`/es`：每个页面一打开就是对应语言，浏览器标签页标题也是。在顶栏切换语言：地址变成该语言的页面，并记住选择（之后打开 `/` 会进入所选语言的首页；选英文则留在 `/`）。*
+- [ ] On `/zh-CN`, click **隐私政策** in the footer: it opens `/zh-CN/privacy` in Chinese. Switch the language at the top of the page to Español: the address becomes `/es/privacy`. Then open `/terms`: you land on `/es/terms`. The sign-up page's terms and privacy links also open the current language's version.
+      *在 `/zh-CN` 页面底部点“隐私政策”：打开 `/zh-CN/privacy`，是中文。在页面顶部把语言切到 Español：地址变成 `/es/privacy`。再打开 `/terms`：会进入 `/es/terms`。注册页上的服务条款和隐私政策链接也会打开当前语言的版本。*
 - [ ] In a browser set to Chinese or Spanish, with no saved choice (private window), open `/`: a small prompt at the bottom offers the page in that language; it can be closed and nothing redirects by itself.
       *浏览器语言设为中文或西语、没有保存过选择（无痕窗口）时打开 `/`：页面底部出现一个切换到该语言的小提示，可以关掉，不会自动跳转。*
 - [ ] Choose **Español** on the login page, sign in, then request a password reset and invite a teammate — both emails arrive in Spanish.

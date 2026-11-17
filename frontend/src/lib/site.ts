@@ -9,7 +9,29 @@ export const LANGUAGES: Language[] = ["en", "zh-CN", "zh-TW", "es"];
 // The home page has one address per language, so search engines and shared links get the right language
 export const HOME_PATH: Record<Language, string> = { en: "/", "zh-CN": "/zh-CN", "zh-TW": "/zh-TW", es: "/es" };
 
-export const homeUrl = (lang: Language) => (lang === "en" ? SITE_URL : `${SITE_URL}${HOME_PATH[lang]}`);
+// Address of a public page in a language: "" = home (/, /zh-CN …), "/privacy" → /privacy, /zh-CN/privacy …
+export const localizedPath = (lang: Language, page = "") => (lang === "en" ? page || "/" : `${HOME_PATH[lang]}${page}`);
+export const localizedUrl = (lang: Language, page = "") => (lang === "en" && !page ? SITE_URL : `${SITE_URL}${localizedPath(lang, page)}`);
+export const homeUrl = (lang: Language) => localizedUrl(lang);
+
+// canonical + hreflang (all four languages and x-default) for a page that exists in every language
+function languageAlternates(lang: Language, page: string): Metadata["alternates"] {
+  const languages: Record<string, string> = Object.fromEntries(LANGUAGES.map((l) => [l, localizedUrl(l, page)]));
+  languages["x-default"] = localizedUrl("en", page);
+  return { canonical: localizedUrl(lang, page), languages };
+}
+
+const OG_LOCALE: Record<Language, string> = { en: "en_US", "zh-CN": "zh_CN", "zh-TW": "zh_TW", es: "es_US" };
+
+// Metadata for a public page in one language (title gets the layout's " | Real Estate CRM" suffix)
+export function pageMetadata(lang: Language, page: string, title: string, description: string): Metadata {
+  return {
+    title,
+    description,
+    alternates: languageAlternates(lang, page),
+    openGraph: { title, description, url: localizedUrl(lang, page), siteName: "Real Estate CRM", type: "website", locale: OG_LOCALE[lang] },
+  };
+}
 
 // The language a browser asks for, mapped to one of ours (null = English or unknown)
 export function browserLanguage(nav: string | undefined): Language | null {
@@ -54,12 +76,10 @@ const HOME_META: Record<Language, { title: string; description: string; ogTitle:
 
 export function homeMetadata(lang: Language): Metadata {
   const m = HOME_META[lang];
-  const languages: Record<string, string> = Object.fromEntries(LANGUAGES.map((l) => [l, homeUrl(l)]));
-  languages["x-default"] = homeUrl("en");
   return {
     title: { absolute: m.title }, // no " | Real Estate CRM" suffix: the title already names the product
     description: m.description,
-    alternates: { canonical: homeUrl(lang), languages },
+    alternates: languageAlternates(lang, ""),
     openGraph: {
       title: m.ogTitle,
       description: m.ogDescription,

@@ -22,6 +22,8 @@
 ## [未发布]
 
 #### 新增 / Added
+- 隐私政策和服务条款也按语言分成独立地址：`/privacy`、`/terms`（英文），以及 `/zh-CN/privacy`、`/zh-TW/terms`、`/es/privacy` 等。每个地址打开就是该语言，标题和搜索引擎标注也是；页面内切换语言会跳到同一份文件的对应语言地址。首页、注册页和房源页上的“隐私政策”“服务条款”链接会直接打开当前语言的版本。
+  *The privacy policy and terms of service also have one address per language: `/privacy` and `/terms` (English), plus `/zh-CN/privacy`, `/zh-TW/terms`, `/es/privacy` and so on. Each opens in its language with a matching title and search-engine tags; switching language on the page moves to the same document in that language. The "Privacy Policy" and "Terms of Service" links on the home, sign-up and listing pages open the version in the current language.*
 - 首页按语言分成四个地址：`/`（英文）、`/zh-CN`、`/zh-TW`、`/es`。每个地址打开时就是该语言的完整页面（标题、描述和分享卡片也是），搜索引擎可以分别收录，分享中文链接对方打开就是中文。切换语言会跳到对应语言的地址并记住选择；之前选过其他语言的访客打开 `/` 会进入该语言的首页；第一次来、浏览器是中文或西语的访客，会在页面底部看到一个“查看中文版”之类的提示，不会被强制跳转。
   *The home page has four addresses, one per language: `/` (English), `/zh-CN`, `/zh-TW` and `/es`. Each opens as a complete page in that language (title, description and share card included), so search engines index each one and a shared Chinese link opens in Chinese. Switching language moves to that language's address and remembers the choice; a visitor who chose another language before is taken to that home page from `/`; a first-time visitor whose browser is in Chinese or Spanish sees a small "view this page in Chinese"-style prompt at the bottom, never a forced redirect.*
 

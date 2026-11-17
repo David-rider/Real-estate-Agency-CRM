@@ -4,7 +4,7 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import { Language, translations } from "./translations";
 import { API_URL } from "../api";
 import { usePathname, useRouter } from "next/navigation";
-import { HOME_PATH } from "../site";
+import { localizedPath } from "../site";
 
 // The browser tab title in each language. The server-rendered English titles stay as they are for search engines;
 // these replace them in the browser once the language is known.
@@ -111,9 +111,9 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     );
 }
 
-// A page that exists in one language (the home page at /, /zh-CN, /zh-TW, /es): it is generated and shown in that
-// language whatever was chosen before, and picking another language opens that language's page.
-export function LockedLanguage({ lang, children }: { lang: Language; children: React.ReactNode }) {
+// A page that exists in one language (the home page at /, /zh-CN …; /privacy, /zh-CN/privacy …): it is generated and
+// shown in that language whatever was chosen before, and picking another language opens the same page in that language.
+export function LockedLanguage({ lang, page = "", children }: { lang: Language; page?: string; children: React.ReactNode }) {
     const parent = useI18n();
     const router = useRouter();
     const value: I18nContextProps = {
@@ -121,7 +121,7 @@ export function LockedLanguage({ lang, children }: { lang: Language; children: R
         t: translations[lang] as typeof translations.en,
         setLanguage: (next: Language) => {
             parent.setLanguage(next);
-            if (next !== lang) router.push(HOME_PATH[next]);
+            if (next !== lang) router.push(localizedPath(next, page));
         },
     };
     return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
