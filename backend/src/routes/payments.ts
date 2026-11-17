@@ -2,7 +2,7 @@ import { appUrl as getAppUrl } from '../lib/appUrl';
 import express from 'express';
 import { prisma } from '../server';
 import { authenticateToken, authorizeRole, AuthRequest, invalidateAccount, clearAccountCache } from '../middleware/authMiddleware';
-import { stripe, isBillableRole, billingStart, graceEndsAt, planRequired, mustPay, seatChanges, onTrial, FREE_ROLES } from '../lib/billing';
+import { stripe, isBillableRole, billingStart, graceEndsAt, planRequired, mustPay, seatChanges, onTrial, FREE_ROLES, volumeDiscount, volumeInfo, volumeCouponId, discountChange, VOLUME_TIERS, NEGOTIATED_FROM } from '../lib/billing';
 
 const router = express.Router();
 
@@ -88,21 +88,47 @@ async function companySeats(orgId: string, org: OrgBilling & { companyPlan: stri
     return seats;
 }
 
-// The two Stripe calls seat billing needs (so the daily reconciliation can be exercised without Stripe)
-export type SubscriptionsClient = { subscriptions: { retrieve(id: string): Promise<any>; update(id: string, params: any): Promise<any> } };
+// The Stripe calls seat billing needs (so the daily reconciliation can be exercised without Stripe)
+export type SubscriptionsClient = {
+    subscriptions: { retrieve(id: string, params?: any): Promise<any>; update(id: string, params: any): Promise<any> };
+    coupons: { retrieve(id: string): Promise<any>; create(params: any): Promise<any> };
+};
+// The subscription is always read with its discounts expanded, so their coupons can be seen
+const SUB_EXPAND = { expand: ['discounts'] };
 
-// Makes the brokerage's Stripe subscription charge for the seats it has now (one line per level, prorated by Stripe).
-// Returns true when Stripe had to be corrected. `sub` may be passed when the caller has just fetched it.
+// Coupon ids on a subscription; null for a discount whose coupon cannot be read
+function couponsOf(sub: any): (string | null)[] {
+    return (sub?.discounts || []).map((d: any) => (typeof d === 'string' ? null : idOf(d?.source?.coupon) || idOf(d?.coupon)));
+}
+
+// Our volume coupon for this percentage, created in Stripe the first time it is needed
+async function ensureVolumeCoupon(client: SubscriptionsClient, percent: number): Promise<string> {
+    const id = volumeCouponId(percent);
+    try {
+        await client.coupons.retrieve(id);
+    } catch {
+        await client.coupons.create({ id, percent_off: percent, duration: 'forever', name: `Volume discount ${percent}%` });
+    }
+    return id;
+}
+
+// Makes the brokerage's Stripe subscription charge for the seats it has now (one line per level, prorated by Stripe),
+// with the volume discount for that many seats. Returns true when Stripe had to be corrected. `sub` may be passed when the caller has just fetched it.
 async function syncCompanySeats(orgId: string, client: SubscriptionsClient | null = stripe, sub?: any): Promise<boolean> {
     const org = await prisma.organization.findUnique({ where: { id: orgId }, select: { companyPlan: true, companyCycle: true, stripeSubscriptionId: true, subscriptionStatus: true } });
     if (!client || !org || !companyPays(org)) return false;
     const cycle: Cycle = org.companyCycle === 'ANNUAL' ? 'ANNUAL' : 'MONTHLY';
     const seats = await companySeats(orgId, org);
-    if (!sub) sub = await client.subscriptions.retrieve(org.stripeSubscriptionId!);
+    if (!sub) sub = await client.subscriptions.retrieve(org.stripeSubscriptionId!, SUB_EXPAND);
     const lines = (sub.items?.data || []).map((i: any) => ({ id: String(i.id), price: idOf(i.price) || '', quantity: Number(i.quantity ?? 0) }));
     const items = seatChanges(lines, seats, { PRO: PLAN_PRICES[`PRO_${cycle}`], ELITE: PLAN_PRICES[`ELITE_${cycle}`] });
-    if (!items.length) return false;
-    await client.subscriptions.update(org.stripeSubscriptionId!, { items, proration_behavior: 'create_prorations' });
+    const discount = discountChange(couponsOf(sub), volumeDiscount(seats.PRO + seats.ELITE));
+    if (!items.length && !discount) return false;
+    const params: any = { proration_behavior: 'create_prorations' };
+    if (items.length) params.items = items;
+    if (discount === 'clear') params.discounts = '';
+    else if (discount) params.discounts = [{ coupon: await ensureVolumeCoupon(client, volumeDiscount(seats.PRO + seats.ELITE)) }];
+    await client.subscriptions.update(org.stripeSubscriptionId!, params);
     return true;
 }
 
@@ -202,7 +228,7 @@ export async function reconcileCompanyBilling(client: SubscriptionsClient | null
     for (const org of orgs) {
         result.checked++;
         try {
-            const sub = await client.subscriptions.retrieve(org.stripeSubscriptionId!);
+            const sub = await client.subscriptions.retrieve(org.stripeSubscriptionId!, SUB_EXPAND);
             const status = String(sub?.status || '');
             let corrected = false;
             if (status !== (org.subscriptionStatus || '')) {
@@ -442,6 +468,8 @@ router.get('/company', authenticateToken, companyAdmin, async (req: AuthRequest,
             cycle: active ? (org.companyCycle === 'ANNUAL' ? 'ANNUAL' : 'MONTHLY') : null,
             status: org.subscriptionStatus,
             seats: active ? await companySeats(req.user!.orgId, org) : { PRO: 0, ELITE: 0 },
+            // Volume discount for the seats paid (or that would be paid) by the brokerage
+            discount: { ...volumeInfo(members.length), tiers: VOLUME_TIERS, negotiatedFrom: NEGOTIATED_FROM },
             members: members.map(m => ({
                 id: m.id, name: m.name, email: m.email, role: m.role, tier: m.tier,
                 level: (m.companyTier || fallback) === 'ELITE' ? 'ELITE' : 'PRO', // the level the brokerage pays (or would pay) for this member
@@ -489,10 +517,12 @@ router.post('/company/checkout', authenticateToken, companyAdmin, async (req: Au
 
         const appUrl = getAppUrl();
         const metadata = { orgId: org.id, companyPlan: plan, companyCycle: cycle };
+        const percent = volumeDiscount(seats.PRO + seats.ELITE);
         const session = await stripe.checkout.sessions.create({
             mode: 'subscription',
             customer: customerId,
             line_items,
+            ...(percent ? { discounts: [{ coupon: await ensureVolumeCoupon(stripe, percent) }] } : {}),
             success_url: `${appUrl}/upgrade?success=true&session_id={CHECKOUT_SESSION_ID}`,
             cancel_url: `${appUrl}/upgrade?canceled=true`,
             client_reference_id: org.id,

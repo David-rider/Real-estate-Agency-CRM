@@ -22,6 +22,8 @@
 ## [未发布]
 
 #### 新增 / Added
+- 公司替成员统一付费时享阶梯折扣：5–24 人每席优惠 10%，25–49 人优惠 15%，50 人及以上单独报价；成员自己付费仍是原价。“升级 → 为团队付费”显示当前折扣和再加几人可到下一档，结账和人数变化时自动套用。
+  *Volume discount when the brokerage pays for its members: 10% off every seat for 5–24, 15% for 25–49, a custom price from 50; members paying for themselves keep the list price. "Upgrade → Pay for your team" shows the current discount and how many more members reach the next tier, and it is applied automatically at checkout and when the team changes.*
 - 新注册的公司（邮箱注册或 Google 登录新建）前 14 天全体内部成员免费使用 Elite，不用绑卡；试用期内邀请的成员也是 Elite，外部协作方不变。每个页面顶部显示“Elite 免费试用：还剩 N 天”，升级页说明试用到期日，试用中仍可直接购买套餐；到期后自动回到各自原来的套餐。老公司不受影响。
   *New brokerages (email sign-up or a new Google sign-in) get Elite free for every internal member for the first 14 days, no card needed; members invited during the trial get Elite too, outside collaborators are unchanged. Every page shows "Free Elite trial: N days left", the upgrade page states when the trial ends and plans can still be bought during it; afterwards everyone returns to the plan they had. Existing brokerages are unaffected.*
 - 数据库：新增 `Organization.trialEndsAt`（幂等迁移 `20261117000100_org_trial`）。新增可选环境变量 `TRIAL_DAYS`（默认 14，设为 0 关闭试用）。
