@@ -36,7 +36,11 @@ router.get('/', async (req: AuthRequest, res) => {
         prisma.client.count({ where: { ...base, NOT: { status: 'ARCHIVED' } } }),
         prisma.transaction.count({ where: { ...base, status: { in: ['IN_CONTRACT', 'BOARD_PACKAGE', 'CLEARED_TO_CLOSE'] } } }),
         prisma.transaction.count({ where: { ...base, status: 'CLOSED' } }),
-        prisma.transaction.findMany({ where: { ...base, createdAt: { gte: sixMonthsAgo } }, select: { createdAt: true } }),
+        // Deals closed in the last six months: dated by the closing date, else by when the deal was marked closed
+        prisma.transaction.findMany({
+            where: { ...base, status: 'CLOSED', OR: [{ closingDate: { gte: sixMonthsAgo } }, { closingDate: null, updatedAt: { gte: sixMonthsAgo } }] },
+            select: { closingDate: true, updatedAt: true },
+        }),
         prisma.commission.findMany({ where: { ...base, status: 'PAID', paidAt: { gte: sixMonthsAgo < startOfYear ? sixMonthsAgo : startOfYear } } }),
         prisma.offer.findMany({
             where: { ...base, status: 'PENDING' },
@@ -75,7 +79,7 @@ router.get('/', async (req: AuthRequest, res) => {
         const sameMonth = (x: Date) => x.getFullYear() === d.getFullYear() && x.getMonth() === d.getMonth();
         chartData.push({
             name: MONTHS[d.getMonth()],
-            deals: recentTransactions.filter(t => sameMonth(t.createdAt)).length,
+            deals: recentTransactions.filter(t => sameMonth(t.closingDate ?? t.updatedAt)).length,
             commission: paidCommissions.filter(c => c.paidAt && sameMonth(c.paidAt)).reduce((s, c) => s + c.netPayout, 0),
         });
     }
@@ -89,6 +93,11 @@ router.get('/', async (req: AuthRequest, res) => {
     });
     const goalTotal = goals.reduce((s, g) => s + (g.annualCommissionGoal ?? 0), 0);
     const annualGoal = goalTotal > 0 ? goalTotal : null;
+
+    // Deals by stage (Reports > Pipeline); stage keys are labelled by the frontend
+    const byStage = await prisma.transaction.groupBy({ by: ['status'], where: base, _count: { _all: true } });
+    const pipeline = ['OFFER_REVIEW', 'IN_CONTRACT', 'BOARD_PACKAGE', 'CLEARED_TO_CLOSE', 'CLOSED']
+        .map(stage => ({ stage, count: byStage.find(g => g.status === stage)?._count._all ?? 0 }));
 
     const funnelData = [
         { name: 'Total Leads', value: totalClients },
@@ -129,7 +138,7 @@ router.get('/', async (req: AuthRequest, res) => {
     res.json({
         scope: mine ? 'me' : 'org',
         activeListings, newLeads, pendingOffers, hotLeads, inContract,
-        chartData, funnelData, ytdCommission, annualGoal, goalScope: mine ? 'me' : 'team', actionItems,
+        chartData, pipeline, funnelData, ytdCommission, annualGoal, goalScope: mine ? 'me' : 'team', actionItems,
         overdueTasks, todaysAppointments, staleLeads,
     });
 });

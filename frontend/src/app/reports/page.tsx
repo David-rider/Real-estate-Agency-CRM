@@ -25,7 +25,7 @@ interface DashData {
     pendingOffers: number;
     ytdCommission: number;
     chartData?: { name: string; deals: number; commission: number }[];
-    pipeline: { stage: string; count: number }[];
+    pipeline?: { stage: string; count: number }[]; // stage = deal status key
     topItems: any[];
 }
 
@@ -85,13 +85,9 @@ export default function ReportsPage() {
         commission: 0,
     }))).map((r) => ({ ...r, month: monthLabel(r.month, language) }));
 
-    const pipelineData = dashData?.pipeline || [
-        { stage: Tpipe.columns?.OFFER_REVIEW,    count: 0 },
-        { stage: Tpipe.columns?.IN_CONTRACT,     count: 0 },
-        { stage: Tpipe.columns?.BOARD_PACKAGE,   count: 0 },
-        { stage: Tpipe.columns?.CLEARED_TO_CLOSE, count: 0 },
-        { stage: Tpipe.columns?.CLOSED,          count: 0 },
-    ];
+    const STAGES = ["OFFER_REVIEW", "IN_CONTRACT", "BOARD_PACKAGE", "CLEARED_TO_CLOSE", "CLOSED"];
+    const pipelineData = (dashData?.pipeline ?? STAGES.map((stage) => ({ stage, count: 0 })))
+        .map((r) => ({ stage: Tpipe.columns?.[r.stage] ?? r.stage, count: r.count }));
 
     const leaderboard = finMetrics?.leaderboard || [];
 
