@@ -6,7 +6,7 @@ export type LegalDoc = { title: string; updated: string; intro: string; sections
 type LegalSet = { privacy: LegalDoc; terms: LegalDoc; back: string; privacyLink: string; termsLink: string; agree: string; and: string; inquiryNotice: string };
 
 const CONTACT = "support@apexzone.xyz";
-const DATE = "2026-11-14";
+const DATE = "2026-11-17";
 
 const en: LegalSet = {
   back: "Back to home",
@@ -26,6 +26,7 @@ const en: LegalSet = {
         "Technical information: sign-in times, IP address and browser type, used for security alerts, audit logs and preventing abuse.",
         "Enquiries from public listing pages: if you send a message or sign in at an open house, your name, contact details and answers go to the brokerage that published the listing, which decides how to use them.",
         "Browser storage: we use a sign-in cookie and your browser's local storage to keep you signed in and remember your language and display choices. We do not use advertising or tracking cookies.",
+        "Shared document packages: when an agent sends you a link to view documents, we record the email you enter, when you accepted any confidentiality agreement, your IP address and browser type, and how long each page was viewed. This record is shown only to the brokerage that shared the documents.",
       ] },
       { h: "2. Sign in with Google", p: [
         "If you choose Sign in with Google, we receive from Google only your name, email address, whether Google has verified that email, and your Google account ID.",
@@ -109,6 +110,7 @@ const zhCN: LegalSet = {
         "技术信息：登录时间、IP 地址和浏览器类型，用于安全提醒、审计日志和防止滥用。",
         "公开房源页面上的咨询：如果你在房源页面留言或在开放看房时登记，你的姓名、联系方式和填写的内容会交给发布该房源的经纪公司，由该公司决定如何使用。",
         "浏览器存储：我们使用登录 Cookie 和浏览器本地存储来保持登录状态，并记住你的语言和显示偏好。我们不使用广告或跟踪 Cookie。",
+        "分享的资料包：经纪人发给你查看文档的链接时，我们会记录你填写的邮箱、你同意保密协议（如有）的时间、你的 IP 地址和浏览器类型，以及每一页的查看时长。这些记录只给分享文档的经纪公司查看。",
       ] },
       { h: "2. 使用 Google 登录", p: [
         "如果你选择用 Google 登录，我们只从 Google 获取你的姓名、邮箱、Google 是否已验证该邮箱，以及你的 Google 账号 ID。",
@@ -192,6 +194,7 @@ const zhTW: LegalSet = {
         "技術資訊：登入時間、IP 位址和瀏覽器類型，用於安全提醒、稽核紀錄和防止濫用。",
         "公開房源頁面上的諮詢：如果您在房源頁面留言或在開放看房時登記，您的姓名、聯絡方式和填寫的內容會交給發布該房源的經紀公司，由該公司決定如何使用。",
         "瀏覽器儲存：我們使用登入 Cookie 和瀏覽器本機儲存來保持登入狀態，並記住您的語言和顯示偏好。我們不使用廣告或追蹤 Cookie。",
+        "分享的資料包：經紀人寄給您查看文件的連結時，我們會記錄您填寫的電子郵件、您同意保密協議（如有）的時間、您的 IP 位址和瀏覽器類型，以及每一頁的瀏覽時間。這些紀錄只提供給分享文件的經紀公司查看。",
       ] },
       { h: "2. 使用 Google 登入", p: [
         "若您選擇使用 Google 登入，我們只從 Google 取得您的姓名、電子郵件、Google 是否已驗證該電子郵件，以及您的 Google 帳號 ID。",
@@ -275,6 +278,7 @@ const es: LegalSet = {
         "Información técnica: horas de inicio de sesión, dirección IP y tipo de navegador, usados para alertas de seguridad, registros de auditoría y prevención de abusos.",
         "Consultas desde las páginas públicas de propiedades: si envía un mensaje o se registra en una jornada de puertas abiertas, su nombre, datos de contacto y respuestas se entregan a la agencia que publicó la propiedad, que decide cómo usarlos.",
         "Almacenamiento del navegador: usamos una cookie de sesión y el almacenamiento local del navegador para mantener su sesión y recordar sus preferencias de idioma y visualización. No usamos cookies de publicidad ni de seguimiento.",
+        "Paquetes de documentos compartidos: cuando un agente le envía un enlace para ver documentos, registramos el correo que usted introduce, cuándo aceptó un acuerdo de confidencialidad (si lo hay), su dirección IP y tipo de navegador, y cuánto tiempo vio cada página. Este registro solo lo ve la agencia que compartió los documentos.",
       ] },
       { h: "2. Iniciar sesión con Google", p: [
         "Si elige iniciar sesión con Google, recibimos de Google solo su nombre, su correo electrónico, si Google ha verificado ese correo y el ID de su cuenta de Google.",

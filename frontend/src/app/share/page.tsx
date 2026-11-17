@@ -1,10 +1,10 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useI18n } from "@/lib/i18n/I18nContext";
 import { useExtra, fmt } from "@/lib/i18n/extra";
-import { api } from "@/lib/api";
+import { api, API_URL } from "@/lib/api";
 import SharedFile from "@/components/share/SharedFile";
 
 type Info = {
@@ -45,6 +45,44 @@ function ShareViewer() {
   const [session, setSession] = useState<string | null>(null);
   const [files, setFiles] = useState<SharedDoc[]>([]);
   const [mark, setMark] = useState<string | null>(null);
+
+  // Time per page: the page mostly on screen collects a second each second while the tab is visible;
+  // the totals are sent every 15 seconds and once more when the tab is hidden or closed.
+  const current = useRef<{ docId: string; page: number } | null>(null);
+  const pending = useRef(new Map<string, number>());
+  useEffect(() => {
+    if (!session) return;
+    const flush = () => {
+      const entries = [...pending.current.entries()];
+      pending.current.clear();
+      for (const [key, seconds] of entries) {
+        const [docId, page] = key.split("|");
+        fetch(`${API_URL}/api/public/shares/${token}/pages`, {
+          method: "POST",
+          keepalive: true,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ session, docId, page: Number(page), seconds }),
+        }).catch(() => {});
+      }
+    };
+    const tick = setInterval(() => {
+      const c = current.current;
+      if (!c || document.visibilityState !== "visible") return;
+      const key = `${c.docId}|${c.page}`;
+      pending.current.set(key, (pending.current.get(key) || 0) + 1);
+    }, 1000);
+    const send = setInterval(flush, 15000);
+    const onHide = () => { if (document.visibilityState === "hidden") flush(); };
+    document.addEventListener("visibilitychange", onHide);
+    window.addEventListener("pagehide", flush);
+    return () => {
+      clearInterval(tick);
+      clearInterval(send);
+      document.removeEventListener("visibilitychange", onHide);
+      window.removeEventListener("pagehide", flush);
+      flush();
+    };
+  }, [session, token]);
 
   const open = useCallback(async (body: { email?: string; ndaAccepted?: boolean }, i: Info) => {
     setBusy(true);
@@ -151,7 +189,7 @@ function ShareViewer() {
                         {f.downloadUrl && <a href={f.downloadUrl} className="text-sm text-primary hover:underline whitespace-nowrap">{S.vDownload}</a>}
                       </div>
                       {kind ? (
-                        <SharedFile url={f.url} kind={kind} watermark={mark} pageLabel={(n) => fmt(S.vPage, { n })} errorText={S.vPdfError} refreshUrl={() => refresh(f.id)} />
+                        <SharedFile url={f.url} kind={kind} watermark={mark} pageLabel={(n) => fmt(S.vPage, { n })} errorText={S.vPdfError} refreshUrl={() => refresh(f.id)} onPageVisible={(page) => { current.current = { docId: f.id, page }; }} />
                       ) : f.downloadUrl ? (
                         <a href={f.url} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline">{S.vOpenFile}</a>
                       ) : (

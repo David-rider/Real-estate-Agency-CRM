@@ -129,7 +129,9 @@ export default function SharedFile({ url, kind, watermark, pageLabel, errorText,
       if (cancelled) return;
       if (kind === "pdf") {
         const d = await loadPdf(bytes);
-        if (!cancelled) setDoc(d);
+        if (cancelled) return;
+        setDoc(d);
+        onPageVisible?.(1); // the first page is on screen when the document opens; scrolling updates it
       } else {
         const bitmap = await createImageBitmap(new Blob([bytes]));
         const c = imageCanvas.current;

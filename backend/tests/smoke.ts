@@ -1952,11 +1952,32 @@ async function main() {
         assert.equal(fresh.status, 200);
         assert.equal((await call('POST', `/api/public/shares/${token}/files`, undefined, { session: newShareToken() })).status, 401);
 
+        // Time per page: reports add up, one report counts at most 60 seconds, bad reports are refused
+        const report = (b: Record<string, unknown>) => call('POST', `/api/public/shares/${token}/pages`, undefined, { session: view.body.session, docId: doc.body.id, ...b });
+        assert.equal((await report({ page: 1, seconds: 15 })).status, 200);
+        assert.equal((await report({ page: 1, seconds: 15 })).status, 200);
+        assert.equal((await report({ page: 2, seconds: 600 })).status, 200);
+        assert.equal((await report({ page: 0, seconds: 5 })).status, 400);
+        assert.equal((await report({ page: 1, seconds: -5 })).status, 400);
+        assert.equal((await report({ page: 1, seconds: 5, docId: otherDoc.body.id })).status, 400, 'only documents of this package');
+        assert.equal((await call('POST', `/api/public/shares/${token}/pages`, undefined, { session: newShareToken(), docId: doc.body.id, page: 1, seconds: 5 })).status, 401);
+        const { addPageSeconds } = await import('../src/lib/shares');
+        assert.deepEqual(addPageSeconds({ d: { '1': 10 } }, 'd', 1, 90), { pages: { d: { '1': 70 } }, added: 60 });
+
+        // The first view of the link notified the person who shared it, once
+        const opened = async () => ((await call('GET', '/api/notifications', owner)).body?.notifications ?? (await call('GET', '/api/notifications', owner)).body ?? [])
+            .filter((n: any) => /Shared package opened/.test(n.title)).length;
+        assert.equal(await opened(), 1, 'first open notifies');
+        assert.equal((await call('POST', `/api/public/shares/${token}/view`, undefined, { email: 'buyer2@example.com', ndaAccepted: true })).status, 201);
+        assert.equal(await opened(), 1, 'later views do not notify again');
+
         // The agent sees the view; a colleague who is not a manager does not see the package; another brokerage never does
         const detail = await call('GET', `/api/shares/${created.body.id}`, owner);
         assert.equal(detail.status, 200);
-        assert.equal(detail.body.links[0].views[0].viewerEmail, 'buyer@example.com');
-        assert.ok(detail.body.links[0].views[0].ndaAcceptedAt, 'the NDA acceptance time is recorded');
+        const firstView = detail.body.links[0].views.find((v: any) => v.viewerEmail === 'buyer@example.com');
+        assert.ok(firstView, 'the view is recorded with the email');
+        assert.deepEqual([firstView.pages?.[doc.body.id]?.['1'], firstView.pages?.[doc.body.id]?.['2'], firstView.totalSeconds], [30, 60, 90], 'seconds per page and in total');
+        assert.ok(firstView.ndaAcceptedAt, 'the NDA acceptance time is recorded');
         assert.equal((await call('GET', `/api/shares/${created.body.id}`, agent.token)).status, 404);
         assert.equal((await call('GET', '/api/shares', agent.token)).body.length, 0);
         assert.equal((await call('GET', `/api/shares/${created.body.id}`, other)).status, 404);
