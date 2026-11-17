@@ -30,8 +30,8 @@
 #### 变更 / Changed
 - 1.5.9.0 已部署，线上已确认（2026-11-17，`GET /api/health` 返回 `1.5.9.0`）；标签 `v1.5.9.0` 已推送。
   *1.5.9.0 is deployed and confirmed live (2026-11-17, `GET /api/health` returns `1.5.9.0`); tag `v1.5.9.0` is pushed.*
-- 路线图新增“阶段 6：定价与转化”：资料包分享与查看追踪（Elite）、公司代付席位阶梯折扣（待确认）、新公司 14 天 Elite 免费试用；公司管控功能确认按管理员角色开放。
-  *The roadmap gains "Stage 6: pricing and conversion": document package sharing with view tracking (Elite), a volume discount for brokerage-paid seats (awaiting confirmation), and a 14-day free Elite trial for new brokerages; brokerage controls are confirmed to be open to company admins.*
+- 路线图新增“阶段 6：定价与转化”：资料包分享与查看追踪（Elite）、公司代付席位阶梯折扣（5–24 人 9 折、25–49 人 85 折、50 人及以上单独谈）、新公司 14 天 Elite 免费试用；公司管控功能确认按管理员角色开放。
+  *The roadmap gains "Stage 6: pricing and conversion": document package sharing with view tracking (Elite), a volume discount for brokerage-paid seats (10% off for 5–24, 15% off for 25–49, 50+ negotiated), and a 14-day free Elite trial for new brokerages; brokerage controls are confirmed to be open to company admins.*
 
 ---
 
