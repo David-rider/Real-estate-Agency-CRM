@@ -17,6 +17,7 @@ interface Transaction {
     price: number;
     status: TransStatus;
     createdAt: string;
+    updatedAt: string; // last change, e.g. moving to this stage
     closingDate?: string;
     property: { id: string; address: string; city: string; propertyType?: string };
     client:   { id: string; firstName: string; lastName: string };
@@ -180,7 +181,7 @@ export default function PipelinePage() {
                                             {COLUMN_KEYS.map(c => <option key={c.key} value={c.key}>{T.columns?.[c.key]}</option>)}
                                         </select>
                                     </td>
-                                    <td className="px-4 py-3 text-right text-foreground/50">{fmt(UI.daysN, { n: daysSince(tx.createdAt) })}</td>
+                                    <td className="px-4 py-3 text-right text-foreground/50">{fmt(UI.daysN, { n: daysSince(tx.updatedAt ?? tx.createdAt) })}</td>
                                 </tr>
                             ))}
                         </tbody>
@@ -265,7 +266,7 @@ export default function PipelinePage() {
 
                                         <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-border/50">
                                             <span className="text-[10px] text-foreground/30">
-                                                {daysSince(tx.createdAt)}{T.daysInStage}
+                                                {daysSince(tx.updatedAt ?? tx.createdAt)}{T.daysInStage}
                                             </span>
                                             {tx.closingDate && (
                                                 <span className="text-[10px] text-foreground/40 flex items-center gap-1">

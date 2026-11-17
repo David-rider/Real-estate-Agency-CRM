@@ -253,7 +253,7 @@ export const ERROR_TEXT: Record<string, T3> = {
 // Messages that carry values: the English pattern and translations with $1, $2 … placeholders
 export const ERROR_PATTERNS: [RegExp, T3][] = [
     [/^Password must be at least (\d+) characters$/, ["密码至少需要 $1 个字符", "密碼至少需要 $1 個字元", "La contraseña debe tener al menos $1 caracteres"]],
-    [/^This feature requires a (\w+) subscription\.$/, ["此功能需要 $1 套餐。", "此功能需要 $1 方案。", "Esta función requiere una suscripción $1."]],
+    [/^This feature requires the (\w+) plan\.$/, ["此功能需要 $1 套餐。", "此功能需要 $1 方案。", "Esta función requiere el plan $1."]],
     [/^A client with this email or phone already exists: (.+) \(agent: (.+)\)$/, ["已有相同邮箱或电话的客户：$1（经纪人：$2）", "已有相同信箱或電話的客戶：$1（經紀人：$2）", "Ya existe un cliente con este correo o teléfono: $1 (agente: $2)"]],
     [/^Not a valid IP address or range: (.+)$/, ["不是有效的 IP 地址或网段：$1", "不是有效的 IP 位址或網段：$1", "No es una dirección IP o rango válido: $1"]],
     [/^Your current IP \((.+)\) is not in the list\. Add it first so you don't lock yourself out\.$/, ["你当前的 IP（$1）不在名单里。请先加上，以免把自己锁在外面。", "你目前的 IP（$1）不在名單裡。請先加上，以免把自己鎖在外面。", "Su IP actual ($1) no está en la lista. Agréguela primero para no quedarse sin acceso."]],

@@ -21,6 +21,18 @@
 
 ## [未发布]
 
+#### 修复 / Fixed
+- 客户详情：活动历史（创建记录、交易、报价、日程、任务、礼品、备注）按当前界面语言显示；客户类型、状态和各类标签不再显示 `IN_CONTRACT`、`BUYER` 这样的代码；时间按界面语言的格式显示。
+  *Client detail: the activity history (record created, deals, offers, appointments, tasks, gifts, notes) follows the interface language; client type, status and tags no longer show codes such as `IN_CONTRACT` or `BUYER`; times use the interface language's format.*
+- 报表：月度成交与佣金图表显示最近六个月的真实数据（以前一直是 1–6 月的空图）。
+  *Reports: the monthly deals and commission charts show the last six months of real data (they used to be an empty January–June chart).*
+- 交易漏斗的“在当前阶段 N 天”改为从最近一次变更算起，与交易页一致。
+  *Pipeline: "N days in stage" now counts from the last change, matching the Transactions page.*
+- 财务：支票发放日期按界面语言显示；需要更高套餐时的提示改为“此功能需要 Elite 套餐”（英文原句有语法错误）。
+  *Finance: the cheque-paid date follows the interface language; the upgrade notice now reads "This feature requires the Elite plan" (the English sentence was ungrammatical).*
+- 售后服务：去掉不属实的“本月有 3 位老客户迎来周年纪念”和“自动化”说法，改为如实说明礼品记录的作用。
+  *Services: removed the untrue "3 past clients have anniversaries this month" and "automated" claims; the section now says plainly what recording a gift does.*
+
 #### 变更 / Changed
 - 1.5.7.0 已部署，线上已确认（2026-11-15，`GET /api/health` 返回 `1.5.7.0`）；标签 `v1.5.6.0`、`v1.5.7.0` 已推送。
   *1.5.7.0 is deployed and confirmed live (2026-11-15, `GET /api/health` returns `1.5.7.0`); tags `v1.5.6.0` and `v1.5.7.0` are pushed.*

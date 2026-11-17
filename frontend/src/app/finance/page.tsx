@@ -17,7 +17,7 @@ import {
 } from "recharts";
 
 export default function FinancePage() {
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   const X = useExtra();
   const { preferences } = useSettings();
   const FX = X.financeExtra;
@@ -397,7 +397,7 @@ export default function FinancePage() {
                         className={`w-2 h-2 rounded-full ${commissions[selectedCommIndex].status === "PAID" ? "bg-primary shadow-[0_0_8px_rgba(var(--primary),0.5)]" : "bg-primary/30"} flex-shrink-0`}
                       />
                       {commissions[selectedCommIndex].status === "PAID"
-                        ? `${t.finance.paidOn} ${new Date(commissions[selectedCommIndex].paidAt).toLocaleDateString()}`
+                        ? `${t.finance.paidOn} ${new Date(commissions[selectedCommIndex].paidAt).toLocaleDateString(language, { year: "numeric", month: "short", day: "numeric" })}`
                         : commissions[selectedCommIndex].status === "REQUESTED"
                         ? ((t.finance as any).payoutRequested || "Payout requested — awaiting approval")
                         : t.finance.pendingSettlement}

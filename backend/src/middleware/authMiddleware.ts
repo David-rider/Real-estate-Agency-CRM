@@ -237,7 +237,7 @@ export const requireTier = (minTier: string) => {
 
         if (userTierWeight < requiredTierWeight) {
             return res.status(403).json({ 
-                error: `This feature requires a ${minTier} subscription.`,
+                error: `This feature requires the ${minTier.charAt(0)}${minTier.slice(1).toLowerCase()} plan.`,
                 requiredTier: minTier
             });
         }

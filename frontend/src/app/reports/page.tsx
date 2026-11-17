@@ -24,7 +24,7 @@ interface DashData {
     newLeads: number;
     pendingOffers: number;
     ytdCommission: number;
-    monthlyData: { month: string; deals: number; commission: number }[];
+    chartData?: { name: string; deals: number; commission: number }[];
     pipeline: { stage: string; count: number }[];
     topItems: any[];
 }
@@ -78,7 +78,8 @@ export default function ReportsPage() {
 
     useEffect(() => { fetchData(); }, [fetchData]);
 
-    const monthlyChart = (dashData?.monthlyData || MONTH_NAMES.slice(0, 6).map((m) => ({
+    // The last six months, from the dashboard endpoint (chartData: { name, deals, commission })
+    const monthlyChart = (dashData?.chartData?.map((r: { name: string; deals: number; commission: number }) => ({ month: r.name, deals: r.deals, commission: r.commission })) || MONTH_NAMES.slice(0, 6).map((m) => ({
         month: m,
         deals: 0,
         commission: 0,
