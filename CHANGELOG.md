@@ -21,6 +21,10 @@
 
 ## [未发布]
 
+---
+
+## [1.5.8.0] — 2026-11-17 · 演示走查修复：客户活动历史多语言、报表真实数据、如实文案 / Demo walkthrough fixes: localized client history, real report data, truthful copy
+
 #### 修复 / Fixed
 - 报表的“交易阶段分布”饼图不再画数量为 0 的阶段（以前几个“0%”标签叠在一起）；一笔交易都没有时显示“还没有交易”。
   *The Reports "Pipeline Distribution" pie no longer draws stages with no deals (their "0%" labels used to overlap); with no deals at all it says "No deals yet".*
