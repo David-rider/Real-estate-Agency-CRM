@@ -110,6 +110,10 @@ happen; note anything that doesn't.
       *营销、集成仍显示“即将推出”；已没有“访问控制”栏目。经理和经纪人能看到公司规则，但不能保存。*
 
 ## 9. Language / 语言
+- [ ] Open `/zh-CN`, `/zh-TW` and `/es` directly (not signed in): each opens in its language right away, with the browser tab title in that language. Switch the language in the top bar: the address changes to that language's page and the choice is remembered (open `/` afterwards and you land on the page of the language you chose; choose English to stay on `/`).
+      *未登录时直接打开 `/zh-CN`、`/zh-TW`、`/es`：每个页面一打开就是对应语言，浏览器标签页标题也是。在顶栏切换语言：地址变成该语言的页面，并记住选择（之后打开 `/` 会进入所选语言的首页；选英文则留在 `/`）。*
+- [ ] In a browser set to Chinese or Spanish, with no saved choice (private window), open `/`: a small prompt at the bottom offers the page in that language; it can be closed and nothing redirects by itself.
+      *浏览器语言设为中文或西语、没有保存过选择（无痕窗口）时打开 `/`：页面底部出现一个切换到该语言的小提示，可以关掉，不会自动跳转。*
 - [ ] Choose **Español** on the login page, sign in, then request a password reset and invite a teammate — both emails arrive in Spanish.
       *在登录页选 Español，登录后申请重置密码、邀请一位同事——两封邮件都是西班牙语。*
 - [ ] Switch the language in the top bar to 简体中文, then create an appointment — the new notification is in Chinese. Switch to 繁體中文 and check again.

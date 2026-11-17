@@ -3,7 +3,8 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { Language, translations } from "./translations";
 import { API_URL } from "../api";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { HOME_PATH } from "../site";
 
 // The browser tab title in each language. The server-rendered English titles stay as they are for search engines;
 // these replace them in the browser once the language is known.
@@ -22,7 +23,13 @@ const TAB_TITLES: Record<Language, Record<string, string>> = {
         "Real Estate Brokerage CRM — Manage Clients, Listings & Commissions": "CRM inmobiliario — Clientes, propiedades y comisiones",
     },
 };
-const ORIGINAL_TITLE = Symbol("originalTitle");
+// The English title a translated title came from (pages in one language, like /zh-CN, start with a translated title)
+function englishTitle(title: string): string {
+    for (const m of Object.values(TAB_TITLES)) {
+        for (const [en, tr] of Object.entries(m)) if (tr === title) return en;
+    }
+    return title;
+}
 
 const VALID_LANGUAGES: Language[] = ["en", "zh-CN", "zh-TW", "es"];
 
@@ -80,12 +87,8 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     // Keep the tab title and <html lang> in the chosen language (page navigation can reset the title)
     const pathname = usePathname();
     useEffect(() => {
-        const doc = document as Document & { [ORIGINAL_TITLE]?: string };
         const apply = () => {
-            const english = Object.values(TAB_TITLES).some(m => Object.values(m).includes(document.title))
-                ? doc[ORIGINAL_TITLE] ?? document.title
-                : document.title;
-            doc[ORIGINAL_TITLE] = english;
+            const english = englishTitle(document.title);
             document.title = TAB_TITLES[language][english] ?? english;
             document.documentElement.lang = language;
         };
@@ -106,6 +109,22 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
             {children}
         </I18nContext.Provider>
     );
+}
+
+// A page that exists in one language (the home page at /, /zh-CN, /zh-TW, /es): it is generated and shown in that
+// language whatever was chosen before, and picking another language opens that language's page.
+export function LockedLanguage({ lang, children }: { lang: Language; children: React.ReactNode }) {
+    const parent = useI18n();
+    const router = useRouter();
+    const value: I18nContextProps = {
+        language: lang,
+        t: translations[lang] as typeof translations.en,
+        setLanguage: (next: Language) => {
+            parent.setLanguage(next);
+            if (next !== lang) router.push(HOME_PATH[next]);
+        },
+    };
+    return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }
 
 export function useI18n() {

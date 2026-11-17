@@ -1,18 +1,22 @@
 import { MetadataRoute } from 'next';
+import { LANGUAGES, SITE_URL, homeUrl } from '@/lib/site';
 
 export const dynamic = 'force-static';
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://real-estate-agency-crm.vercel.app';
+  const baseUrl = SITE_URL;
+  // The home page once per language, each listing the others (hreflang)
+  const languages = Object.fromEntries(LANGUAGES.map((l) => [l, homeUrl(l)]));
   const now = new Date();
 
   return [
-    {
-      url: baseUrl,
+    ...LANGUAGES.map((l) => ({
+      url: homeUrl(l),
       lastModified: now,
-      changeFrequency: 'weekly',
+      changeFrequency: 'weekly' as const,
       priority: 1.0,
-    },
+      alternates: { languages },
+    })),
     {
       url: `${baseUrl}/public-listings`,
       lastModified: now,

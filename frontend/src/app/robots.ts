@@ -1,14 +1,15 @@
 import { MetadataRoute } from 'next';
+import { SITE_URL } from '@/lib/site';
 
 export const dynamic = 'force-static';
 
 export default function robots(): MetadataRoute.Robots {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://real-estate-agency-crm.vercel.app';
+  const baseUrl = SITE_URL;
   return {
     rules: [
       {
         userAgent: '*',
-        allow: ['/', '/public-listings', '/property', '/login', '/signup'],
+        allow: ['/', '/zh-CN', '/zh-TW', '/es', '/public-listings', '/property', '/login', '/signup'],
         disallow: [
           '/dashboard',
           '/crm',
