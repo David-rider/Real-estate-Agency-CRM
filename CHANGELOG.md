@@ -21,6 +21,12 @@
 
 ## [未发布]
 
+#### 新增 / Added
+- 新注册的公司（邮箱注册或 Google 登录新建）前 14 天全体内部成员免费使用 Elite，不用绑卡；试用期内邀请的成员也是 Elite，外部协作方不变。每个页面顶部显示“Elite 免费试用：还剩 N 天”，升级页说明试用到期日，试用中仍可直接购买套餐；到期后自动回到各自原来的套餐。老公司不受影响。
+  *New brokerages (email sign-up or a new Google sign-in) get Elite free for every internal member for the first 14 days, no card needed; members invited during the trial get Elite too, outside collaborators are unchanged. Every page shows "Free Elite trial: N days left", the upgrade page states when the trial ends and plans can still be bought during it; afterwards everyone returns to the plan they had. Existing brokerages are unaffected.*
+- 数据库：新增 `Organization.trialEndsAt`（幂等迁移 `20261117000100_org_trial`）。新增可选环境变量 `TRIAL_DAYS`（默认 14，设为 0 关闭试用）。
+  *Database: adds `Organization.trialEndsAt` (idempotent migration `20261117000100_org_trial`). New optional env var `TRIAL_DAYS` (default 14; 0 turns the trial off).*
+
 #### 变更 / Changed
 - 1.5.9.0 已部署，线上已确认（2026-11-17，`GET /api/health` 返回 `1.5.9.0`）；标签 `v1.5.9.0` 已推送。
   *1.5.9.0 is deployed and confirmed live (2026-11-17, `GET /api/health` returns `1.5.9.0`); tag `v1.5.9.0` is pushed.*
@@ -695,6 +701,7 @@
 | 后端<br>*Backend* | `TRUST_PROXY` | 可选，生产环境默认 `1`<br>*Optional; defaults to `1` in production* |
 | 后端<br>*Backend* | `DISABLE_IP_ALLOWLIST` | 可选，紧急开关：设为 `true` 时忽略所有公司的 IP 白名单（管理员被锁在外面时使用），平时不要设置<br>*Optional emergency switch: `true` ignores every brokerage's IP allowlist (for when admins are locked out); leave unset normally* |
 | 后端<br>*Backend* | `BILLING_START_DATE` | 可选：开始要求付费套餐的日期（`YYYY-MM-DD`）。不设置（或未配置 Stripe）时不做任何限制；设置后，此前已有的账号有 30 天宽限期<br>*Optional: the day paid plans become required (`YYYY-MM-DD`). Unset (or without Stripe) nothing is enforced; once set, accounts that existed before it get a 30-day grace period* |
+| 后端<br>*Backend* | `TRIAL_DAYS` | 可选：新注册公司免费试用 Elite 的天数，默认 `14`，设为 `0` 关闭试用（最多 90）<br>*Optional: days of the free Elite trial for new brokerages, default `14`, `0` turns it off (at most 90)* |
 | 后端<br>*Backend* | `DISABLE_JOBS` | 可选，设为 `true` 关闭预约提醒任务<br>*Optional; `true` turns off the appointment-reminder job* |
 | 后端<br>*Backend* | `SEED_PASSWORD` / `ALLOW_SEED` | 仅种子脚本使用<br>*Used only by the seed script* |
 | 前端<br>*Frontend* | `NEXT_PUBLIC_GOOGLE_CLIENT_ID` | Google 登录的 OAuth 客户端 ID（公开值，不是密钥）；与后端 `GOOGLE_CLIENT_ID` 填同一个值。未设置时 Google 按钮显示“即将推出”<br>*Google sign-in OAuth client ID (a public value, not a secret); same value as the backend `GOOGLE_CLIENT_ID`. When unset, the Google button shows "Coming soon"* |

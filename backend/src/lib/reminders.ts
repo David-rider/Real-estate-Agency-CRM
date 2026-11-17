@@ -5,7 +5,7 @@ import { billingStart, graceEndsAt, reminderStage, nextReconcileAt, FREE_ROLES }
 import { sendEmail, billingReminderEmail } from './email';
 import { EMAIL, normalizeLang } from './messages';
 import { appUrl } from './appUrl';
-import { reconcileCompanyBilling } from '../routes/payments';
+import { reconcileCompanyBilling, endExpiredTrials } from '../routes/payments';
 
 const HOUR = 60 * 60 * 1000;
 
@@ -111,6 +111,7 @@ export function startReminderLoop(intervalMs = 10 * 60 * 1000) {
     const tick = () => {
         sendAppointmentReminders().catch(err => console.error('Reminder job failed:', err));
         sendBillingReminders().catch(err => console.error('Billing reminder job failed:', err));
+        endExpiredTrials().catch(err => console.error('Trial expiry job failed:', err));
         if (Date.now() >= reconcileAt) {
             const ranAt = Date.now();
             reconcileAt = nextReconcileAt(ranAt, 0);

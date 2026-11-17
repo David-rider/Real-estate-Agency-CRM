@@ -47,12 +47,21 @@ async function register(label: string) {
         name: `${label} Owner`, email: `${label}-${run}@smoke.test`, password: 'SmokeTest123!', orgName: `${label} Realty ${run}`,
     });
     assert.equal(r.status, 201, JSON.stringify(r.body));
+    await endTrial(r.body.user.orgId);
     return r.body.token as string;
 }
 
 // Shared database handle for steps that need to create staff accounts or back-date data
 let sharedPrisma: PrismaClient | null = null;
 const db = () => (sharedPrisma ??= new PrismaClient());
+
+// New brokerages start on a free Elite trial; most steps check the free plan, so end it before the first request
+// (the server has not cached the account yet). The trial itself is checked in its own step.
+async function endTrial(orgId: string) {
+    if (!process.env.DATABASE_URL) return;
+    await db().organization.update({ where: { id: orgId }, data: { trialEndsAt: null } });
+    await db().user.updateMany({ where: { orgId }, data: { tier: 'CORE' } });
+}
 
 // Invite someone into the owner's brokerage and accept the invitation (needs DATABASE_URL to read the token)
 async function joinOrg(owner: string, label: string, role: string) {
@@ -1321,6 +1330,54 @@ async function main() {
         const s = await user('bill-solo');
         assert.deepEqual([s.tier, s.stripeSubscriptionId], ['CORE', null]);
         assert.equal((await call('GET', '/api/payments/status', solo)).body.hasSubscription, false);
+    });
+
+    await step('free Elite trial: a new brokerage and the members it invites get Elite for 14 days, then return to their plan', async () => {
+        const { trialDays, newTrialEnd, onTrial } = await import('../src/lib/billing');
+        const day = 86400000;
+        const now = new Date('2027-03-01T00:00:00Z');
+        assert.deepEqual([trialDays({}), trialDays({ TRIAL_DAYS: '' }), trialDays({ TRIAL_DAYS: '7' }), trialDays({ TRIAL_DAYS: '0' }), trialDays({ TRIAL_DAYS: 'x' }), trialDays({ TRIAL_DAYS: '365' })], [14, 14, 7, 0, 0, 90]);
+        assert.equal(newTrialEnd(now, {})!.getTime(), now.getTime() + 14 * day);
+        assert.equal(newTrialEnd(now, { TRIAL_DAYS: '0' }), null, 'TRIAL_DAYS=0 turns the trial off');
+        const org = { trialEndsAt: new Date(now.getTime() + day) };
+        assert.equal(onTrial({ role: 'AGENT', isActive: true }, org, now), true);
+        assert.equal(onTrial({ role: 'ATTORNEY', isActive: true }, org, now), false, 'outside collaborators are not part of the trial');
+        assert.equal(onTrial({ role: 'AGENT', isActive: false }, org, now), false);
+        assert.equal(onTrial({ role: 'AGENT', isActive: true }, org, new Date(now.getTime() + 2 * day)), false, 'over once the end has passed');
+        assert.equal(onTrial({ role: 'AGENT', isActive: true }, { trialEndsAt: null }, now), false);
+
+        if (!process.env.DATABASE_URL) { console.log('    (skipped the end-to-end part: set DATABASE_URL)'); return; }
+        const reg = await call('POST', '/api/auth/register', undefined, { name: 'Trial Owner', email: `trial-${run}@smoke.test`, password: 'SmokeTest123!', orgName: `Trial Realty ${run}` });
+        assert.equal(reg.status, 201, JSON.stringify(reg.body));
+        if (reg.body.user.tier !== 'ELITE') { console.log('    (skipped: the trial is turned off on this server, TRIAL_DAYS=0)'); return; }
+        const owner = reg.body.token as string;
+        const status = await call('GET', '/api/payments/status', owner);
+        assert.equal(status.status, 200, JSON.stringify(status.body));
+        assert.deepEqual([status.body.tier, status.body.paidTier], ['ELITE', 'CORE'], 'Elite on trial, while nothing is paid');
+        const left = new Date(status.body.trialEndsAt).getTime() - Date.now();
+        assert.ok(left > 13.9 * day && left <= 14 * day, `the trial lasts 14 days (${left})`);
+        assert.equal((await call('GET', '/api/finance/projections', owner)).status, 200, 'Elite features are open during the trial');
+
+        // A member invited during the trial gets Elite too; an outside collaborator stays free
+        const agent = await joinOrg(owner, 'trial-agent', 'AGENT');
+        const atty = await joinOrg(owner, 'trial-atty', 'ATTORNEY');
+        const tierOf = async (label: string) => (await db().user.findUnique({ where: { email: `${label}-${run}@smoke.test` } }))!.tier;
+        assert.equal(await tierOf('trial-agent'), 'ELITE');
+        assert.equal(await tierOf('trial-atty'), 'CORE');
+        assert.equal((await call('GET', '/api/finance/projections', agent.token)).status, 200);
+
+        // Another brokerage is not affected
+        const other = await register('trial-other');
+        assert.equal((await call('GET', '/api/finance/projections', other)).status, 403);
+
+        // The trial ends: the next recalculation returns everyone to the plan they pay for
+        await db().organization.update({ where: { id: reg.body.user.orgId }, data: { trialEndsAt: new Date(Date.now() - 60 * 1000) } });
+        assert.equal((await call('DELETE', `/api/settings/users/${atty.id}`, owner)).status, 200); // any team change recalculates plans
+        assert.equal(await tierOf('trial'), 'CORE');
+        assert.equal(await tierOf('trial-agent'), 'CORE');
+        assert.equal((await call('GET', '/api/finance/projections', owner)).status, 403, 'Elite features close after the trial');
+        const after = await call('GET', '/api/payments/status', owner);
+        assert.deepEqual([after.body.tier, after.body.trialEndsAt], ['CORE', null]);
     });
 
     await step('billing: a brokerage can pay for its members, with a level per member and seats that follow the team', async () => {

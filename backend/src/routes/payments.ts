@@ -2,7 +2,7 @@ import { appUrl as getAppUrl } from '../lib/appUrl';
 import express from 'express';
 import { prisma } from '../server';
 import { authenticateToken, authorizeRole, AuthRequest, invalidateAccount, clearAccountCache } from '../middleware/authMiddleware';
-import { stripe, isBillableRole, billingStart, graceEndsAt, planRequired, mustPay, seatChanges, FREE_ROLES } from '../lib/billing';
+import { stripe, isBillableRole, billingStart, graceEndsAt, planRequired, mustPay, seatChanges, onTrial, FREE_ROLES } from '../lib/billing';
 
 const router = express.Router();
 
@@ -31,7 +31,7 @@ const COMPANY_ADMINS = ['SUPERADMIN', 'FIRMADMIN'];
 //   1. by the member:    User.stripeSubscriptionId        → User.selfTier
 //   2. by the brokerage: Organization.stripeSubscriptionId → one seat per internal member, at the level the
 //                        admin chose for that member (User.companyTier, else Organization.companyPlan)
-// User.tier is the plan the member actually has: the higher of the two.
+// User.tier is the plan the member actually has: the higher of the two, or Elite during the brokerage's free trial.
 const RANK: Record<string, number> = { CORE: 0, PRO: 1, ELITE: 2 };
 const higher = (a: Tier, b: Tier): Tier => (RANK[a] >= RANK[b] ? a : b);
 const LIVE = ['active', 'trialing', 'past_due']; // past_due: a charge failed and Stripe is still retrying
@@ -64,7 +64,7 @@ async function endOwnSubscription(userId: string, subscriptionId: string): Promi
 // Recomputes every member's plan in one brokerage from who pays for what. Safe to run repeatedly.
 // A member the brokerage now pays for has their own subscription cancelled, so nobody is charged twice.
 export async function refreshOrgTiers(orgId: string): Promise<void> {
-    const org = await prisma.organization.findUnique({ where: { id: orgId }, select: { companyPlan: true, stripeSubscriptionId: true, subscriptionStatus: true } });
+    const org = await prisma.organization.findUnique({ where: { id: orgId }, select: { companyPlan: true, stripeSubscriptionId: true, subscriptionStatus: true, trialEndsAt: true } });
     if (!org) return;
     const members = await prisma.user.findMany({
         where: { orgId },
@@ -74,7 +74,7 @@ export async function refreshOrgTiers(orgId: string): Promise<void> {
         const paidByCompany = companyLevel(m, org);
         let own = m.selfTier as Tier;
         if (paidByCompany && m.stripeSubscriptionId && await endOwnSubscription(m.id, m.stripeSubscriptionId)) own = 'CORE';
-        const tier = higher(own, paidByCompany || 'CORE');
+        const tier = onTrial(m, org) ? 'ELITE' : higher(own, paidByCompany || 'CORE');
         if (tier !== m.tier) await prisma.user.update({ where: { id: m.id }, data: { tier } });
     }
     clearAccountCache(); // new plans apply on the next request, not 30 s later
@@ -113,13 +113,26 @@ export async function companyChanged(orgId: string): Promise<void> {
     try { await refreshOrgTiers(orgId); } catch (err: any) { console.error(`Could not refresh plans of org ${orgId}:`, err?.message || err); }
 }
 
+// Returns members of brokerages whose free trial has ended to the plan they pay for. Runs with the reminder loop;
+// looking back a week means a server that was down for a while still catches up. Returns how many brokerages were checked.
+export async function endExpiredTrials(now = new Date()): Promise<number> {
+    const orgs = await prisma.organization.findMany({
+        where: { trialEndsAt: { lte: now, gt: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000) } },
+        select: { id: true },
+    });
+    for (const o of orgs) {
+        try { await refreshOrgTiers(o.id); } catch (err: any) { console.error(`Could not end the trial of org ${o.id}:`, err?.message || err); }
+    }
+    return orgs.length;
+}
+
 // ── A member's own subscription ──────────────────────────────────────────────
 async function applyUserTier(userId: string, selfTier: Tier, billing: { stripeCustomerId?: string; stripeSubscriptionId?: string | null; subscriptionStatus?: string | null } = {}) {
     const user = await prisma.user.update({
         where: { id: userId }, data: { selfTier, ...billing },
-        select: { role: true, isActive: true, companyTier: true, organization: { select: { companyPlan: true, stripeSubscriptionId: true, subscriptionStatus: true } } },
+        select: { role: true, isActive: true, companyTier: true, organization: { select: { companyPlan: true, stripeSubscriptionId: true, subscriptionStatus: true, trialEndsAt: true } } },
     });
-    const tier = higher(selfTier, companyLevel(user, user.organization) || 'CORE');
+    const tier = onTrial(user, user.organization) ? 'ELITE' : higher(selfTier, companyLevel(user, user.organization) || 'CORE');
     await prisma.user.update({ where: { id: userId }, data: { tier } });
     invalidateAccount(userId); // the new plan applies on the next request, not 30 s later
 }
@@ -304,15 +317,20 @@ router.get('/status', authenticateToken, async (req: AuthRequest, res) => {
         if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
         const user = await prisma.user.findUnique({
             where: { id: req.user.userId },
-            select: { role: true, tier: true, isActive: true, companyTier: true, createdAt: true, stripeSubscriptionId: true, subscriptionStatus: true, organization: { select: { companyPlan: true, stripeSubscriptionId: true, subscriptionStatus: true } } },
+            select: { role: true, tier: true, selfTier: true, isActive: true, companyTier: true, createdAt: true, stripeSubscriptionId: true, subscriptionStatus: true, organization: { select: { companyPlan: true, stripeSubscriptionId: true, subscriptionStatus: true, trialEndsAt: true } } },
         });
         if (!user) return res.status(404).json({ error: 'User not found' });
         const start = billingStart();
         const internalMembers = await prisma.user.count({ where: { orgId: req.user.orgId, isActive: true, role: { notIn: FREE_ROLES as any } } });
         const inTeam = internalMembers > 1;
         const grace = graceEndsAt(user, start);
+        const trial = onTrial(user, user.organization);
         res.json({
             tier: user.tier,
+            // The plan the member (or the brokerage) actually pays for, without the free trial
+            paidTier: higher(user.selfTier as Tier, companyLevel(user, user.organization) || 'CORE'),
+            // The brokerage's free Elite trial is running until this moment
+            trialEndsAt: trial ? user.organization.trialEndsAt!.toISOString() : null,
             billable: isBillableRole(user.role),
             hasSubscription: Boolean(user.stripeSubscriptionId),
             subscriptionStatus: user.subscriptionStatus,
@@ -321,7 +339,7 @@ router.get('/status', authenticateToken, async (req: AuthRequest, res) => {
             // A plan is needed now (blocked until one is chosen)
             planRequired: planRequired(user, internalMembers, start),
             // Still free for now, but a plan will be needed on this date
-            graceEndsAt: start && inTeam && isBillableRole(user.role) && user.tier === 'CORE' && grace && grace.getTime() > Date.now() ? grace.toISOString() : null,
+            graceEndsAt: start && inTeam && isBillableRole(user.role) && user.tier === 'CORE' && !trial && grace && grace.getTime() > Date.now() ? grace.toISOString() : null,
         });
     } catch (error) {
         console.error('Billing status error:', error);
