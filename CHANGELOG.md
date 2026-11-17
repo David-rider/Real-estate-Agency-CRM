@@ -21,6 +21,10 @@
 
 ## [未发布]
 
+---
+
+## [1.5.9.0] — 2026-11-17 · 首页、隐私政策与服务条款按语言分页 / One address per language for the home page, privacy policy and terms
+
 #### 新增 / Added
 - 隐私政策和服务条款也按语言分成独立地址：`/privacy`、`/terms`（英文），以及 `/zh-CN/privacy`、`/zh-TW/terms`、`/es/privacy` 等。每个地址打开就是该语言，标题和搜索引擎标注也是；页面内切换语言会跳到同一份文件的对应语言地址。首页、注册页和房源页上的“隐私政策”“服务条款”链接会直接打开当前语言的版本。
   *The privacy policy and terms of service also have one address per language: `/privacy` and `/terms` (English), plus `/zh-CN/privacy`, `/zh-TW/terms`, `/es/privacy` and so on. Each opens in its language with a matching title and search-engine tags; switching language on the page moves to the same document in that language. The "Privacy Policy" and "Terms of Service" links on the home, sign-up and listing pages open the version in the current language.*
