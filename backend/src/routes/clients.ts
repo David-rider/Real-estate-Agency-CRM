@@ -5,6 +5,8 @@ import { clientScope, canEditClient, checkRefs, isManager, optDate, pickEnum, Au
 import { OrgPolicies, missingClientField } from '../lib/policies';
 import { audit } from '../lib/audit';
 import { createNotification } from './notifications';
+import { requestLang } from '../lib/errorMessages';
+import { timelineText, timelineLabels, apptTypeLabel } from '../lib/timelineText';
 
 const router = Router();
 
@@ -329,38 +331,42 @@ router.get('/:id/timeline', async (req: AuthRequest, res) => {
         prisma.task.findMany({ where: { linkedClientId: id, orgId } }),
     ]);
 
-    const events = [
+    // Written in the viewer's language; status and type tags come with their labels (raw values stay for logic)
+    const lang = requestLang(req);
+    const T = timelineText(lang);
+    const raw: { id: string; type: string; subtype?: string; title: string; description: string; date: Date; status?: string }[] = [
         ...notes.map(n => ({
             id: n.id, type: 'NOTE', subtype: n.type,
-            title: `${n.type.charAt(0)}${n.type.slice(1).toLowerCase()} logged by ${n.author.name}`,
+            title: T.note(n.type, n.author.name),
             description: n.content, date: n.createdAt,
         })),
         ...offers.map(o => ({
             id: o.id, type: 'OFFER',
-            title: `Offer for ${o.property.address}`,
-            description: `$${o.amount.toLocaleString()} — ${o.status}`, date: o.createdAt, status: o.status,
+            title: T.offerFor(o.property.address),
+            description: T.offerDesc(o.amount, o.status), date: o.createdAt, status: o.status,
         })),
         ...appointments.map(a => ({
             id: a.id, type: 'APPOINTMENT',
-            title: `${a.type.replace('_', ' ')}: ${a.title}`,
-            description: a.property ? `At ${a.property.address}` : (a.notes || a.location || ''), date: a.date, status: a.status,
+            title: `${apptTypeLabel(a.type, lang)}: ${a.title}`,
+            description: a.property ? T.at(a.property.address) : (a.notes || a.location || ''), date: a.date, status: a.status,
         })),
         ...giftOrders.map(g => ({
-            id: g.id, type: 'GIFT', title: `Gift: ${g.item}`, description: `Status: ${g.status}`, date: g.createdAt, status: g.status,
+            id: g.id, type: 'GIFT', title: T.gift(g.item), description: T.giftDesc(g.status), date: g.createdAt, status: g.status,
         })),
         ...transactions.map(t => ({
-            id: t.id, type: 'TRANSACTION', title: `Deal ${t.status.replace(/_/g, ' ')}`,
-            description: `Property: ${t.property.address}`, date: t.updatedAt, status: t.status,
+            id: t.id, type: 'TRANSACTION', title: T.deal(t.status),
+            description: T.property(t.property.address), date: t.updatedAt, status: t.status,
         })),
         ...tasks.map(t => ({
-            id: t.id, type: 'TASK', title: `Task: ${t.title}`,
-            description: t.dueDate ? `Due ${t.dueDate.toISOString().slice(0, 10)}` : '', date: t.createdAt, status: t.status,
+            id: t.id, type: 'TASK', title: T.task(t.title),
+            description: t.dueDate ? T.due(t.dueDate) : '', date: t.createdAt, status: t.status,
         })),
         {
-            id: `creation-${client.id}`, type: 'MODIFICATION', title: 'Client record created',
-            description: `Added as ${client.type}${client.source ? ` via ${client.source}` : ''}`, date: client.createdAt,
+            id: `creation-${client.id}`, type: 'MODIFICATION', title: T.created,
+            description: T.addedAs(client.type, client.source), date: client.createdAt,
         },
     ];
+    const events = raw.map(e => ({ ...e, ...timelineLabels(lang, e.type, e.status) }));
     events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     res.json(events);
 });

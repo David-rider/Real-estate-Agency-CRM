@@ -120,6 +120,12 @@ async function main() {
         assert.equal(r.status, 201, JSON.stringify(r.body));
         const t = await call('GET', `/api/clients/${clientId}/timeline`, a);
         assert.ok(t.body.some((e: any) => e.type === 'NOTE'));
+        // The history is written in the viewer's language, and enum values come with labels (never shown raw)
+        const created = (body: any[]) => body.find((e: any) => e.type === 'MODIFICATION');
+        assert.match(created(t.body).description, /^Added as (buyer|seller|referral|renter|investor)/, created(t.body).description);
+        const zh = await fetch(`${API}/api/clients/${clientId}/timeline`, { headers: { Authorization: `Bearer ${a}`, 'X-Lang': 'zh-CN' } }).then(r => r.json());
+        assert.deepEqual([created(zh).title, created(zh).typeLabel], ['创建客户记录', '记录']);
+        assert.ok(zh.find((e: any) => e.type === 'NOTE').title.includes('电话'), 'the note title names the activity type in Chinese');
         const stale = await call('GET', '/api/clients?stale=true', a);
         assert.equal(stale.body.total, 0);
         const tasks = await call('GET', `/api/tasks?clientId=${clientId}`, a);

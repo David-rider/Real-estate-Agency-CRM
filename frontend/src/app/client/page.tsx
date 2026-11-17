@@ -8,7 +8,7 @@ import { useI18n } from "@/lib/i18n/I18nContext";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { useExtra, fmt } from "@/lib/i18n/extra";
 import { useToast } from "@/components/ui/Toast";
-import { api, dateInputToISO } from "@/lib/api";
+import { api, dateInputToISO, langHeader } from "@/lib/api";
 import { AI_ASSISTANT_ENABLED } from "@/lib/features";
 
 interface TimelineEvent {
@@ -19,12 +19,14 @@ interface TimelineEvent {
   description: string;
   date: string;
   status?: string;
+  typeLabel?: string;
+  statusLabel?: string;
 }
 
 function ClientProfilePage() {
   const id = useSearchParams().get("id") ?? "";
   const router = useRouter();
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   const { token } = useAuth();
   const X = useExtra();
   const toast = useToast();
@@ -53,7 +55,7 @@ function ClientProfilePage() {
             headers: { Authorization: `Bearer ${token}` },
           }),
           fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/clients/${id}/timeline`, {
-            headers: { Authorization: `Bearer ${token}` },
+            headers: { Authorization: `Bearer ${token}`, ...langHeader() },
           }),
         ]);
 
@@ -71,12 +73,12 @@ function ClientProfilePage() {
     };
 
     fetchClientDetails();
-  }, [id, token]);
+  }, [id, token, language]); // the activity history is written in the interface language
 
   const fetchTimeline = async () => {
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/clients/${id}/timeline`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${token}`, ...langHeader() },
       });
       if (res.ok) setTimeline(await res.json());
     } catch (e) { console.error(e); }
@@ -168,10 +170,11 @@ function ClientProfilePage() {
             </h1>
             <div className="flex items-center gap-4 mt-3">
               <span className="text-sm font-semibold px-3 py-1 bg-primary/10 text-primary rounded-full uppercase tracking-widest">
-                {client.type}
+                {(X.ui.clientTypes as Record<string, string>)[client.type] ?? client.type}
               </span>
               <span className="text-sm font-semibold px-3 py-1 bg-surface ring-1 ring-border/50 text-foreground/60 rounded-full uppercase tracking-widest">
-                {client.status}
+                {client.status === "IN_CONTRACT" ? t.crm.modal.statusInContract : client.status === "ACTIVE" ? t.crm.modal.statusActive
+                  : client.status === "LEAD" ? t.crm.modal.statusLead : client.status === "CLOSED" ? t.crm.modal.statusClosed : X.crm.statusArchived}
               </span>
               {client.temperature && (
                 <span className={`text-sm font-semibold px-3 py-1 rounded-full uppercase tracking-widest ${client.temperature === "HOT" ? "bg-red-500/10 text-red-500" : client.temperature === "COLD" ? "bg-sky-500/10 text-sky-600" : "bg-amber-500/10 text-amber-600"}`}>
@@ -295,7 +298,7 @@ function ClientProfilePage() {
                       {event.title}
                     </h4>
                     <span className="text-xs font-sans font-semibold text-foreground/30 uppercase tracking-widest">
-                      {new Date(event.date).toLocaleDateString(undefined, {
+                      {new Date(event.date).toLocaleString(language, {
                         month: "short",
                         day: "numeric",
                         year: "numeric",
@@ -311,10 +314,10 @@ function ClientProfilePage() {
                   {event.status && (
                     <div className="mt-3 flex gap-2">
                       <span className="text-xs font-bold uppercase tracking-tighter px-2 py-0.5 bg-surface ring-1 ring-border/50 text-foreground/50 rounded">
-                        {event.type}
+                        {event.typeLabel ?? event.type}
                       </span>
                       <span className="text-xs font-bold uppercase tracking-tighter px-2 py-0.5 bg-primary/5 text-primary rounded">
-                        {event.status}
+                        {event.statusLabel ?? event.status}
                       </span>
                     </div>
                   )}
