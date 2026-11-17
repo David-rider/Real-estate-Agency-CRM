@@ -22,6 +22,8 @@
 ## [未发布]
 
 #### 新增 / Added
+- 资料包分享（第 2 步，界面）：文档页可以勾选文档后点“分享”，填写标题、留言、只发给某个邮箱、关联房源或客户、各项开关和到期日，生成链接后一键复制；新增“已分享的资料包”标签，可以看到每条链接是否有效、被查看了几次、最近一次查看时间，并能复制、撤销或删除。对方打开 `/share?t=…` 后按要求留邮箱、同意保密协议，即可逐页查看 PDF 和图片，页面上带有对方邮箱的水印；允许下载时才显示下载按钮。
+  *Document package sharing (step 2, screens): on the Documents page, tick documents and choose Share to set a title, message, a single recipient email, a linked listing or client, the switches and an expiry, then copy the link; a new "Shared packages" tab shows whether each link is active, how many times it was viewed and when, with copy, revoke and delete. The recipient opens `/share?t=…`, gives an email and accepts the NDA if asked, and reads the PDFs and images page by page with their email as a watermark; a download button appears only when downloads are allowed.*
 - 资料包分享（第 1 步，服务器部分）：Elite 用户可以把几份文档打成资料包并生成分享链接，可要求对方留邮箱、先同意保密协议、只发给指定邮箱、设置过期时间，并随时撤销；对方不需要账号，每次查看都有记录。分享界面和查看页在下一步上线。数据库新增 4 张表（幂等迁移 `20261118000100_share_packages`）。
   *Document package sharing (step 1, server side): Elite users can bundle documents into a package with a share link that can require an email, acceptance of a confidentiality agreement, a specific recipient and an expiry, and can be revoked at any time; viewers need no account and every view is recorded. The sharing screens and the viewer page come in the next step. Four new tables (idempotent migration `20261118000100_share_packages`).*
 - 公司替成员统一付费时享阶梯折扣：5–24 人每席优惠 10%，25–49 人优惠 15%，50 人及以上单独报价；成员自己付费仍是原价。“升级 → 为团队付费”显示当前折扣和再加几人可到下一档，结账和人数变化时自动套用。
